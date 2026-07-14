@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+    <!-- Player Colors -->
+    <string name="PlayerColorSpiderman">Spiderman</string>
+    <string name="PlayerColorSunburn">Sunburn</string>
+    <!-- Cause of Deaths -->
+    <string name="DiedToSentinel">Terminated</string>
+    <string name="DiedToSentinelExplosion">Disintegrated</string>
+    <!-- Sentinel - Neutral Killing -->
+    <string name="SuperSquadRoleSentinel">Sentinel</string>
+    <string name="SuperSquadRoleSentinelIntroBlurb">Eliminate those who stand in your path.</string>
+    <string name="SuperSquadRoleSentinelTabDescription">Kill players by using your dope abilities!\%nl\%Preferably, explode \%b\%only\%/b\% in a secluded area.</string>
+    <!-- Sentinel Wiki -->
+    <string name="SuperSquadRoleSentinelWikiDescription">The Sentinel is a Neutral Killing role that can explode themselves to kill anyone nearby. They may also kill normally, but where's the fun in that?</string>
+    <string name="SuperSquadRoleSentinelExplode">Explode</string>
+    <string name="SuperSquadRoleSentinelExplodeWikiDescription">Explode all players nearby.</string>
+    <!-- Sentinel Options -->
+    <string name="SuperSquadOptionSentinelKillCooldown">Kill Cooldown</string>
+    <string name="SuperSquadOptionSentinelExplodeCooldown">Explode Cooldown</string>
+    <string name="SuperSquadOptionSentinelExplosionRadius">Explosion Radius</string>
+    <string name="SuperSquadOptionSentinelCanVent">Sentinel Can Vent</string>
+    <string name="SuperSquadOptionSentinelImpostorVision">Sentinel Has Impostor Vision</string>
+    <!-- Apparater - Crewmate Power -->
+    <string name="SuperSquadRoleApparater">Apparater</string>
+    <string name="SuperSquadRoleApparaterIntroBlurb">Open the map and step through it.</string>
+    <string name="SuperSquadRoleApparaterTabDescription">Open the map and click anywhere on it to \%b\%teleport\%/b\% there.</string>
+    <!-- Apparater Wiki -->
+    <string name="SuperSquadRoleApparaterWikiDescription">The Apparater is a Crewmate Power role that can open the map and click a location to instantly teleport there.</string>
+    <string name="SuperSquadRoleApparaterTeleport">Teleport</string>
+    <string name="SuperSquadRoleApparaterTeleportWikiDescription">Open the map. Click anywhere on it to teleport to that location.</string>
+    <!-- Apparater Options -->
+    <string name="SuperSquadOptionApparaterCooldown">Teleport Cooldown</string>
+    <string name="SuperSquadOptionApparaterSelectTime">Time To Select Location</string>
+    <string name="SuperSquadOptionApparaterMaxUses">Max Uses</string>
+</resources>

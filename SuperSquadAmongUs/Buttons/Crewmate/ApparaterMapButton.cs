@@ -1,8 +1,8 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
-using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
+using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Roles.Crewmate;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
@@ -13,15 +13,11 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 
 public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
 {
-    private const float SearchRadiusStep = 0.2f;
-    private const float SearchMaxRadius = 4f;
-    private const int SearchAnglesPerRing = 16;
+    // Fallback probe radius if the local player's collider is ever unavailable when checking
+    // (shouldn't normally happen - the player always has a collider while alive).
+    private const float FallbackProbeRadius = 0.2f;
 
-    // Non-trigger colliders on these layers don't represent physical obstacles
-    // (matches the filter TownOfUs itself uses for placement checks, e.g.
-    // SentryPlaceCameraButton/MinerPlaceVentButton).
-    private const int PlayersLayer = 5;
-    private const int IgnoreRaycastLayer = 8;
+    private static bool loggedMasksOnce;
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Teleport");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
@@ -54,6 +50,8 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         map.TrackedHerePoint.gameObject.SetActive(false);
         map.HerePoint.enabled = true;
         PlayerControl.LocalPlayer.SetPlayerMaterialColors(map.HerePoint);
+
+        LogMasksOnce();
     }
 
     public override void OnEffectEnd()
@@ -88,10 +86,20 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         }
 
         var rawTarget = GetRawClickWorldPosition();
-        if (TryFindNearestValidPoint(rawTarget, out var target))
+        var origin = playerControl.GetTruePosition();
+        var probeRadius = GetPlayerProbeRadius();
+
+        LogClickDiagnostics(origin, rawTarget, probeRadius);
+
+        if (WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, playerControl.Collider, out var target))
         {
+            Info($"Apparater: teleporting {origin} -> {target} (raw click {rawTarget})");
             playerControl.NetTransform.RpcSnapTo(target);
             ResetCooldownAndOrEffect();
+        }
+        else
+        {
+            Info($"Apparater: no reachable point found near raw click {rawTarget}");
         }
     }
 
@@ -113,46 +121,42 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         return (Vector2)(localPoint * ShipStatus.Instance.MapScale);
     }
 
-    // Searches outward in expanding rings from the raw clicked point for the nearest spot that is
-    // both inside the ship's walkable room area and not overlapping a solid obstacle (console,
-    // table, engine, wall, etc.), so a click on/near furniture lands the player next to it instead
-    // of inside it.
-    private static bool TryFindNearestValidPoint(Vector2 candidate, out Vector2 result)
+    private static float GetPlayerProbeRadius()
     {
-        if (IsValidTeleportPoint(candidate))
-        {
-            result = candidate;
-            return true;
-        }
-
-        for (var radius = SearchRadiusStep; radius <= SearchMaxRadius; radius += SearchRadiusStep)
-        {
-            for (var i = 0; i < SearchAnglesPerRing; i++)
-            {
-                var angle = i * (360f / SearchAnglesPerRing) * Mathf.Deg2Rad;
-                var offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
-                var point = candidate + offset;
-
-                if (IsValidTeleportPoint(point))
-                {
-                    result = point;
-                    return true;
-                }
-            }
-        }
-
-        result = default;
-        return false;
+        var collider = PlayerControl.LocalPlayer.Collider;
+        return collider ? Mathf.Max(collider.bounds.extents.x, collider.bounds.extents.y) : FallbackProbeRadius;
     }
 
-    private static bool IsValidTeleportPoint(Vector2 point)
+    // Logs the resolved integer value of each Constants.*Mask once per session - these are IL2CPP
+    // native fields with no statically-recoverable value (confirmed by direct inspection of the
+    // compiled game assembly), so the only way to actually know what they contain is to read them
+    // back at runtime like this.
+    private static void LogMasksOnce()
     {
-        return Helpers.GetRoom(point) != null && !IsObstructed(point);
+        if (loggedMasksOnce)
+        {
+            return;
+        }
+
+        loggedMasksOnce = true;
+        Info($"Apparater: Constants.ShipOnlyMask={Constants.ShipOnlyMask} ShipAndObjectsMask={Constants.ShipAndObjectsMask} " +
+             $"ShipAndAllObjectsMask={Constants.ShipAndAllObjectsMask} NotShipMask={Constants.NotShipMask} " +
+             $"PlayersOnlyMask={Constants.PlayersOnlyMask}");
     }
 
-    private static bool IsObstructed(Vector2 point)
+    // Dumps every collider actually present at the raw clicked point (unmasked - all layers, both
+    // trigger and solid), so a single test click still tells us definitively what's physically there
+    // if the reachability search ever fails to block a wall/obstacle again.
+    private static void LogClickDiagnostics(Vector2 origin, Vector2 point, float radius)
     {
-        var hits = Physics2D.OverlapPointAll(point, Constants.ShipAndAllObjectsMask);
-        return hits.Any(c => !c.isTrigger && c.gameObject.layer != PlayersLayer && c.gameObject.layer != IgnoreRaycastLayer);
+        var hits = Physics2D.OverlapCircleAll(point, radius);
+        Info($"Apparater: click at {point} (origin {origin}), probeRadius={radius}, {hits.Length} collider(s) present at click (unmasked):");
+        foreach (var hit in hits)
+        {
+            Info($"Apparater:   '{hit.gameObject.name}' layer={hit.gameObject.layer} ({LayerMask.LayerToName(hit.gameObject.layer)}) isTrigger={hit.isTrigger} tag={hit.tag}");
+        }
+
+        var blockedBetween = PhysicsHelpers.AnythingBetween(PlayerControl.LocalPlayer.Collider, origin, point, Constants.ShipAndAllObjectsMask, false);
+        Info($"Apparater:   AnythingBetween(origin, click)={blockedBetween}");
     }
 }

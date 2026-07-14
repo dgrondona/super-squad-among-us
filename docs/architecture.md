@@ -55,6 +55,27 @@ Shared role/button colors go in root-level `SuperSquadColors.cs` (and player col
 `TownOfUsColors.UseBasic ? Palette.CrewmateBlue : new Color32(...)` so custom role colors respect the
 "use basic crewmate team color" accessibility setting.
 
+## Physical obstacle / placement checks
+
+**For validating the player's own current position** (placing an object at their feet, e.g. Sentry's
+camera or Miner's vent), TOU-Mira's own examples (`SentryPlaceCameraButton`, `MinerPlaceVentButton`)
+check an **unmasked** `Physics2D.OverlapBoxAll` there, additionally filtering out `isTrigger` colliders
+and specific layer numbers to avoid false positives from themselves/UI/etc. That filtering does not
+transfer to a query that already passes a scoped mask like `Constants.ShipAndAllObjectsMask` — copying
+it onto an already-masked query can silently exclude the very obstacle colliders you're trying to
+detect. When a query is already mask-scoped, don't also filter by `isTrigger`/layer; trust the mask.
+
+**For validating an arbitrary world point that isn't the player's own position** (an "is this clicked
+spot walkable" style check), a point/circle overlap test alone is not sufficient, no matter how it's
+masked/filtered — a spot on the far side of a thin wall isn't inside any collider, so no point
+classifier can see it as blocked (`docs/roles/apparater.md` has the full multi-round story of learning
+this the hard way). The reliable approach is **reachability, not classification**: walk a chain of short
+steps from a known-good position (a `Physics2D.OverlapCircle` per cell for solid obstacles, plus a
+`PhysicsHelpers.AnythingBetween` line-crossing check on each step for thin wall colliders that overlap
+checks miss), and only accept destinations connected to that known-good start. `Modules/WalkableRegionSolver.cs`
+implements exactly this as a general-purpose utility (`TryFindReachablePoint`) — reach for it before
+writing another point-classification check for this kind of problem.
+
 ## Per-role notes
 
 Design decisions and known follow-ups for individual roles are tracked in `docs/roles/<name>.md` —

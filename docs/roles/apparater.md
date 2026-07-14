@@ -248,10 +248,40 @@ only way to confirm live whether the two per-step checks above are actually seei
 `HasRoomMargin`/`CircleContains`-comparison logging from round 4 is gone along with the code it was
 diagnosing.
 
-**Not yet confirmed by play-testing as of this writing.** Same four spots as round 4 are the right test:
-open floor, a wall, the Electrical console / an engine obstacle, and a hallway — this design targets all
-four at once, so a single test round should confirm or refute the whole architecture rather than one
-check at a time.
+Play-tested: the reachability architecture is a real improvement ("this seems to be a lot better" —
+user), but two things remained:
+
+## Play-test fixes (round 5.1) — padding and rejecting off-map clicks
+
+1. **Still some teleporting into walls, suspected to be a padding issue.** `IsCellOpen` was checking
+   `Physics2D.OverlapCircle` at exactly the player's own collision radius — a "clear" cell was only
+   guaranteed to not be *overlapping* a wall, not to have any real breathing room from one. Right up
+   against a wall reads the same as "in the wall" once the player's sprite/body actually occupies that
+   spot. Fix: `WalkableRegionSolver` now checks occupancy with `probeRadius + WallPadding` (a new
+   constant, `0.1f`) instead of the bare radius, so accepted cells have a small buffer of clearance.
+   This applies everywhere `IsCellOpen` is used (per-cell search *and* the final exact-click precision
+   polish), so it can't be bypassed by landing exactly on the raw click.
+2. **New requirement: clicking outside the play area (a wall, or off the ship) should do nothing**,
+   rather than snapping to the nearest valid point regardless of distance. The user's framing was
+   "the map is an overlay, walls are transparent, so only clicks that land in a room/hallway should
+   count" — but rather than hit-testing the map's actual artwork/alpha (real feasibility unknown,
+   texture may not be marked readable, would need new UV-mapping logic), this is achieved by reusing the
+   reachability search's own output: `ApparaterMapButton` now measures the distance between the raw
+   click and the nearest reachable point the solver found, and does nothing at all
+   (`MaxSnapDistance = 1.5f`, no teleport) if that distance is too large. This falls out naturally: a
+   click that's genuinely in a room/hallway needs at most a small nudge to reach real clearance; a click
+   on a wall (especially with the added padding above making near-wall cells stricter) or in the void
+   needs a much bigger jump back to actual floor, and gets rejected.
+
+Both changes are tunable constants (`WallPadding` in `WalkableRegionSolver.cs`; `MaxSnapDistance` in
+`ApparaterMapButton.cs`), not hardcoded assumptions — if clicks near legitimate large furniture (a big
+meeting table) start getting incorrectly rejected as "outside the map," `MaxSnapDistance` is the first
+thing to raise; if walls still don't feel like they have enough clearance, raise `WallPadding` (mind
+corridor width — Skeld corridors are roughly 1.2–1.6 units, so keep `2 * (probeRadius + WallPadding)`
+comfortably under that).
+
+**Not yet confirmed by play-testing as of this writing.** Same four test spots remain relevant: open
+floor, a wall, the Electrical console / an engine obstacle, and a hallway.
 
 ## Known follow-ups
 

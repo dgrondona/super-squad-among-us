@@ -22,6 +22,11 @@ internal static class WalkableRegionSolver
     private const float MaxCellSize = 0.25f;
     private const int MaxExpandedCells = 8000;
 
+    // Extra clearance added on top of the body's own radius for the per-cell obstacle check, so a
+    // "clear" cell has real breathing room from a wall/obstacle rather than merely not overlapping it
+    // (which can still read as "standing in the wall" once the body actually occupies that spot).
+    private const float WallPadding = 0.1f;
+
     private static readonly (int Dx, int Dy)[] Neighbors = { (1, 0), (-1, 0), (0, 1), (0, -1) };
 
     /// <summary>
@@ -45,10 +50,11 @@ internal static class WalkableRegionSolver
             useTriggers = false,
         };
         var overlapBuffer = new Collider2D[1];
+        var paddedRadius = probeRadius + WallPadding;
 
         Vector2 CellCenter(int cx, int cy) => origin + new Vector2(cx * cellSize, cy * cellSize);
 
-        bool IsCellOpen(Vector2 center) => Physics2D.OverlapCircle(center, probeRadius, filter, overlapBuffer) == 0;
+        bool IsCellOpen(Vector2 center) => Physics2D.OverlapCircle(center, paddedRadius, filter, overlapBuffer) == 0;
 
         bool HasClearEdge(Vector2 from, Vector2 to) => !PhysicsHelpers.AnythingBetween(selfCollider, from, to, mask, false);
 

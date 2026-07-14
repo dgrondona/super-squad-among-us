@@ -17,6 +17,14 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
     // (shouldn't normally happen - the player always has a collider while alive).
     private const float FallbackProbeRadius = 0.2f;
 
+    // A click doesn't land exactly where the reachability search's nearest-valid-point does: for a
+    // click that's basically on open floor (or barely clipping a wall/obstacle edge), that gap is a
+    // small precision nudge. For a click on a wall, or entirely outside the ship, the nearest reachable
+    // point can be far away (however far it is back to actual floor). Treating "far" as "the click
+    // wasn't actually on the map" gives us "clicking outside the play area does nothing" without
+    // needing to hit-test the map's artwork directly.
+    private const float MaxSnapDistance = 1.5f;
+
     private static bool loggedMasksOnce;
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Teleport");
@@ -91,16 +99,23 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
 
         LogClickDiagnostics(origin, rawTarget, probeRadius);
 
-        if (WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, playerControl.Collider, out var target))
-        {
-            Info($"Apparater: teleporting {origin} -> {target} (raw click {rawTarget})");
-            playerControl.NetTransform.RpcSnapTo(target);
-            ResetCooldownAndOrEffect();
-        }
-        else
+        if (!WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, playerControl.Collider, out var target))
         {
             Info($"Apparater: no reachable point found near raw click {rawTarget}");
+            return;
         }
+
+        var snapDistance = Vector2.Distance(target, rawTarget);
+        if (snapDistance > MaxSnapDistance)
+        {
+            Info($"Apparater: click at {rawTarget} was {snapDistance} from the nearest reachable point {target} " +
+                 $"(> {MaxSnapDistance}); treating as outside the play area and ignoring");
+            return;
+        }
+
+        Info($"Apparater: teleporting {origin} -> {target} (raw click {rawTarget}, snapDistance={snapDistance})");
+        playerControl.NetTransform.RpcSnapTo(target);
+        ResetCooldownAndOrEffect();
     }
 
     private static void CloseMap()

@@ -20,4 +20,16 @@
     <string name="ExampleOptionSentinelExplosionRadius">Explosion Radius</string>
     <string name="ExampleOptionSentinelCanVent">Sentinel Can Vent</string>
     <string name="ExampleOptionSentinelImpostorVision">Sentinel Has Impostor Vision</string>
+    <!-- Apparater - Crewmate Power -->
+    <string name="ExampleRoleApparater">Apparater</string>
+    <string name="ExampleRoleApparaterIntroBlurb">Open the map and step through it.</string>
+    <string name="ExampleRoleApparaterTabDescription">Open the map and click anywhere on it to \%b\%teleport\%/b\% there.</string>
+    <!-- Apparater Wiki -->
+    <string name="ExampleRoleApparaterWikiDescription">The Apparater is a Crewmate Power role that can open the map and click a location to instantly teleport there.</string>
+    <string name="ExampleRoleApparaterTeleport">Teleport</string>
+    <string name="ExampleRoleApparaterTeleportWikiDescription">Open the map. Click anywhere on it to teleport to that location.</string>
+    <!-- Apparater Options -->
+    <string name="ExampleOptionApparaterCooldown">Teleport Cooldown</string>
+    <string name="ExampleOptionApparaterSelectTime">Time To Select Location</string>
+    <string name="ExampleOptionApparaterMaxUses">Max Uses</string>
 </resources>

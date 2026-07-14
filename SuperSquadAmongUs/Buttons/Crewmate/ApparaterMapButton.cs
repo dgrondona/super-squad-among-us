@@ -25,8 +25,6 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
     // needing to hit-test the map's artwork directly.
     private const float MaxSnapDistance = 1.5f;
 
-    private static bool loggedMasksOnce;
-
     public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Teleport");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Apparater;
@@ -58,8 +56,6 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         map.TrackedHerePoint.gameObject.SetActive(false);
         map.HerePoint.enabled = true;
         PlayerControl.LocalPlayer.SetPlayerMaterialColors(map.HerePoint);
-
-        LogMasksOnce();
     }
 
     public override void OnEffectEnd()
@@ -96,8 +92,6 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         var rawTarget = GetRawClickWorldPosition();
         var origin = playerControl.GetTruePosition();
         var probeRadius = GetPlayerProbeRadius();
-
-        LogClickDiagnostics(origin, rawTarget, probeRadius);
 
         if (!WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, playerControl.Collider, out var target))
         {
@@ -140,38 +134,5 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
     {
         var collider = PlayerControl.LocalPlayer.Collider;
         return collider ? Mathf.Max(collider.bounds.extents.x, collider.bounds.extents.y) : FallbackProbeRadius;
-    }
-
-    // Logs the resolved integer value of each Constants.*Mask once per session - these are IL2CPP
-    // native fields with no statically-recoverable value (confirmed by direct inspection of the
-    // compiled game assembly), so the only way to actually know what they contain is to read them
-    // back at runtime like this.
-    private static void LogMasksOnce()
-    {
-        if (loggedMasksOnce)
-        {
-            return;
-        }
-
-        loggedMasksOnce = true;
-        Info($"Apparater: Constants.ShipOnlyMask={Constants.ShipOnlyMask} ShipAndObjectsMask={Constants.ShipAndObjectsMask} " +
-             $"ShipAndAllObjectsMask={Constants.ShipAndAllObjectsMask} NotShipMask={Constants.NotShipMask} " +
-             $"PlayersOnlyMask={Constants.PlayersOnlyMask}");
-    }
-
-    // Dumps every collider actually present at the raw clicked point (unmasked - all layers, both
-    // trigger and solid), so a single test click still tells us definitively what's physically there
-    // if the reachability search ever fails to block a wall/obstacle again.
-    private static void LogClickDiagnostics(Vector2 origin, Vector2 point, float radius)
-    {
-        var hits = Physics2D.OverlapCircleAll(point, radius);
-        Info($"Apparater: click at {point} (origin {origin}), probeRadius={radius}, {hits.Length} collider(s) present at click (unmasked):");
-        foreach (var hit in hits)
-        {
-            Info($"Apparater:   '{hit.gameObject.name}' layer={hit.gameObject.layer} ({LayerMask.LayerToName(hit.gameObject.layer)}) isTrigger={hit.isTrigger} tag={hit.tag}");
-        }
-
-        var blockedBetween = PhysicsHelpers.AnythingBetween(PlayerControl.LocalPlayer.Collider, origin, point, Constants.ShipAndAllObjectsMask, false);
-        Info($"Apparater:   AnythingBetween(origin, click)={blockedBetween}");
     }
 }

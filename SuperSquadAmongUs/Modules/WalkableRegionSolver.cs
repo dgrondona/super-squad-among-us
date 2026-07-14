@@ -52,45 +52,44 @@ internal static class WalkableRegionSolver
         var overlapBuffer = new Collider2D[1];
         var paddedRadius = probeRadius + WallPadding;
 
-        Vector2 CellCenter(int cx, int cy) => origin + new Vector2(cx * cellSize, cy * cellSize);
+        Vector2 CellCenter((int Cx, int Cy) cell) => origin + new Vector2(cell.Cx * cellSize, cell.Cy * cellSize);
 
         bool IsCellOpen(Vector2 center) => Physics2D.OverlapCircle(center, paddedRadius, filter, overlapBuffer) == 0;
 
         bool HasClearEdge(Vector2 from, Vector2 to) => !PhysicsHelpers.AnythingBetween(selfCollider, from, to, mask, false);
 
-        var originKey = PackKey(0, 0);
-        var visited = new HashSet<long>(MaxExpandedCells) { originKey };
-        var frontier = new PriorityQueue<long, float>(MaxExpandedCells);
+        var originCell = (Cx: 0, Cy: 0);
+        var visited = new HashSet<(int Cx, int Cy)>(MaxExpandedCells) { originCell };
+        var frontier = new PriorityQueue<(int Cx, int Cy), float>(MaxExpandedCells);
 
-        var bestKey = originKey;
+        var bestCell = originCell;
         var bestSqrDist = (origin - rawTarget).sqrMagnitude;
         var earlySuccessSqrDist = cellSize * cellSize;
-        frontier.Enqueue(originKey, bestSqrDist);
+        frontier.Enqueue(originCell, bestSqrDist);
 
         var expanded = 0;
         while (frontier.Count > 0 && expanded < MaxExpandedCells)
         {
-            frontier.TryDequeue(out var curKey, out _);
+            frontier.TryDequeue(out var curCell, out _);
             expanded++;
 
-            UnpackKey(curKey, out var curCx, out var curCy);
-            var curCenter = CellCenter(curCx, curCy);
+            var curCenter = CellCenter(curCell);
 
             if ((curCenter - rawTarget).sqrMagnitude <= earlySuccessSqrDist)
             {
-                bestKey = curKey;
+                bestCell = curCell;
                 break;
             }
 
             foreach (var (dx, dy) in Neighbors)
             {
-                var neighborKey = PackKey(curCx + dx, curCy + dy);
-                if (!visited.Add(neighborKey))
+                var neighborCell = (Cx: curCell.Cx + dx, Cy: curCell.Cy + dy);
+                if (!visited.Add(neighborCell))
                 {
                     continue;
                 }
 
-                var neighborCenter = CellCenter(curCx + dx, curCy + dy);
+                var neighborCenter = CellCenter(neighborCell);
 
                 if (!IsCellOpen(neighborCenter) || !HasClearEdge(curCenter, neighborCenter))
                 {
@@ -101,32 +100,23 @@ internal static class WalkableRegionSolver
                 if (sqrDist < bestSqrDist)
                 {
                     bestSqrDist = sqrDist;
-                    bestKey = neighborKey;
+                    bestCell = neighborCell;
                 }
 
-                frontier.Enqueue(neighborKey, sqrDist);
+                frontier.Enqueue(neighborCell, sqrDist);
             }
         }
 
-        UnpackKey(bestKey, out var bestCx, out var bestCy);
-        result = CellCenter(bestCx, bestCy);
+        result = CellCenter(bestCell);
 
         // Precision polish: if the winning cell is right next to the raw target, try landing on the
         // exact click instead of the cell center.
-        if (bestKey != originKey && (result - rawTarget).sqrMagnitude <= earlySuccessSqrDist &&
+        if (bestCell != originCell && (result - rawTarget).sqrMagnitude <= earlySuccessSqrDist &&
             IsCellOpen(rawTarget) && HasClearEdge(result, rawTarget))
         {
             result = rawTarget;
         }
 
-        return bestKey != originKey;
-    }
-
-    private static long PackKey(int cx, int cy) => ((long)cx << 32) | (uint)cy;
-
-    private static void UnpackKey(long key, out int cx, out int cy)
-    {
-        cx = (int)(key >> 32);
-        cy = (int)(key & 0xFFFFFFFF);
+        return bestCell != originCell;
     }
 }

@@ -280,8 +280,50 @@ thing to raise; if walls still don't feel like they have enough clearance, raise
 corridor width — Skeld corridors are roughly 1.2–1.6 units, so keep `2 * (probeRadius + WallPadding)`
 comfortably under that).
 
-**Not yet confirmed by play-testing as of this writing.** Same four test spots remain relevant: open
-floor, a wall, the Electrical console / an engine obstacle, and a hallway.
+**Confirmed working by play-testing** (round 5.1 fixes included) — the reachability approach, wall
+padding, and off-map-click rejection all hold up in live testing.
+
+## Round 6 — simplification pass (no behavior change)
+
+Feedback after round 5.1 confirmed correctness: "this is actually a lot better and seems to now be
+working as intended. It does seem to be WAY overcomplicated though" — and asked whether a pregenerated
+map of valid teleport points, generated from level bounding boxes, would be simpler.
+
+Investigated via a design-focused subagent pass. **The literal idea doesn't hold up as a performance
+win, and it's worth recording why so it isn't re-proposed without this context:**
+- A *correct* precomputed map still needs the same per-edge wall-crossing check (`AnythingBetween`)
+  baked in via a flood-fill — occupancy-only classification (just `OverlapCircle` per cell) cannot
+  encode connectivity and would reintroduce the exact wall-tunneling bug from rounds 2–4. So a valid
+  precomputed map is not cheaper-because-simpler classification; it's the same physics work, done
+  eagerly instead of on demand.
+- Eagerly covering enough area to answer *any* future click, before knowing where it'll land, costs
+  **O((radius / cellSize)²)** — quadratically worse than the current goal-directed search's
+  **O(distance / cellSize)** for a specific click, since a directed search only examines a thin path
+  toward the target instead of a full disc in every direction.
+- This ability is used roughly once per map-open (a successful click ends the effect immediately), so
+  there's no repeated-lookup volume to amortize an eager precompute against — it would be pure overhead.
+
+**A genuinely simpler alternative did surface**: a single swept `Physics2D.CircleCast` from the player
+to the click (a "line-of-sight blink," ~10 lines, unlimited range, no grid or cache at all — the same
+crossing-detection idea that fixed the original bug, just applied once over the whole distance instead
+of per grid-cell edge). Its tradeoff is real and was presented to the user directly: it can't route
+around corners like the current pathfinder does — it's a straight-line blink, not a walk. The user chose
+to **keep the pathfinding/corner-routing behavior** over switching to this simpler mechanic.
+
+**What was actually simplified**, given that choice (behavior-preserving, no logic change):
+- `WalkableRegionSolver.cs`: replaced packed-`long` grid keys (`PackKey`/`UnpackKey`, bit-shifting a
+  coordinate pair into a single `long`) with plain `(int Cx, int Cy)` tuple keys — .NET `ValueTuple`s
+  already have structural equality/hashing, so this is a pure readability win with the packing helpers
+  deleted entirely.
+- `ApparaterMapButton.cs`: removed `LogMasksOnce`/`loggedMasksOnce` and `LogClickDiagnostics` (the
+  mask-value dump and per-collider dump that existed specifically to diagnose *why* walls weren't being
+  detected across rounds 2–5). That question is answered and the fix is confirmed working, so the
+  diagnostic instrumentation was dead weight. The concise `Info(...)` calls for the three real outcomes
+  (teleported / no reachable point / click too far from the play area) in `FixedUpdate` remain.
+
+Explicitly **not** done, and shouldn't be revisited without a new, concrete reason: no eager/precomputed
+grid, no session-scoped result caching (helps only the rare multi-click-per-open case, at real
+complexity cost), no switch to line-of-sight `CircleCast` (the user's explicit choice).
 
 ## Known follow-ups
 
@@ -291,14 +333,11 @@ floor, a wall, the Electrical console / an engine obstacle, and a hallway.
 - Not yet tested on multi-page maps (Polus/Airship/Fungle) or with a click on/near a closed door. By
   construction the search should be a non-regression here (it only ever expands within the player's own
   connected floor, seeded at their real position), but this hasn't been confirmed live.
-- `WalkableRegionSolver`'s tunables (`MinCellSize`/`MaxCellSize` 0.15–0.25, `MaxExpandedCells` 8000) are
-  a reasoned first guess (cell size tied to the player's collider size; cap sized to comfortably cover a
-  cross-room teleport without an unbounded worst case), not yet tuned against real play - if a snap
-  feels too imprecise, too slow, or fails on a legitimately-close click, these are the values to revisit.
-- If round 5's diagnostics show `AnythingBetween` still can't see the walls on
-  `Constants.ShipAndAllObjectsMask`, that means the reachability *architecture* is sound but the *mask*
-  is wrong — the fix becomes finding which mask/layer the walls are actually on, not another structural
-  rework.
+- `WalkableRegionSolver`'s tunables (`MinCellSize`/`MaxCellSize` 0.15–0.25, `MaxExpandedCells` 8000,
+  `WallPadding` 0.1) and `ApparaterMapButton`'s `MaxSnapDistance` (1.5) are reasoned first guesses, not
+  exhaustively tuned against real play - if a snap feels too imprecise, too slow, fails on a
+  legitimately-close click, or incorrectly rejects a click near large furniture, these are the values to
+  revisit.
 - `WalkableRegionSolver` is written as a general-purpose reusable utility (not Apparater-specific) —
   worth reaching for if a future role needs similar "place/move something to a valid nearby spot"
   logic, per the note in `docs/architecture.md`.

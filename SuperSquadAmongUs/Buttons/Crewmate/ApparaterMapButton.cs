@@ -25,43 +25,63 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
     // needing to hit-test the map's artwork directly.
     private const float MaxSnapDistance = 1.5f;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Teleport");
+    public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Apparate");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Apparater;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<ApparaterOptions>.Instance.TeleportCooldown + MapCooldown, 5f, 120f);
-    public override float EffectDuration => OptionGroupSingleton<ApparaterOptions>.Instance.SelectTime;
+
+    // There's no real selection-time limit - the player picks a spot whenever they want - but
+    // TownOfUsButton.FixedUpdateHandler (which this button inherits, not the base CustomActionButton
+    // version) ends the effect the instant Timer goes negative, unconditionally: `else if (HasEffect &&
+    // EffectActive)`, with no "EffectDuration > 0" guard the way the base class has. So EffectDuration
+    // can't just be 0 - Timer would go negative on literally the next tick and force-close the map
+    // before the player can click anything. Instead it's re-armed to this value every tick in
+    // FixedUpdate below, so it never actually gets the chance to run out; the constant itself just needs
+    // to comfortably clear one tick's Time.deltaTime.
+    private const float TimerKeepAlive = 5f;
+
+    public override float EffectDuration => TimerKeepAlive;
     public override int MaxUses => (int)OptionGroupSingleton<ApparaterOptions>.Instance.MaxUses;
     public override LoadableAsset<Sprite> Sprite => SuperSquadCrewAssets.ApparaterMapSprite;
 
-    // Edge-detected ourselves: Input.GetMouseButtonDown is a single-frame Update() flag and is
-    // unreliable when only read from FixedUpdate (it can be missed entirely if no FixedUpdate
-    // tick lands on the frame the click happened). Seeding this to the real state on open also
-    // means the same physical click that pressed this ability button can't double as a map click
-    // until the button is actually released and pressed again.
-    private bool wasMouseDown;
+    // The base ClickHandler decrements UsesLeft the moment the button is pressed, before OnClick
+    // even runs - so opening the map always "spends" a use as far as the base class is concerned.
+    // We only want a use spent on an actual teleport, so we track whether one happened and refund
+    // the use (and skip the cooldown) in OnEffectEnd, which fires on both paths the effect can end:
+    // an actual teleport, or the player closing the map without picking a spot.
+    private bool teleported;
+
+    // The frame the map was opened on, so the same physical press that triggered the ability button
+    // can't also register as a map-target click on that very first frame. See HandleMapClick.
+    private int openedFrame;
 
     protected override void OnClick()
     {
-        wasMouseDown = Input.GetMouseButton(0);
-        HudManager.Instance.InitMap();
-
-        var map = MapBehaviour.Instance;
-        // GenericShow() is the bare "show the ship layout" call. ShowNormalMap()/ShowCountOverlay()/
-        // ShowSabotageMap() additionally trigger TownOfUs's vent-icon overlay (a Harmony postfix
-        // targeting those three methods specifically) and leave the task overlay visible - neither
-        // of which we want for a plain teleport-target picker.
-        map.GenericShow();
-        map.taskOverlay.Hide();
-        map.countOverlay.gameObject.SetActive(false);
-        map.TrackedHerePoint.gameObject.SetActive(false);
-        map.HerePoint.enabled = true;
-        PlayerControl.LocalPlayer.SetPlayerMaterialColors(map.HerePoint);
+        teleported = false;
+        openedFrame = Time.frameCount;
+        BareMapVisuals.Open(Palette.Blue);
     }
 
     public override void OnEffectEnd()
     {
         base.OnEffectEnd();
-        CloseMap();
+        BareMapVisuals.Close();
+
+        if (teleported)
+        {
+            // Cooldown already applies: ResetCooldownAndOrEffect (the only caller of OnEffectEnd for
+            // this button) sets Timer = Cooldown before calling us.
+            return;
+        }
+
+        // No teleport happened - refund the use ClickHandler spent on opening the map, and don't make
+        // the player wait out a cooldown for an ability they never actually used.
+        if (LimitedUses)
+        {
+            IncreaseUses();
+        }
+
+        Timer = 0f;
     }
 
     protected override void FixedUpdate(PlayerControl playerControl)
@@ -73,22 +93,44 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
             return;
         }
 
+        // Re-arm (see TimerKeepAlive) and hide the countdown text TownOfUsButton.FixedUpdateHandler
+        // just drew above us this same tick - the map should just stay open, not visibly tick down.
+        Timer = TimerKeepAlive;
+        if (Button)
+        {
+            Button!.cooldownTimerText.gameObject.SetActive(false);
+        }
+
         if (!MapBehaviour.Instance || !MapBehaviour.Instance.gameObject.activeSelf)
         {
             // The player closed the map themselves (e.g. the in-game close button) without picking a spot.
             ResetCooldownAndOrEffect();
-            return;
         }
+    }
 
-        var isMouseDown = Input.GetMouseButton(0);
-        var clicked = isMouseDown && !wasMouseDown;
-        wasMouseDown = isMouseDown;
-
-        if (!clicked)
+    /// <summary>
+    /// Handles a left-click while the teleport map is open: finds the nearest reachable point to the
+    /// click and snaps the player there. Called once per frame a left-click begins, from
+    /// <see cref="Patches.ApparaterMapClickPatch"/> (a <c>HudManager.Update</c> postfix), so it's synced
+    /// to the render frame. Detecting the click here rather than by polling the mouse in
+    /// <see cref="FixedUpdate"/> is the fix for clicks being dropped: FixedUpdate doesn't run on every
+    /// rendered frame, so a quick click held for less than one fixed timestep was never sampled.
+    /// </summary>
+    public void HandleMapClick()
+    {
+        if (!EffectActive || !MapBehaviour.Instance || !MapBehaviour.Instance.gameObject.activeSelf)
         {
             return;
         }
 
+        // The press that opened the map (clicking the ability button) shouldn't also count as a map
+        // target on that same frame.
+        if (Time.frameCount == openedFrame)
+        {
+            return;
+        }
+
+        var playerControl = PlayerControl.LocalPlayer;
         var rawTarget = GetRawClickWorldPosition();
         var origin = playerControl.GetTruePosition();
         var probeRadius = GetPlayerProbeRadius();
@@ -108,16 +150,9 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         }
 
         Info($"Apparater: teleporting {origin} -> {target} (raw click {rawTarget}, snapDistance={snapDistance})");
+        teleported = true;
         playerControl.NetTransform.RpcSnapTo(target);
         ResetCooldownAndOrEffect();
-    }
-
-    private static void CloseMap()
-    {
-        if (MapBehaviour.Instance && MapBehaviour.Instance.gameObject.activeSelf)
-        {
-            MapBehaviour.Instance.Close();
-        }
     }
 
     private static Vector2 GetRawClickWorldPosition()

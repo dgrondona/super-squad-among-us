@@ -26,10 +26,9 @@
     <string name="SuperSquadRoleApparaterTabDescription">Open the map and click anywhere on it to \%b\%teleport\%/b\% there.</string>
     <!-- Apparater Wiki -->
     <string name="SuperSquadRoleApparaterWikiDescription">The Apparater is a Crewmate Power role that can open the map and click a location to instantly teleport there.</string>
-    <string name="SuperSquadRoleApparaterTeleport">Teleport</string>
+    <string name="SuperSquadRoleApparaterTeleport">Aparate</string>
     <string name="SuperSquadRoleApparaterTeleportWikiDescription">Open the map. Click anywhere on it to teleport to that location.</string>
     <!-- Apparater Options -->
     <string name="SuperSquadOptionApparaterCooldown">Teleport Cooldown</string>
-    <string name="SuperSquadOptionApparaterSelectTime">Time To Select Location</string>
     <string name="SuperSquadOptionApparaterMaxUses">Max Uses</string>
 </resources>

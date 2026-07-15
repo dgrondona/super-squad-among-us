@@ -11,12 +11,12 @@ public sealed class ApparaterOptions : AbstractOptionGroup<ApparaterRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleApparater", "Apparater");
 
-    [ModdedNumberOption("SuperSquadOptionApparaterCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float TeleportCooldown { get; set; } = 30f;
+    [ModdedNumberOption("SuperSquadOptionApparaterCooldown", 5f, 60f, 1f, MiraNumberSuffixes.Seconds)]
+    public float TeleportCooldown { get; set; } = 6f;
 
-    [ModdedNumberOption("SuperSquadOptionApparaterSelectTime", 3f, 20f, 1f, MiraNumberSuffixes.Seconds)]
-    public float SelectTime { get; set; } = 10f;
-
-    [ModdedNumberOption("SuperSquadOptionApparaterMaxUses", 1f, 15f, 1f, MiraNumberSuffixes.None, "0")]
-    public float MaxUses { get; set; } = 5f;
+    // -1 is the "infinite uses" sentinel here, not 0 - matches TownOfUsButton's default
+    // ZeroIsInfinite=false (see TownOfUsButton.cs), which ApparaterMapButton doesn't override, and
+    // mirrors the same pattern EngineerOptions.MaxVents/MaxFixes use for the same reason.
+    public ModdedNumberOption MaxUses { get; } =
+        new("SuperSquadOptionApparaterMaxUses", 4f, -1f, 15f, 1f, "0", "∞", MiraNumberSuffixes.None, "0");
 }

@@ -4,7 +4,8 @@ Crewmate Power role. Ability opens the map (like the crewmate minimap / imposter
 teleports the player to wherever they click inside it.
 
 Files: `Roles/Crewmate/ApparaterRole.cs`, `Buttons/Crewmate/ApparaterMapButton.cs`,
-`Options/Roles/Crewmate/ApparaterOptions.cs`.
+`Options/Roles/Crewmate/ApparaterOptions.cs`, `Modules/WalkableRegionSolver.cs`. Also owns (but doesn't
+exclusively use - see round 9) `Modules/BareMapVisuals.cs`, the shared "open a bare, tinted map" helper.
 
 ## Design decisions (confirmed with the user, don't re-litigate without a reason)
 
@@ -324,6 +325,250 @@ to **keep the pathfinding/corner-routing behavior** over switching to this simpl
 Explicitly **not** done, and shouldn't be revisited without a new, concrete reason: no eager/precomputed
 grid, no session-scoped result caching (helps only the rare multi-click-per-open case, at real
 complexity cost), no switch to line-of-sight `CircleCast` (the user's explicit choice).
+
+## Round 7 — polish pass (color, cooldown, use-refund, rename, infinite-uses option)
+
+Follow-up requests after round 6's simplification, all applied together:
+
+- **Color scheme: purple → green.** `SuperSquadColors.Apparater` changed from `(156, 108, 210)` to
+  `(46, 204, 113)`. Picked to stay visually distinct from `SuperSquadColors.Chameleon` (teal-green,
+  `(81, 180, 154)`) and `SuperSquadColors.Sentinel` (gray-green, `(143, 162, 141)`) already in this
+  project's palette.
+- **Default cooldown lowered to 6s.** `ApparaterOptions.TeleportCooldown` default `30f` → `6f`. The
+  `[ModdedNumberOption]` range had to move too (old min was `10f`, above the new default) — now
+  `(5f, 60f, 1f)`, matching the `5f` floor `ApparaterMapButton.Cooldown`'s `Math.Clamp` already enforced.
+- **Ability no longer consumes a use unless the player actually teleports.** Root cause: MiraAPI's
+  `CustomActionButton.ClickHandler()` decrements `UsesLeft` unconditionally the moment the button is
+  pressed (before `OnClick()` even runs) whenever `LimitedUses` is true — so simply opening the map and
+  then closing it without picking a spot (or letting the 10s selection window time out) was silently
+  spending a use. Fix, in `ApparaterMapButton`: a `teleported` field, reset to `false` in `OnClick()` and
+  set `true` only right before the real `RpcSnapTo` call. `OnEffectEnd()` — which fires on *every* path
+  the effect can end (successful teleport via `ResetCooldownAndOrEffect()`, the player manually closing
+  the map, and the selection window timing out via the base class's own `FixedUpdateHandler`) — refunds
+  the use with `IncreaseUses()` whenever `!teleported`. No new mechanism needed; this just closes the gap
+  between "base class always deducts on click" and "we only want to deduct on success."
+- **Ability renamed "Teleport" → "Aparate".** Changed the locale value for `SuperSquadRoleApparaterTeleport`
+  (`Resources/Locale/en_US.xml`) and the matching fallback strings in `ApparaterMapButton.Name` and
+  `ApparaterRole.Abilities`. The locale *key* itself was left unchanged (internal identifier, not
+  user-facing) to keep the diff minimal. Other prose that uses "teleport" as a plain verb (tab
+  description, wiki description, the `SuperSquadOptionApparaterCooldown` option label) was deliberately
+  left alone — the request was to rename the ability/button, not to purge the word "teleport" from
+  descriptive text about what it does.
+- **`MaxUses` now supports an explicit infinite setting.** Range changed from `(1f, 15f)` to `(0f, 15f,
+  zeroInfinity: true)` (same pattern as TOU-Mira's `MonarchOptions.MaxKnights`), default `5f` → `4f`. `0`
+  now means infinite in the options menu; no button-side change was needed since MiraAPI's
+  `CustomActionButton.ZeroIsInfinite` already defaults to `true` and `ApparaterMapButton` never overrides
+  it, so `MaxUses => (int)OptionGroupSingleton<ApparaterOptions>.Instance.MaxUses` already flows an option
+  value of `0` through to "infinite uses" correctly.
+- All three `ApparaterOptions` fields (`TeleportCooldown`, `SelectTime`, `MaxUses`) already carried
+  `[ModdedNumberOption]` attributes before this round, which is this project's only mechanism for
+  exposing an option in the in-game settings menu (auto-registered via reflection, see root
+  `CLAUDE.md`/`docs/architecture.md`) — so "make sure cooldown and use count are configurable in
+  settings" was already true going in; this round's `MaxUses` change extends what's configurable
+  (added the infinite option) rather than making it configurable for the first time.
+
+## Round 8 — no-countdown map, refund-on-cancel cooldown, infinite-uses fix, blue marker
+
+Follow-up play-test feedback after round 7:
+
+1. **"Cooldown is still 30s by default in practice mode."** No bug found in this round's code — the
+   option's C# default only seeds a `ModdedNumberOption`'s `Value` the first time it's constructed.
+   Among Us's host-side option presets are persisted to disk independently of the mod's compiled
+   defaults (`ModdedOption`'s `includeInPreset` ties it into the vanilla preset-save system); a preset
+   slot that was already touched while the old `30f` default was in effect keeps its saved `30` until
+   the slider is manually moved (or a fresh/reset preset is used) — rebuilding the DLL can't retroactively
+   rewrite an already-saved preset value. If cooldown is still wrong after manually setting the slider to
+   6s in the host's options menu, *that* would point back at code and is worth a fresh look.
+2. **"Still doing the countdown when I click on it to open the map. We don't need that countdown, and
+   the map shouldn't close unless the player teleports or closes it themselves."** The `SelectTime`
+   option (`EffectDuration`) was a max-time-to-choose timer — once it hit 0, the base class's own
+   `FixedUpdateHandler` auto-fired `OnEffectEnd()` and force-closed the map. Removed entirely:
+   `ApparaterOptions.SelectTime` is gone, and `ApparaterMapButton` now overrides `HasEffect => true`
+   while leaving `EffectDuration` at the base class's default of `0`. `HasEffect` is what keeps
+   `EffectActive` (and thus click-handling) alive while the map is open; `EffectDuration == 0` is what
+   the base class's own auto-timeout condition (`EffectDuration > 0`) and countdown-fill-bar rendering
+   both gate on, so with it at 0 neither ever fires — the map now stays open indefinitely until an actual
+   teleport or a manual close.
+3. **"Closing the map or running out of time resets the cooldown — it shouldn't."** Root cause, same
+   family as round 7's use-refund bug: `ResetCooldownAndOrEffect()` (called both after a successful
+   teleport and when the player manually closes the map) unconditionally sets `Timer = Cooldown` *before*
+   calling `OnEffectEnd()`. `OnEffectEnd()` now checks the same `teleported` flag introduced in round 7:
+   if a teleport happened, it leaves that already-applied cooldown alone; if not, it overwrites
+   `Timer = 0f` (on top of also refunding the use), so declining to teleport costs nothing at all. The
+   "running out of time" half of this is now moot given fix #2 above — there's no more timeout to run out
+   from.
+4. **`MaxUses`'s infinite-uses setting from round 7 was actually broken** — caught before play-testing,
+   while investigating fix #1. `[ModdedNumberOption(..., zeroInfinity: true)]` only controls what the
+   *options-menu slider* displays at `0` (the literal string `"∞"`); it has no connection to
+   `CustomActionButton.ZeroIsInfinite` (an unrelated, confusingly-similarly-named bool on the *button*
+   class that controls whether `LimitedUses` treats `0` or `-1` as "no limit"). `TownOfUsButton` (which
+   `ApparaterMapButton` inherits from via `TownOfUsRoleButton<T>`) hardcodes `ZeroIsInfinite = false`, so
+   under round 7's `0`-to-15 range, selecting "infinite" in the menu would have actually meant
+   `LimitedUses = (0 >= 0) = true` with `UsesLeft` stuck at `0` forever — permanently unusable, the
+   opposite of infinite. Fixed by following the exact convention TOU-Mira's own `EngineerOptions`
+   (`MaxVents`/`MaxFixes`) already uses for this same button hierarchy: `-1` is the infinite sentinel, not
+   `0`. `ApparaterOptions.MaxUses` is now the explicit `ModdedNumberOption` constructor form (matching
+   `EngineerOptions`) with range `-1`–`15`, default `4`, `"∞"` shown at `-1` and a plain `"0"` at `0`.
+   `ApparaterMapButton` needed no change for this — it was never touching `ZeroIsInfinite`, so leaving it
+   at the inherited `false` is exactly correct now that the option uses the matching `-1` sentinel.
+5. **Map marker color: player's own color → crewmate blue.** `OnClick()` called
+   `PlayerControl.LocalPlayer.SetPlayerMaterialColors(map.HerePoint)`, tinting the "here" dot to the
+   local player's own cosmetic color — copied from the pattern TOU-Mira's `SpyAdminTableRoleButton` uses
+   for its portable admin table. The user wanted it to instead match the plain blue the *ordinary*
+   crewmate map uses. `MapBehaviour.HerePoint` is a plain `UnityEngine.SpriteRenderer` (confirmed via a
+   throwaway Mono.Cecil inspection of the installed game's IL2CPP interop assembly, the same technique
+   from round 4), so this is now a direct, unambiguous assignment: `map.HerePoint.color =
+   Palette.CrewmateBlue;` — the same named constant this project already uses everywhere else
+   (`SuperSquadColors`/`TownOfUsColors`'s `UseBasic` fallback) to mean "vanilla crewmate blue."
+
+## Round 9 — round 8's no-countdown fix actually broke the map (auto-closed in ~2 ticks), plus map color
+
+Play-test report: clicking Aparate opened the map for only a few rendered frames before it closed itself,
+the map background was still red instead of blue, and the HerePoint marker flashed green instead of the
+player's actual cyan for the brief moment it was visible. The user correctly guessed the shape of bug #1
+before any code was reread: "I'm thinking that when you removed the countdown, you didn't remove the
+thing that resets the ability and closes the map."
+
+**Bug 1: the auto-close.** Confirmed exactly as suspected, via a full read of
+`reference/TOU-Mira/TownOfUs/Buttons/TownOfUsButton.cs` (not re-read carefully enough in round 8 - only
+the base `MiraAPI.Hud.CustomActionButton.FixedUpdateHandler` had been checked, and the two are *not* the
+same method). `ApparaterMapButton` inherits through `TownOfUsRoleButton<TRole>` → `TownOfUsButton`, and
+`TownOfUsButton` **overrides** `FixedUpdateHandler` with its own auto-end condition:
+`else if (HasEffect && EffectActive) { EffectActive = false; Timer = Cooldown; OnEffectEnd(); }` - no
+`EffectDuration > 0` guard at all, unlike the base class version round 8's reasoning was based on. With
+`EffectDuration` at the base default of `0`, `Timer` (set to `EffectDuration` on click) started at `0` and
+went negative on the very next tick, firing this unconditional auto-end almost immediately - map opens,
+`OnEffectEnd()` fires within ~1-2 fixed-update ticks, map closes again. `HasEffect => true` (round 8's
+override) is exactly what let this fire despite `EffectDuration` being `0` - without it the effect
+wouldn't have activated at all; with it, there was nothing left to stop the very next tick from ending it.
+
+Fix: `EffectDuration` now returns a constant (`TimerKeepAlive = 5f`) instead of `0`, and
+`ApparaterMapButton.FixedUpdate` **re-arms `Timer = TimerKeepAlive` every single tick** while the map is
+open, before it ever gets the chance to run out. This also makes the `HasEffect => true` override
+unnecessary (removed) - `HasEffect`'s inherited default (`EffectDuration > 0`) is `true` on its own once
+`EffectDuration` is a positive constant. Since `TownOfUsButton.FixedUpdateHandler` unconditionally shows a
+countdown fill/text whenever `EffectActive` is true (again, no way to opt out short of not having
+`EffectActive` at all, which we need for click-handling to run), `FixedUpdate` also force-hides
+`Button.cooldownTimerText.gameObject` every tick, *after* the base method's own draw call already ran
+that same tick (our override runs at the very end of `FixedUpdateHandler`) - so by the time the frame
+actually renders, the countdown text is already inactive again. The fill-bar overlay itself isn't
+suppressed the same way (would need a bigger override to fully prevent), but since `Timer` never drifts
+far below `EffectDuration`, it reads as a static, fully-filled icon rather than a visibly draining one -
+acceptable for "no countdown," not worth a larger override to chase further.
+
+**Bug 2: map background still red, not blue.** The user's own hunch pointed the right direction ("you
+probably grabbed a red one instead of the blue one"). Inspected `MapBehaviour` and its color-related
+members via a throwaway Mono.Cecil dump of the installed game's IL2CPP interop assembly (same technique as
+round 4/8). `MapBehaviour.ColorControl` is an `AlphaPulse` - a small pulsing-color component (also reused
+as `MapCountOverlay.BackgroundColor`) with a public `SetColor(Color)` method. `GenericShow()` (the "bare"
+call we use specifically to dodge the vent-icon Harmony postfix and skip the task overlay - see round 1)
+does not touch `ColorControl` the way `ShowNormalMap()`/`ShowSabotageMap()` presumably do internally as a
+side effect of setting their respective `MapOptions.Mode` (confirmed via Cecil that `MapOptions.Modes` is
+an enum with `Normal`/`Sabotage`/`CountOverlay`/`Detective` values, and that `Show(MapOptions)` is public -
+but its actual native body, like every IL2CPP interop method, isn't inspectable, so exactly what it sets
+internally is still an inference, not a confirmed fact). Since `GenericShow()` skips whatever that is,
+`ColorControl` was left at whatever it last happened to be (plausibly defaulting toward the sabotage/red
+end, or leftover from some earlier map interaction), which reads as "the map is red."
+
+Fix: rather than switching to `Show(MapOptions)` and trusting an unverified inference about what `Mode`
+sets internally (and risking reintroducing the vent-icon/task-overlay problem `GenericShow()` was
+specifically chosen to dodge - Harmony postfixes target `ShowNormalMap`/`ShowCountOverlay`/`ShowSabotageMap`
+by method identity, not whatever they call internally, so this specific risk wouldn't apply to
+`Show(MapOptions)` either, but it's still an extra unverified assumption for no real benefit), this just
+sets `ColorControl` explicitly and directly, the same "don't infer it, just assert it" approach already
+used for `HerePoint.color`: `map.ColorControl.SetColor(tint)`.
+
+**Bug 3: HerePoint marker flashed green instead of the player's real color.** No separate bug found or
+fixed for this specifically - the leading theory is that this was a downstream symptom of bug 1: with the
+map only surviving ~1-2 physics ticks before auto-closing, whatever the user glimpsed in that broken
+window (mid-transition rendering, or simply misattributing the ability button's own green outline text/
+icon - correct and intentional since round 7 - to the map marker in a very fast, confusing sequence) isn't
+reliable evidence of a steady-state color bug. Now that bug 1 is fixed and the map actually stays open,
+`HerePoint.color = tint` (set once in `OnClick`, no longer racing an near-immediate close) should hold
+correctly. Flag if a green marker (or any color other than the intended tint) is still visible once the
+map reliably stays open - that would mean there's a real second color bug still to chase, likely something
+re-tinting `HerePoint` after `OnClick` runs (a Harmony patch or a live-update loop neither of these two
+Cecil passes has surfaced yet).
+
+**Refactor alongside the fix, motivated by the user's own follow-up ask:** "we may want to make an
+imposter role at some point... an ability where they could click on the map to launch an airstrike... we
+should make sure we have a way to use both the red and blue versions for imposter or crewmate roles." Not
+building that role now (explicitly deferred by the user - "that's for later") - but the map-opening logic
+(`GenericShow()` + overlay hiding + `HerePoint` setup + `ColorControl` tint + `Close()`) is exactly the part
+a future impostor map-ability would need to reuse verbatim, just with a different tint, so it's pulled out
+of `ApparaterMapButton` into `SuperSquadAmongUs/Modules/BareMapVisuals.cs`
+(`BareMapVisuals.Open(Color tint)` / `BareMapVisuals.Close()`) rather than fixing bug 2 inline where it'd
+have to be duplicated later. `ApparaterMapButton.OnClick()` now just calls
+`BareMapVisuals.Open(Palette.CrewmateBlue)`. A future impostor ability would call
+`BareMapVisuals.Open(<impostor red constant>)` and reuse `BareMapVisuals.Close()` in its own
+`OnEffectEnd()` - the impostor-red constant itself wasn't looked up/named since there's no consumer for it
+yet.
+
+## Round 10 — clicks mostly dropped (the real click bug), plus map colors done properly
+
+Play-test after round 9: the ability counter/cooldown behaved, but three things were wrong, one of them
+a serious functional regression.
+
+**Bug 1 (the big one): most map clicks did nothing; only very inconsistently (no pattern) did one
+register.** This is the *actual* root cause of clicking unreliability, finally pinned down. Click
+detection had always been done by polling `Input.GetMouseButton(0)` in the button's `FixedUpdate` with
+manual rising-edge detection. `FixedUpdate` runs on a fixed timestep (~50 Hz), **not once per rendered
+frame** - so a quick mouse click whose pressed-state lasts less than one fixed-timestep interval is never
+sampled as pressed and is silently dropped. Whether any given click lands on a fixed tick is essentially
+random → "works inconsistently, no pattern." (`Input.GetMouseButtonDown(0)` has the mirror-image problem:
+it's a single-frame Update-scoped flag that's missed if no FixedUpdate lands that frame - which is why
+the earlier code deliberately avoided it. The real fix is not a different `Input` call but a different
+*place to read from*.)
+
+Fix: read the click from an **Update** context instead of FixedUpdate. New Harmony patch
+`Patches/ApparaterMapClickPatch.cs` - a postfix on `HudManager.Update` (which runs every rendered frame;
+TOU-Mira already patches this method elsewhere, and `SentryCameraSurveillancePatch` is precedent for
+reading `Input.GetMouseButtonDown(0)` from an Update patch). It reads the single-frame
+`GetMouseButtonDown(0)` (reliable here because Update *is* the frame that sets it) and forwards to
+`CustomButtonSingleton<ApparaterMapButton>.Instance.HandleMapClick()`. The teleport logic moved verbatim
+from `FixedUpdate` into the new public `HandleMapClick()`, which self-gates on `EffectActive` (only true
+while this player's teleport map is open, so it's a no-op for everyone else / every other click) plus an
+"ignore the frame the map opened on" guard (`openedFrame`) so the press that opened the map can't double
+as the first target. `FixedUpdate` keeps only the timer-keepalive, countdown-hide, and
+player-closed-the-map detection; all mouse polling (`wasMouseDown` and friends) is gone.
+*Note: `MapBehaviour` itself has no `Update` method (only `FixedUpdate`) - confirmed via Cecil - which is
+why the patch targets `HudManager.Update`, not `MapBehaviour.Update`.*
+
+**Bug 2: the position marker was green, not the player's own color.** Round 9 had set
+`HerePoint.color = <tint>` directly. `HerePoint` is a `SpriteRenderer` that renders through the
+player-cosmetic material pipeline; a plain `.color =` assignment bypasses that pipeline and shows a
+wrong/default color (the green). The correct call - and what the original, known-good version and
+TOU-Mira's own portable-admin buttons (`SpyAdminTableRoleButton.cs:205`,
+`SpyAdminTableModifierButton.cs:208`) use - is
+`PlayerControl.LocalPlayer.SetPlayerMaterialColors(HerePoint)`. Reverted to that; the marker now shows the
+local player's real color.
+
+**Bug 3: the map background was cyan-ish, not the normal task-map blue.** Round 9 used
+`Palette.CrewmateBlue` - which is a UI/text team color, not the map background color. TOU-Mira's own
+`MapBehaviourPatch.ShowNormalMap` postfix (`Patches/MapBehaviourPatch.cs:11-26`) shows the correct
+constants: `ColorControl.SetColor(Palette.Blue)` for crewmates, `Palette.ImpostorRed` for impostors,
+`TownOfUsColors.Neutral` otherwise. Switched the crewmate background to `Palette.Blue`.
+
+**Bug 4 (also reported: vents showing).** `GenericShow()` does not *create* vent icons (it's not a
+`ShowVentsPatch` target - that part of round 1 still holds), but TOU-Mira's `ShowVentsPatch`
+(`Patches/Misc/MapBehaviourPatch.cs`) stores the vent/dead-body icons it makes for the vanilla map in
+**static dicts** (`VentIcons`/`BodyIcons`), as GameObjects parented under the map root, and only tears
+them down at round start or when the vent toggle is off - **never when the map closes**. So opening the
+vanilla task map even once (easy to do in practice mode) leaves those icons sitting under the map root,
+and they reappear the moment we `GenericShow()` it. `BareMapVisuals.Open` now destroys those leftover
+icons (mirroring `ShowVentsPatch`'s own teardown; the dicts self-heal since the vanilla map recreates its
+icons on its next open). If vents ever show again, this cleanup and/or a new persistent-icon source is
+where to look.
+
+**Shared helper generalized for the future impostor map ability.** `BareMapVisuals.Open` now takes the
+background color as a parameter (`Open(Color backgroundColor)`); the marker is always the local player's
+own color. `ApparaterMapButton` calls `BareMapVisuals.Open(Palette.Blue)`. A future impostor
+click-the-map ability (the user's "click to launch an airstrike" idea, explicitly deferred) calls
+`BareMapVisuals.Open(Palette.ImpostorRed)` and reuses `BareMapVisuals.Close()` - the red/blue split the
+user asked to keep available falls straight out of the parameter, matching how vanilla tints the two.
+
+Files touched this round: `Modules/BareMapVisuals.cs`, `Buttons/Crewmate/ApparaterMapButton.cs`, new
+`Patches/ApparaterMapClickPatch.cs`.
 
 ## Known follow-ups
 

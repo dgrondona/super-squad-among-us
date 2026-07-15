@@ -31,4 +31,12 @@
     <!-- Apparater Options -->
     <string name="SuperSquadOptionApparaterCooldown">Teleport Cooldown</string>
     <string name="SuperSquadOptionApparaterMaxUses">Max Uses</string>
+    <!-- Invisible Boy - Crewmate Support -->
+    <string name="SuperSquadRoleInvisibleBoy">Invisible Boy</string>
+    <string name="SuperSquadRoleInvisibleBoyIntroBlurb">Unseen when unwatched.</string>
+    <string name="SuperSquadRoleInvisibleBoyTabDescription">You turn \%b\%invisible\%/b\% whenever nobody can see you.</string>
+    <!-- Invisible Boy Wiki -->
+    <string name="SuperSquadRoleInvisibleBoyWikiDescription">The Invisible Boy is a Crewmate Support role that turns invisible whenever no living player has line of sight to him. The moment anyone can see even a sliver of him, he is visible again.</string>
+    <string name="SuperSquadRoleInvisibleBoyPassive">Unseen</string>
+    <string name="SuperSquadRoleInvisibleBoyPassiveWikiDescription">While no living player can see you, you are invisible - hidden from players, cameras, and the admin table. You see yourself as a ghostly outline. Dead players don't count; players in vents do.</string>
 </resources>

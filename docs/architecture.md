@@ -46,7 +46,9 @@ follows the same shape:
 `Modules/` holds free-standing gameplay logic used by a role's buttons that isn't itself a
 role/button/option (e.g. `Explode.cs` backs Sentinel's explosion ability). `Patches/` holds Harmony
 patches applied via the `Harmony.PatchAll()` call in `Plugin.Load()` (e.g. `LogoPatch.cs` swaps the
-splash logo to `SuperSquadAssets.Banner`).
+splash logo to `SuperSquadAssets.Banner`). `Modifiers/` holds MiraAPI modifier classes (auto-registered
+by reflection the same way roles/buttons/options are — see "Registration is automatic" above); first
+example is `Modifiers/InvisibleBoyModifier.cs`.
 
 ## Colors
 

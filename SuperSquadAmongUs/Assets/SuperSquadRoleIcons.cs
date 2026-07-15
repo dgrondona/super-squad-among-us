@@ -14,4 +14,5 @@ public static class SuperSquadRoleIcons
 
     // Crewmates
     public static LoadableAsset<Sprite> Apparater { get; } = new LoadableResourceAsset($"{ShortPath}.RoleIcons.Apparater.png", 200);
+    public static LoadableAsset<Sprite> InvisibleBoy { get; } = new LoadableResourceAsset($"{ShortPath}.RoleIcons.InvisibleBoy.png", 200);
 }

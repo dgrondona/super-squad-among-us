@@ -4,42 +4,33 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Modules;
 
 /// <summary>
-/// Finds the reachable point closest to a target by walking a grid of small steps outward from a
-/// known-good origin, rather than classifying the target point in isolation.
+/// Finds the reachable point closest to a target by walking a grid of small steps outward from
+/// known-good seed points, rather than classifying the target point in isolation. Full rationale and
+/// history: docs/roles/apparater.md.
 /// </summary>
-/// <remarks>
-/// A point sitting on the far side of a thin wall (or embedded in a wall-attached obstacle, e.g. a
-/// console built into a wall) isn't inside any collider, so no point/circle overlap test can ever see
-/// it as blocked. Only a chain of validated short steps from somewhere legitimately walkable can
-/// guarantee a destination is actually reachable without a step crossing a wall - which is what this
-/// does: a greedy best-first search (ordered by distance to the raw target) through 4-connected grid
-/// cells, seeded at <paramref name="origin"/>, accepting a cell only if both the cell itself is clear
-/// of solid obstacles and the short step onto it doesn't cross a wall.
-/// </remarks>
 internal static class WalkableRegionSolver
 {
     private const float MinCellSize = 0.15f;
     private const float MaxCellSize = 0.25f;
     private const int MaxExpandedCells = 8000;
+    private const int AnchorRingSamples = 16;
 
-    // Extra clearance added on top of the body's own radius for the per-cell obstacle check, so a
-    // "clear" cell has real breathing room from a wall/obstacle rather than merely not overlapping it
-    // (which can still read as "standing in the wall" once the body actually occupies that spot).
+    // Landing needs extra clearance beyond the body's radius; traversal deliberately doesn't - see docs.
     private const float WallPadding = 0.1f;
 
-    private static readonly (int Dx, int Dy)[] Neighbors = { (1, 0), (-1, 0), (0, 1), (0, -1) };
+    // Slightly under the body's true radius - AnythingBetween (the edge check) is the real wall guard.
+    private const float TraversalRadiusFactor = 0.9f;
 
-    /// <summary>
-    /// Finds the reachable point nearest <paramref name="rawTarget"/>, walking outward from
-    /// <paramref name="origin"/> (which must already be a valid, walkable position).
-    /// </summary>
-    /// <param name="origin">A known-good, already-walkable starting position (e.g. the player's own position).</param>
-    /// <param name="rawTarget">The unvalidated target position to snap toward.</param>
-    /// <param name="probeRadius">The radius of the moving body, used both as the grid cell size and the per-cell obstacle check radius.</param>
-    /// <param name="selfCollider">The collider used for the wall-crossing check between adjacent cells.</param>
-    /// <param name="result">The reachable point found, closest to <paramref name="rawTarget"/>.</param>
-    /// <returns><see langword="true"/> if a reachable point other than <paramref name="origin"/> itself was found.</returns>
-    public static bool TryFindReachablePoint(Vector2 origin, Vector2 rawTarget, float probeRadius, Collider2D selfCollider, out Vector2 result)
+    // 8-connected so a corner has a diagonal escape; diagonals are still edge-checked.
+    private static readonly (int Dx, int Dy)[] Neighbors =
+    {
+        (1, 0), (-1, 0), (0, 1), (0, -1),
+        (1, 1), (1, -1), (-1, 1), (-1, -1),
+    };
+
+    /// <summary>Finds the reachable point nearest <paramref name="rawTarget"/>, seeded at <paramref name="origin"/> and a map spawn-ring anchor.</summary>
+    /// <returns><see langword="true"/> if a reachable point other than <paramref name="origin"/> was found.</returns>
+    public static bool TryFindReachablePoint(Vector2 origin, Vector2 rawTarget, float probeRadius, out Vector2 result)
     {
         var cellSize = Mathf.Clamp(probeRadius, MinCellSize, MaxCellSize);
         var mask = Constants.ShipAndAllObjectsMask;
@@ -50,13 +41,16 @@ internal static class WalkableRegionSolver
             useTriggers = false,
         };
         var overlapBuffer = new Collider2D[1];
-        var paddedRadius = probeRadius + WallPadding;
+        var traversalRadius = probeRadius * TraversalRadiusFactor;
+        var landingRadius = probeRadius + WallPadding;
 
         Vector2 CellCenter((int Cx, int Cy) cell) => origin + new Vector2(cell.Cx * cellSize, cell.Cy * cellSize);
 
-        bool IsCellOpen(Vector2 center) => Physics2D.OverlapCircle(center, paddedRadius, filter, overlapBuffer) == 0;
+        bool IsOpen(Vector2 center, float radius) => Physics2D.OverlapCircle(center, radius, filter, overlapBuffer) == 0;
 
-        bool HasClearEdge(Vector2 from, Vector2 to) => !PhysicsHelpers.AnythingBetween(selfCollider, from, to, mask, false);
+        // Collider-less overload deliberately - the collider-based one sweeps that collider's own live
+        // position, not the from/to positions passed in. See docs/roles/apparater.md.
+        bool HasClearEdge(Vector2 from, Vector2 to) => !PhysicsHelpers.AnythingBetween(from, to, mask, false);
 
         var originCell = (Cx: 0, Cy: 0);
         var visited = new HashSet<(int Cx, int Cy)>(MaxExpandedCells) { originCell };
@@ -65,7 +59,34 @@ internal static class WalkableRegionSolver
         var bestCell = originCell;
         var bestSqrDist = (origin - rawTarget).sqrMagnitude;
         var earlySuccessSqrDist = cellSize * cellSize;
+
+        if (bestSqrDist <= earlySuccessSqrDist)
+        {
+            result = origin;
+            return false;
+        }
+
         frontier.Enqueue(originCell, bestSqrDist);
+
+        // Second seed, independent of the player's position - see docs/roles/apparater.md for why.
+        if (TryFindSpawnAnchor(landingRadius, IsOpen, out var anchorPoint))
+        {
+            var anchorCell = (Cx: Mathf.RoundToInt((anchorPoint.x - origin.x) / cellSize),
+                              Cy: Mathf.RoundToInt((anchorPoint.y - origin.y) / cellSize));
+            var anchorCenter = CellCenter(anchorCell);
+
+            if (anchorCell != originCell && IsOpen(anchorCenter, traversalRadius) && visited.Add(anchorCell))
+            {
+                var anchorSqrDist = (anchorCenter - rawTarget).sqrMagnitude;
+                if (anchorSqrDist < bestSqrDist && IsOpen(anchorCenter, landingRadius))
+                {
+                    bestSqrDist = anchorSqrDist;
+                    bestCell = anchorCell;
+                }
+
+                frontier.Enqueue(anchorCell, anchorSqrDist);
+            }
+        }
 
         var expanded = 0;
         while (frontier.Count > 0 && expanded < MaxExpandedCells)
@@ -75,7 +96,7 @@ internal static class WalkableRegionSolver
 
             var curCenter = CellCenter(curCell);
 
-            if ((curCenter - rawTarget).sqrMagnitude <= earlySuccessSqrDist)
+            if ((curCenter - rawTarget).sqrMagnitude <= earlySuccessSqrDist && IsOpen(curCenter, landingRadius))
             {
                 bestCell = curCell;
                 break;
@@ -91,13 +112,13 @@ internal static class WalkableRegionSolver
 
                 var neighborCenter = CellCenter(neighborCell);
 
-                if (!IsCellOpen(neighborCenter) || !HasClearEdge(curCenter, neighborCenter))
+                if (!IsOpen(neighborCenter, traversalRadius) || !HasClearEdge(curCenter, neighborCenter))
                 {
                     continue;
                 }
 
                 var sqrDist = (neighborCenter - rawTarget).sqrMagnitude;
-                if (sqrDist < bestSqrDist)
+                if (sqrDist < bestSqrDist && IsOpen(neighborCenter, landingRadius))
                 {
                     bestSqrDist = sqrDist;
                     bestCell = neighborCell;
@@ -109,14 +130,50 @@ internal static class WalkableRegionSolver
 
         result = CellCenter(bestCell);
 
-        // Precision polish: if the winning cell is right next to the raw target, try landing on the
-        // exact click instead of the cell center.
+        // Precision polish: land exactly on the click if the winning cell is right next to it.
         if (bestCell != originCell && (result - rawTarget).sqrMagnitude <= earlySuccessSqrDist &&
-            IsCellOpen(rawTarget) && HasClearEdge(result, rawTarget))
+            IsOpen(rawTarget, landingRadius) && HasClearEdge(result, rawTarget))
         {
             result = rawTarget;
         }
 
         return bestCell != originCell;
+    }
+
+    /// <summary>Finds a clear point on the map's spawn ring(s) to use as a position-independent search seed.</summary>
+    private static bool TryFindSpawnAnchor(float clearRadius, Func<Vector2, float, bool> isOpen, out Vector2 anchor)
+    {
+        var ship = ShipStatus.Instance;
+        if (!ship)
+        {
+            anchor = default;
+            return false;
+        }
+
+        var centers = new[] { ship.MeetingSpawnCenter, ship.InitialSpawnCenter, ship.MeetingSpawnCenter2 };
+
+        foreach (var center in centers)
+        {
+            for (var i = 0; i < AnchorRingSamples; i++)
+            {
+                var angle = i * (360f / AnchorRingSamples);
+                var candidate = center + (Vector2)(Quaternion.Euler(0f, 0f, angle) * (Vector2.up * ship.SpawnRadius));
+                if (isOpen(candidate, clearRadius))
+                {
+                    anchor = candidate;
+                    return true;
+                }
+            }
+
+            // Ring centers are usually obstructed (e.g. the meeting table) - last resort only.
+            if (isOpen(center, clearRadius))
+            {
+                anchor = center;
+                return true;
+            }
+        }
+
+        anchor = default;
+        return false;
     }
 }

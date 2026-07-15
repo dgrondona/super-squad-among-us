@@ -78,5 +78,14 @@ writing another point-classification check for this kind of problem.
 
 ## Per-role notes
 
-Design decisions and known follow-ups for individual roles are tracked in `docs/roles/<name>.md` —
-check there before touching an existing role, and add a new file there when you build the next one.
+Design decisions, current architecture, and known follow-ups for individual roles are tracked in
+`docs/roles/<name>.md` — check there before touching an existing role, and add a new file there when you
+build the next one.
+
+Keep that file to **current-state information only**, roughly 200-300 lines: what the role does, how it
+works now, confirmed design decisions, known follow-ups. If a role accumulates a long round-by-round
+bug-fix/investigation history, move it to `docs/roles/<name>-history.md` (see `apparater-history.md` for
+the shape of this) with a one-line pointer from the main file — the history is for archaeology (why a
+design looks the way it does, what was already tried and rejected), not something to re-read every
+session. The same "keep it minimal, push detail into docs" applies to code comments: a short comment
+pointing at the relevant doc section beats re-explaining historical context inline.

@@ -35,7 +35,7 @@ public sealed class ApparaterRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITownOf
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Teleport", "Aparate"),
+                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Teleport", "Teleport"),
                     TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TeleportWikiDescription"),
                     SuperSquadCrewAssets.ApparaterMapSprite),
             };

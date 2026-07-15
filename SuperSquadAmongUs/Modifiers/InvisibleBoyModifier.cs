@@ -42,12 +42,7 @@ public sealed class InvisibleBoyModifier : ConcealedModifier, IVisualAppearance
     /// <returns>The <see cref="VisualAppearance"/> to render for this player.</returns>
     public VisualAppearance GetVisualAppearance()
     {
-        // Unlike Swooper (impostor-aligned teammates see the ghostly outline), Invisible Boy is a
-        // crewmate - only he himself sees his own outline while alive, plus the dead-who-know crowd.
-        var playerColor = (Player.AmOwner || (PlayerControl.LocalPlayer.DiedOtherRound() &&
-                                                OptionGroupSingleton<GeneralOptions>.Instance.TheDeadKnow))
-            ? new Color(0f, 0f, 0f, 0.1f)
-            : Color.clear;
+        var playerColor = LocalViewerSeesOutline() ? new Color(0f, 0f, 0f, 0.1f) : Color.clear;
 
         return new VisualAppearance(Player.GetDefaultModifiedAppearance(), TownOfUsAppearances.Swooper)
         {
@@ -68,12 +63,18 @@ public sealed class InvisibleBoyModifier : ConcealedModifier, IVisualAppearance
         shroomSystem = UnityEngine.Object.FindObjectOfType<MushroomMixupSabotageSystem>();
         Player.RawSetAppearance(this);
         Player.cosmetics.ToggleNameVisible(false);
+        ApplyLocalVisibility();
     }
 
     /// <inheritdoc />
     public override void FixedUpdate()
     {
         base.FixedUpdate();
+
+        // Re-assert every tick: the transparent appearance only hides the main view, but security
+        // cameras (and TOU-Mira's IsVisibleToOthers) honor PlayerControl.Visible, not sprite alpha, and
+        // vanilla flips Visible back on across vent/ladder animations. See docs/roles/invisible-boy.md.
+        ApplyLocalVisibility();
 
         if (shroomSystem && shroomSystem!.IsActive)
         {
@@ -87,6 +88,12 @@ public sealed class InvisibleBoyModifier : ConcealedModifier, IVisualAppearance
     {
         Player.ResetAppearance();
         Player.cosmetics.ToggleNameVisible(true);
+
+        // Only the viewers we hid need restoring; the owner's Visible was never touched.
+        if (!Player.AmOwner)
+        {
+            Player.Visible = true;
+        }
 
         if (HudManagerPatches.CamouflageCommsEnabled)
         {
@@ -118,5 +125,32 @@ public sealed class InvisibleBoyModifier : ConcealedModifier, IVisualAppearance
     public override string GetDescription()
     {
         return "You are invisible while nobody watches!";
+    }
+
+    // Whether the local viewer is one who should still see the ghostly outline rather than nothing:
+    // the Invisible Boy himself, or a dead player when "the dead know" is on (Swooper convention).
+    private bool LocalViewerSeesOutline()
+    {
+        return Player.AmOwner ||
+               (PlayerControl.LocalPlayer && PlayerControl.LocalPlayer.DiedOtherRound() &&
+                OptionGroupSingleton<GeneralOptions>.Instance.TheDeadKnow);
+    }
+
+    // Fully removes the player from this client's rendering (main view AND cameras) unless the local
+    // viewer is meant to see the outline. Never touches the owner's own Visible - his outline shows via
+    // the appearance alpha and his vent/ladder visibility stays vanilla-managed. Visible is a local,
+    // per-client rendering flag, so hiding him here doesn't affect his own screen.
+    private void ApplyLocalVisibility()
+    {
+        if (Player.AmOwner)
+        {
+            return;
+        }
+
+        var shouldBeVisible = LocalViewerSeesOutline();
+        if (Player.Visible != shouldBeVisible)
+        {
+            Player.Visible = shouldBeVisible;
+        }
     }
 }

@@ -29,30 +29,37 @@ public sealed class InvisibleBoyRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITow
 
     private float unseenTime;
 
-    private void FixedUpdate()
+    /// <summary>
+    /// Evaluates whether anyone can currently see this Invisible Boy and locally applies or clears his
+    /// invisibility. Driven per-player, per-client by <see cref="Patches.InvisibleBoyVisibilityPatch"/>
+    /// rather than the role's own tick (which only reliably runs for the local player): every observer
+    /// computes the same answer from the shared player positions and applies the modifier locally, with
+    /// no RPC - so it works for players this client doesn't own (dummies, and everyone else's Invisible
+    /// Boy) too. The reveal is instant; going invisible waits out a short unseen grace.
+    /// </summary>
+    /// <param name="player">The Invisible Boy this role belongs to (passed from the driving patch).</param>
+    public void UpdateVisibilityState(PlayerControl player)
     {
-        // Only the Invisible Boy's own client evaluates visibility; the result is propagated to
-        // everyone else purely through the RpcAddModifier/RpcRemoveModifier calls below.
-        if (!Player || Player.Data == null || Player.Data.Role is not InvisibleBoyRole || !Player.AmOwner)
+        if (!player || player.Data == null)
         {
             return;
         }
 
-        if (Player.HasDied() || MeetingHud.Instance || ExileController.Instance)
+        if (player.HasDied() || MeetingHud.Instance || ExileController.Instance)
         {
             unseenTime = 0f;
             return;
         }
 
-        var seen = SightChecker.CanAnyoneSee(Player);
-        var invisible = Player.HasModifier<InvisibleBoyModifier>();
+        var seen = SightChecker.CanAnyoneSee(player);
+        var invisible = player.HasModifier<InvisibleBoyModifier>();
 
         if (seen)
         {
             unseenTime = 0f;
             if (invisible)
             {
-                Player.RpcRemoveModifier<InvisibleBoyModifier>();
+                player.RemoveModifier<InvisibleBoyModifier>();
             }
 
             return;
@@ -66,7 +73,7 @@ public sealed class InvisibleBoyRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITow
         unseenTime += Time.fixedDeltaTime;
         if (unseenTime >= InvisibilityGraceSeconds)
         {
-            Player.RpcAddModifier<InvisibleBoyModifier>();
+            player.AddModifier<InvisibleBoyModifier>();
         }
     }
 

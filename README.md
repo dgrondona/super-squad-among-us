@@ -11,6 +11,18 @@ custom roles to [Town of Us: Mira](https://github.com/AU-Avengers/TOU-Mira), bui
 See [CLAUDE.md](./CLAUDE.md) for build instructions and architecture notes.
 
 -----------------------
+# Credits
+
+- [Town of Us: Mira](https://github.com/AU-Avengers/TOU-Mira) (AU-Avengers) and
+  [MiraAPI](https://github.com/All-Of-Us-Mods/MiraAPI) (All-Of-Us-Mods) — the frameworks this addon
+  is built on.
+- [AllTheRoles](https://github.com/Zeo666/AllTheRoles) (Zeo666 and contributors) — the **Astral,
+  Sniper, and Pelican** role designs and their button art originate from AllTheRoles and were
+  ported to this addon re-implemented on MiraAPI/TOU-Mira.
+- [TheOtherRoles](https://github.com/TheOtherRolesAU/TheOtherRoles) (GPL-3.0, the mod AllTheRoles
+  descends from) — the **Ninja and Witch** role designs, their button art, and the trace/spell
+  overlay sprites come from TheOtherRoles.
+
 # License
 This software is distributed under the GNU GPLv3 License. BepInEx is distributed under the LGPL-2.1 License.
 

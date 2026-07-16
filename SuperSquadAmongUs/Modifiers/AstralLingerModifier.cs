@@ -7,7 +7,7 @@ namespace SuperSquadAmongUs.Modifiers;
 /// The Astral's post-return grace phase: after snapping back to the phase spot the player stays
 /// invisible for a few more seconds (normal collision) so returning isn't a dead giveaway.
 /// </summary>
-public sealed class AstralLingerModifier : AstralInvisibilityModifier
+public sealed class AstralLingerModifier : TimedInvisibilityModifier
 {
     /// <inheritdoc />
     public override string ModifierName => "Astral Linger";

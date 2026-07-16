@@ -6,6 +6,9 @@
     <!-- Cause of Deaths -->
     <string name="DiedToSentinel">Terminated</string>
     <string name="DiedToSentinelExplosion">Disintegrated</string>
+    <string name="SuperSquadDiedToWitchHex">Hexed</string>
+    <string name="SuperSquadDiedToPelican">Digested</string>
+    <string name="DiedToSuperSquadSniper">Sniped</string>
     <!-- Sentinel - Neutral Killing -->
     <string name="SuperSquadRoleSentinel">Sentinel</string>
     <string name="SuperSquadRoleSentinelIntroBlurb">Eliminate those who stand in your path.</string>
@@ -52,4 +55,63 @@
     <string name="SuperSquadOptionAstralFormDuration">Astral Form Duration</string>
     <string name="SuperSquadOptionAstralLingerDuration">Invisibility Linger After Return</string>
     <string name="SuperSquadOptionAstralCanVent">Astral Can Vent</string>
+    <!-- Ninja - Impostor Assassin -->
+    <string name="SuperSquadRoleNinja">Ninja</string>
+    <string name="SuperSquadRoleNinjaIntroBlurb">Surprise and assassinate your foes.</string>
+    <string name="SuperSquadRoleNinjaTabDescription">Mark a target and \%b\%trace\%/b\% their location.\%nl\%Assassinate them to become \%b\%invisible\%/b\%.</string>
+    <!-- Ninja Wiki -->
+    <string name="SuperSquadRoleNinjaWikiDescription">The Ninja is an Impostor Assassin role that can mark players and see their trace. When they assassinate a marked target, they become invisible for a brief period to slip away unnoticed.</string>
+    <string name="SuperSquadRoleNinjaMark">Mark</string>
+    <string name="SuperSquadRoleNinjaMarkWikiDescription">Mark a target player and see their trace on the map.</string>
+    <string name="SuperSquadRoleNinjaAssassinate">Assassinate</string>
+    <string name="SuperSquadRoleNinjaAssassinateWikiDescription">Kill your marked target and become invisible.</string>
+    <!-- Ninja Options -->
+    <string name="SuperSquadOptionNinjaMarkCooldown">Mark Cooldown</string>
+    <string name="SuperSquadOptionNinjaKnowsTargetLocation">Knows Target Location</string>
+    <string name="SuperSquadOptionNinjaTraceDuration">Trace Duration</string>
+    <string name="SuperSquadOptionNinjaTraceColorFadeDuration">Trace Color Fade Duration</string>
+    <string name="SuperSquadOptionNinjaInvisibleDuration">Invisibility Duration</string>
+    <string name="SuperSquadOptionNinjaCanVent">Ninja Can Vent</string>
+    <!-- Witch - Impostor Curse -->
+    <string name="SuperSquadRoleWitch">Witch</string>
+    <string name="SuperSquadRoleWitchIntroBlurb">Cast a hex upon your foes; hexed players die at the next meeting unless you are voted out.</string>
+    <string name="SuperSquadRoleWitchTabDescription">\%b\%Hex\%/b\% your targets during the game.\%nl\%They will die at the next meeting unless they're protected or you're voted out.</string>
+    <!-- Witch Wiki -->
+    <string name="SuperSquadRoleWitchWikiDescription">The Witch is an Impostor Curse role that can hex players. Hexed players will die at the next meeting unless the Witch is voted out before then or the hex is somehow lifted.</string>
+    <string name="SuperSquadRoleWitchHex">Hex</string>
+    <string name="SuperSquadRoleWitchHexWikiDescription">Curse a player to die at the next meeting.</string>
+    <!-- Witch Options -->
+    <string name="SuperSquadOptionWitchHexCooldown">Hex Cooldown</string>
+    <string name="SuperSquadOptionWitchAdditionalCooldown">Additional Cooldown</string>
+    <string name="SuperSquadOptionWitchCanHexAnyone">Can Hex Anyone</string>
+    <string name="SuperSquadOptionWitchCastDuration">Cast Duration</string>
+    <string name="SuperSquadOptionWitchTriggerBothCooldowns">Trigger Both Cooldowns</string>
+    <string name="SuperSquadOptionWitchVotingWitchSavesTargets">Voting Out Witch Saves Targets</string>
+    <string name="SuperSquadOptionWitchCanVent">Witch Can Vent</string>
+    <!-- Sniper - Impostor Marksman -->
+    <string name="SuperSquadRoleSniper">Sniper</string>
+    <string name="SuperSquadRoleSniperintroBlurb">Kill from across the map with a piercing shot.</string>
+    <string name="SuperSquadRoleSniperTabDescription">\%b\%Aim\%/b\% and \%b\%snipe\%/b\% players from anywhere on the map.\%nl\%Precision kills from a distance.</string>
+    <!-- Sniper Wiki -->
+    <string name="SuperSquadRoleSniperWikiDescription">The Sniper is an Impostor Marksman role that can aim at targets and take a piercing shot that kills from across the map. They have a limited aiming window to line up their shot.</string>
+    <string name="SuperSquadRoleSniperSnipe">Snipe</string>
+    <string name="SuperSquadRoleSniperSnipeWikiDescription">Aim and fire a shot at a targeted player from anywhere on the map.</string>
+    <!-- Sniper Options -->
+    <string name="SuperSquadOptionSniperSnipeCooldown">Snipe Cooldown</string>
+    <string name="SuperSquadOptionSniperAimWindow">Aim Window</string>
+    <string name="SuperSquadOptionSniperCanKillImpostors">Sniper Can Kill Impostors</string>
+    <string name="SuperSquadOptionSniperBulletVisibleToOthers">Bullet Visible To Others</string>
+    <string name="SuperSquadOptionSniperCanVent">Sniper Can Vent</string>
+    <!-- Pelican - Neutral Killing -->
+    <string name="SuperSquadRolePelican">Pelican</string>
+    <string name="SuperSquadRolePelicanIntroBlurb">You're soooo hungry - devour players and win alone.</string>
+    <string name="SuperSquadRolePelicanTabDescription">\%b\%Devour\%/b\% players to consume them.\%nl\%Win by being the last one alive.</string>
+    <!-- Pelican Wiki -->
+    <string name="SuperSquadRolePelicanWikiDescription">The Pelican is a Neutral Killing role that can devour other players. They win alone when they are the only player left alive.</string>
+    <string name="SuperSquadRolePelicanDevour">Devour</string>
+    <string name="SuperSquadRolePelicanDevourWikiDescription">Consume a player to remove them from the game.</string>
+    <!-- Pelican Options -->
+    <string name="SuperSquadOptionPelicanDevourCooldown">Devour Cooldown</string>
+    <string name="SuperSquadOptionPelicanCanVent">Pelican Can Vent</string>
+    <string name="SuperSquadOptionPelicanImpostorVision">Pelican Has Impostor Vision</string>
 </resources>

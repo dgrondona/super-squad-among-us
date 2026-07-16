@@ -7,11 +7,11 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Modifiers;
 
 /// <summary>
-/// The Astral's ghost phase: invisible (via <see cref="AstralInvisibilityModifier"/>) and able to walk
+/// The Astral's ghost phase: invisible (via <see cref="TimedInvisibilityModifier"/>) and able to walk
 /// through walls (collider disabled). When the duration expires the player snaps back to where they
 /// phased from and, if configured, lingers invisible via <see cref="AstralLingerModifier"/>.
 /// </summary>
-public sealed class AstralFormModifier : AstralInvisibilityModifier
+public sealed class AstralFormModifier : TimedInvisibilityModifier
 {
     private Vector2 returnPosition;
 

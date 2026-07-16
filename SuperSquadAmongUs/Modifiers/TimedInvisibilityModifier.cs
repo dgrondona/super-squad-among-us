@@ -17,7 +17,7 @@ namespace SuperSquadAmongUs.Modifiers;
 /// but timed (auto-starts) and with Swooper's viewer rule: fellow impostors and the informed dead see a
 /// faint outline, everyone else sees nothing.
 /// </summary>
-public abstract class AstralInvisibilityModifier : ConcealedModifier, IVisualAppearance
+public abstract class TimedInvisibilityModifier : ConcealedModifier, IVisualAppearance
 {
     // See InvisibleBoyModifier: the pinned TownOfUsMira package predates VanillaSystemCheckPatches'
     // cache, so fetch the mushroom-mixup system once per activation the same way.

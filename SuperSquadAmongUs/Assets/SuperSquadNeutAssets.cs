@@ -10,4 +10,5 @@ public static class SuperSquadNeutAssets
     public static LoadableAsset<Sprite> SentinelVentSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SentinelVentButton.png");
     public static LoadableAsset<Sprite> SentinelExplodeSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SentinelExplodeButton.png");
     public static LoadableAsset<Sprite> SentinelKillSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SentinelKillButton.png");
+    public static LoadableAsset<Sprite> PelicanDevourSprite { get; } = new LoadableResourceAsset($"{ShortPath}.DevourButton.png");
 }

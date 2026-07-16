@@ -60,12 +60,18 @@ public sealed class DevouredModifier(PlayerControl pelican) : ConcealedModifier,
     {
         Player.RawSetAppearance(this);
         Player.cosmetics.ToggleNameVisible(false);
-        Player.moveable = false;
 
+        // Blocks report/abilities/consoles/map and makes the player untargetable, via TOU-Mira's
+        // DisabledModifier checks. Added locally on every client - this modifier is the synced one.
+        Player.AddModifier<DevouredDisabledModifier>();
+
+        // Freeze movement the way Ambusher does; the per-tick pin below is the only position source
+        // while devoured (the paused NetTransform stops the owner broadcasting competing positions).
         if (Player.AmOwner)
         {
-            HudManager.Instance.UseButton.SetDisabled();
-            HudManager.Instance.ReportButton.SetDisabled();
+            Player.moveable = false;
+            Player.MyPhysics.ResetMoveState();
+            Player.NetTransform.SetPaused(true);
         }
     }
 
@@ -81,6 +87,13 @@ public sealed class DevouredModifier(PlayerControl pelican) : ConcealedModifier,
         }
 
         ApplyLocalVisibility();
+
+        // Self-heal: if anything reset this player's appearance, re-blank it within a tick.
+        if (Player.GetAppearanceType() != TownOfUsAppearances.Swooper)
+        {
+            Player.RawSetAppearance(this);
+            Player.cosmetics.ToggleNameVisible(false);
+        }
     }
 
     /// <inheritdoc />
@@ -88,16 +101,20 @@ public sealed class DevouredModifier(PlayerControl pelican) : ConcealedModifier,
     {
         Player.ResetAppearance();
         Player.cosmetics.ToggleNameVisible(true);
-        Player.moveable = true;
 
-        if (!Player.AmOwner)
+        if (Player.HasModifier<DevouredDisabledModifier>())
         {
-            Player.Visible = true;
+            Player.RemoveModifier<DevouredDisabledModifier>();
+        }
+
+        if (Player.AmOwner)
+        {
+            Player.moveable = true;
+            Player.NetTransform.SetPaused(false);
         }
         else
         {
-            HudManager.Instance.UseButton.SetEnabled();
-            HudManager.Instance.ReportButton.SetEnabled();
+            Player.Visible = true;
         }
     }
 

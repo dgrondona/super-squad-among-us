@@ -10,6 +10,8 @@ using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Buttons;
+using TownOfUs.Modifiers;
+using TownOfUs.Modifiers.Neutral;
 using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -81,7 +83,10 @@ public sealed class NinjaMarkButton : TownOfUsKillRoleButton<NinjaRole, PlayerCo
 
     public override void ClickHandler()
     {
-        if (!CanClick())
+        // Mirror TownOfUsButton.ClickHandler's gating - overriding it must not bypass the
+        // hacked/disabled checks every other TOU button gets.
+        if (!CanClick() || PlayerControl.LocalPlayer.HasModifier<GlitchHackedModifier>() ||
+            PlayerControl.LocalPlayer.HasModifier<DisabledModifier>())
         {
             return;
         }

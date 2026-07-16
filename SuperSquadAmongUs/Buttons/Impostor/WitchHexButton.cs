@@ -32,10 +32,19 @@ public sealed class WitchHexButton : TownOfUsRoleButton<WitchRole, PlayerControl
     public override LoadableAsset<Sprite> Sprite => SuperSquadImpAssets.WitchHexSprite;
 
     /// <summary>
-    /// Gets the cumulative extra cooldown built up by successful casts this round (TOR's
-    /// currentCooldownAddition). Reset when a meeting starts.
+    /// Gets the cumulative extra cooldown built up by successful casts (TOR's currentCooldownAddition).
+    /// Persists across meetings, like TOR; reset at the start of each game (see WitchEvents).
     /// </summary>
     public float CurrentCooldownAddition { get; private set; }
+
+    /// <summary>
+    /// Resets the cumulative cooldown penalty. Called at game start - the button singleton outlives
+    /// individual games, so the penalty would otherwise leak into the next lobby.
+    /// </summary>
+    public void ResetCooldownAddition()
+    {
+        CurrentCooldownAddition = 0f;
+    }
 
     public override bool CanUse()
     {
@@ -46,11 +55,6 @@ public sealed class WitchHexButton : TownOfUsRoleButton<WitchRole, PlayerControl
     protected override void FixedUpdate(PlayerControl playerControl)
     {
         base.FixedUpdate(playerControl);
-
-        if (MeetingHud.Instance)
-        {
-            CurrentCooldownAddition = 0f;
-        }
 
         // TOR cancel rule: the channel breaks if the closest valid target stops being the player the
         // cast started on (they ran away, died, or someone closer walked in).

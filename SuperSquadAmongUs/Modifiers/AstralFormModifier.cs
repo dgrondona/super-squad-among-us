@@ -35,18 +35,25 @@ public sealed class AstralFormModifier : TimedInvisibilityModifier
         Player.Collider.enabled = true;
         base.OnDeactivate();
 
-        // The snap-back is client-authoritative movement, so only the owner performs it (RpcSnapTo
-        // syncs it). Skipped when the phase ended because of a meeting or death rather than timeout.
-        if (!Player.AmOwner || Player.HasDied() || MeetingHud.Instance)
+        // Skipped when the phase ended because of a meeting or death rather than timeout.
+        if (Player.HasDied() || MeetingHud.Instance)
         {
             return;
         }
 
-        Player.NetTransform.RpcSnapTo(returnPosition);
-
+        // Every client adds the linger locally, in the same tick the form ends. An RPC here would open
+        // a latency window where remote clients render the astral fully visible between the phases
+        // (each client's form timer expires on its own; see TimedModifier.FixedUpdate).
         if (OptionGroupSingleton<AstralOptions>.Instance.LingerDuration > 0f)
         {
-            Player.RpcAddModifier<AstralLingerModifier>();
+            Player.AddModifier<AstralLingerModifier>();
+        }
+
+        // The snap-back is client-authoritative movement, so only the owner performs it (RpcSnapTo
+        // syncs it to everyone else).
+        if (Player.AmOwner)
+        {
+            Player.NetTransform.RpcSnapTo(returnPosition);
         }
     }
 

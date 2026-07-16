@@ -81,25 +81,39 @@ with the same UnityPy recipe if we want them; check
       TOR behavior.
 - [x] Credits section added to root `README.md`.
 - [x] **All five roles implemented and compiling** (commits `8996e37` Astral, `cd1598b` the rest).
-      None are verified in-game yet — see "Post-implementation follow-ups" below.
-- [ ] Role icons: current icons are placeholder copies of the button art in
-      `Resources/RoleIcons/` — replace with proper TOU-style icons.
 - [x] Per-role docs `docs/roles/<name>.md` written.
 - [x] Devour button sprite picked (`DevourButton.png`); unused alt deleted.
+- [x] **First playtest (2026-07, solo-ish) + fix round done.** Findings and fixes — full details in
+      each role's `docs/roles/<name>.md` "Playtest history" section:
+  - Sniper "didn't work": clicks were polled from the button's FixedUpdate (fixed tick, drops
+    clicks) → moved to a per-frame `HudManager.Update` patch (`SniperAimPatch`); hit test was
+    line-vs-center-point → now line-vs-body-sprite-circle; also added first-death-shield /
+    untargetable / hacked gating.
+  - Astral: crew-view outline report — code analysis says crew clients render nothing (matches
+    Swooper); fixed two real remote-visibility gaps anyway (linger handoff now local per client,
+    appearance self-heals per tick). Needs re-test from a genuine crewmate client.
+  - Witch: meeting overlay layer now taken from `voteArea.Megaphone` like TOR (root layer may not be
+    in the meeting camera's cull mask); cumulative cooldown now persists across meetings (TOR only
+    resets per game — earlier per-meeting reset was wrong).
+  - Ninja: `ClickHandler` override was missing TOU's hacked/disabled gating — restored.
+  - Pelican (proactive, still untested): freeze now uses Ambusher's owner-only
+    `SetPaused`/`ResetMoveState` pattern; new `DevouredDisabledModifier` (TOU `DisabledModifier`)
+    blocks report/abilities/targeting while devoured; Pelican disconnect now releases the stomach.
+- [ ] **Re-test in a real lobby** — per-role checklists live in the "Playtest history" /
+      "follow-ups" sections of `docs/roles/*.md`.
+- [ ] Role icons: current icons are placeholder copies of the button art in
+      `Resources/RoleIcons/` — replace with proper TOU-style icons.
 
 ## Post-implementation follow-ups
 
-- **Manual in-game verification needed for everything** (no automated tests exist). Highest-risk
-  spots: Astral collider re-enable on all exit paths + kill button while phased; Ninja teleport-kill
-  + trace RPC; Witch ejection-event resolution + meeting overlay position; Pelican devoured
-  camera-follow (position pinning) + digestion at meeting + release on Pelican murder; Sniper
-  UI-click guard (`EventSystem.IsPointerOverGameObject` under IL2CPP) + line-hit math.
+- **Re-test needed** (see per-role docs): Sniper end-to-end; Astral crew-view invisibility from a
+  crewmate client; Witch meeting overlay; Pelican everything (needs 2+ players); Ninja
+  teleport-kill + traces across clients.
 - Sounds: no cast/mark/shot sounds yet. TOR's `warlockCurse`/`witchSpell` clips are in the TOR
   `toraudio` bundle (see Assets section); a shot sound needs sourcing.
-- Witch: cumulative additional-cooldown resets when a meeting starts (mirrors TOR's presumed
-  behavior — unverified against TOR in practice).
 - Pelican: devoured players keep their tasks (crew could in theory still win on tasks while
-  devoured) — decide if task completion should be blocked.
+  devoured; consoles are blocked so they can't *complete* new ones) — decide if outstanding tasks
+  should count.
 
 ## Porting plan
 

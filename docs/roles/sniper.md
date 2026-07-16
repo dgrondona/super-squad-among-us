@@ -10,13 +10,15 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 **Aim-window pattern.** Press the button to shoulder and enter aiming mode; stays armed until you fire or the aim window expires. No re-click needed, just click in the world to fire. Fires on left-click input (not the HUD button again).
 
-**Hit detection is line-based.** `SniperShots.FindHits` casts a ray from origin toward direction and checks perpendicular distance to the line for each living player. If ≤ 0.2 units (ATR's hit-width), they're hit. Pierces clusters (not closest-target-only). Ignores the Sniper themself and, if configured, fellow impostors.
+**Aiming and firing run per rendered frame, not on the button's FixedUpdate.** `Patches/SniperAimPatch.cs` (a `HudManager.Update` postfix) calls `SniperSnipeButton.HandleAimFrame()` every frame. This matters: MiraAPI button `FixedUpdate` runs on `PlayerControl.FixedUpdate`'s fixed tick, and `Input.GetMouseButtonDown` is only true during the one rendered frame of the press — polling it from the fixed tick drops most clicks at any frame rate above the tick rate. This was the primary reason the first playtest reported "sniper doesn't work". Same pitfall and same fix as the Apparater's map click (see docs/roles/apparater.md).
 
-**Aim guide sprite.** Updates every frame to point from the Sniper's position toward the cursor; destroyed when aiming ends. Used `atan2` to compute rotation angle.
+**Hit detection is line-vs-hitbox, not line-vs-point.** `SniperShots.FindHits` treats each player as a circle around their **body sprite bounds** (center + max extent, ~0.5u; collider-position fallback) and hits when perpendicular distance to the shot line ≤ 0.2 (bullet half-width) + that radius. The original line-vs-`GetTruePosition()` test whiffed unless the line passed within 0.2u of the feet — the second playtest bug. Pierces clusters (all hits, ordered by distance). Skips: the Sniper, dead/disconnected, players in vents, `FirstDeadShield` holders, players with a `DisabledModifier` that has `CanBeInteractedWith == false` (devoured, ambush-hidden, ...), and — if configured — impostor-aligned players (`IsImpostorAligned()`, which covers alliance modifiers too).
 
-**Bullet visual.** Either RPC-synced (`SniperShots.RpcShowShot`, all clients see it) if `BulletVisibleToOthers` is on, or shown locally to the Sniper only. Visual flies for 60 units at 40 units/second (purely cosmetic; the kill line is infinite). Multi-kill resolution uses `RpcSpecialMultiMurder` (TOU-Mira utility) to kill all victims on one RPC.
+**Aim guide sprite.** Updates every rendered frame (via the same patch) to point from the Sniper's position toward the cursor; destroyed when aiming ends.
 
-**UI-click guard.** `EventSystem.IsPointerOverGameObject()` blocks fire if the pointer is over HUD. Map-open also blocks fire. Prevents accidental kills into buttons.
+**Bullet visual.** Either RPC-synced (`SniperShots.RpcShowShot`, all clients see it) if `BulletVisibleToOthers` is on, or shown locally to the Sniper only. Visual flies for 60 units at 40 units/second (purely cosmetic; the kill line is infinite). Multi-kill resolution uses `RpcSpecialMultiMurder` (TOU-Mira utility) to kill all victims on one RPC; it handles Guardian Angel protection internally (first-death shields are the caller's job, handled in `FindHits`).
+
+**UI-click guard, two layers.** Among Us HUD buttons are collider-based `PassiveButton`s that `EventSystem.IsPointerOverGameObject()` does NOT detect, so `IsClickOnHud()` also probes the UI layer under the cursor through `HudManager.Instance.UICamera` via `Physics2D.OverlapPoint`. Additionally, the frame the button was armed is recorded (`armedFrame`) so the arming click itself can never fire the shot, and firing is blocked while hacked/disabled (`GlitchHackedModifier`/`DisabledModifier`) and while the map is open.
 
 ## Design decisions
 
@@ -26,11 +28,14 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 - **Firing always ends aim and starts cooldown.** Regardless of whether any targets were hit. Prevents spam.
 - **UI-click guard prevents accidental fires.** Especially important since the Sniper needs to aim at world positions, not click the button again.
 
+## Playtest history
+
+- **2026-07 first playtest: "sniper doesn't work".** Two root causes found and fixed: (1) click polling lived in the button's FixedUpdate and dropped most clicks (see above); (2) hit test was line-vs-center-point with a 0.2u corridor, so even registered shots whiffed. Both reworked — needs a re-test.
+
 ## Not yet verified in-game / known follow-ups
 
-- Manual in-game verification needed.
+- Re-test after the click/hit-detection rework (see Playtest history).
 - Role icon and ability sprite are placeholder art.
-- UI-click guard using `EventSystem.IsPointerOverGameObject()` needs IL2CPP verification — determine whether it correctly detects clicks on Among Us's IL2CPP HUD.
-- Aim guide rotation and positioning should be visually confirmed in a real game (current math is standard `atan2` projection, magnitude 0.6 from the Sniper).
-- Edge case: if the Sniper enters a meeting during aim mode, aim cancels and cooldown starts — intended behavior, should be confirmed.
+- Aim guide rotation and positioning should be visually confirmed (standard `atan2` projection, magnitude 0.6 from the Sniper).
+- The UI-layer `Physics2D.OverlapPoint` probe assumes HUD button colliders live on the "UI" layer — confirm no HUD element is missed (clicking the kill button while aiming must not fire).
 - Z-depth sorting (`position.y / 1000f - 1f`) should be verified to ensure the bullet and guide render correctly relative to the environment.

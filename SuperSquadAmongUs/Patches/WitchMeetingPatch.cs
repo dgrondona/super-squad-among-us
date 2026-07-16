@@ -16,6 +16,7 @@ public static class WitchMeetingPatch
 {
     private const string OverlayName = "SuperSquadHexedOverlay";
 
+    [HarmonyPostfix]
     public static void Postfix(MeetingHud __instance)
     {
         foreach (var voteArea in __instance.playerStates)
@@ -29,7 +30,10 @@ public static class WitchMeetingPatch
                 var overlayObject = new GameObject(OverlayName);
                 overlayObject.transform.SetParent(voteArea.transform, false);
                 overlayObject.transform.localPosition = new Vector3(-0.5f, -0.03f, -1f);
-                overlayObject.layer = voteArea.gameObject.layer;
+
+                // TOR takes the layer from the Megaphone child sprite, not the vote-area root - the
+                // root's layer isn't guaranteed to be in the meeting camera's cull mask.
+                overlayObject.layer = voteArea.Megaphone.gameObject.layer;
 
                 var renderer = overlayObject.AddComponent<SpriteRenderer>();
                 renderer.sprite = SuperSquadImpAssets.WitchHexedOverlaySprite.LoadAsset();

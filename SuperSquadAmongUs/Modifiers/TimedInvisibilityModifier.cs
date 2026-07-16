@@ -72,6 +72,15 @@ public abstract class TimedInvisibilityModifier : ConcealedModifier, IVisualAppe
         // docs/roles/invisible-boy.md for the full story.
         ApplyLocalVisibility();
 
+        // Self-heal the appearance too: if anything reset this player to their normal look (e.g. the
+        // form->linger handoff, where the ending phase's ResetAppearance can land after the next
+        // phase's RawSetAppearance), re-blank it within a tick.
+        if (Player.GetAppearanceType() != TownOfUsAppearances.Swooper)
+        {
+            Player.RawSetAppearance(this);
+            Player.cosmetics.ToggleNameVisible(false);
+        }
+
         if (shroomSystem && shroomSystem!.IsActive)
         {
             Player.RawSetAppearance(this);

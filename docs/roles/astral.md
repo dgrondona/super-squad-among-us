@@ -8,9 +8,9 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 ## How it works
 
-**Two-phase modifier handoff.** `AstralFormModifier` (ghost phase) and `AstralLingerModifier` (grace phase) both inherit from `TimedInvisibilityModifier`, which handles shared invisibility rendering. Ghost phase disables the player's collider on activation, then re-enables it and snaps the player back via `RpcSnapTo` on deactivation (client-authoritative). If configured, the linger phase triggers automatically after snap-back; both modifiers auto-expire on timer and remove themselves. The button's `EffectDuration` equals form + linger time, so the cooldown doesn't start until both phases end.
+**Two-phase modifier handoff.** `AstralFormModifier` (ghost phase) and `AstralLingerModifier` (grace phase) both inherit from `TimedInvisibilityModifier`, which handles shared invisibility rendering. Ghost phase disables the player's collider on activation, then re-enables it and snaps the player back via `RpcSnapTo` on deactivation (owner-only; client-authoritative). The linger modifier is added **locally on every client** inside the form's `OnDeactivate` — each client's form timer expires on its own (`TimedModifier` counts down per client), so a local add makes the handoff gapless. It was originally an owner-side `RpcAddModifier`, which opened a latency window where remote clients rendered the astral fully visible between the phases. The button's `EffectDuration` equals form + linger time, so the cooldown doesn't start until both phases end (button-vs-modifier clock drift is bounded by a tick; the button's `OnEffectEnd` cleanup only fires on real disagreements).
 
-**Shared invisibility rendering.** Both phases use `TimedInvisibilityModifier`, which implements Swooper's viewer rule: fellow impostors and the informed dead see a faint outline (0.1α black), everyone else sees nothing. Visibility state is re-asserted every tick to survive vent/ladder animations (vanilla flips `Player.Visible` back on during those).
+**Shared invisibility rendering.** Both phases use `TimedInvisibilityModifier`, which implements Swooper's viewer rule: the astral themself, fellow impostors, and the informed dead see a faint outline (0.1α black); everyone else sees nothing. Two per-tick self-heals in `FixedUpdate`: `Player.Visible` is re-asserted (vanilla flips it back on across vent/ladder animations, and cameras honor it), and the appearance is re-applied whenever `GetAppearanceType()` is no longer `Swooper` (anything that reset the player's look — e.g. the phase handoff ordering, where the ending phase's `ResetAppearance` can land after the next phase's `RawSetAppearance` — is undone within one tick).
 
 **Syncing.** Modifiers sync via `RpcAddModifier` (MiraAPI standard); movement uses `RpcSnapTo` (TOU-Mira standard). No custom RPCs.
 
@@ -21,9 +21,13 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 - **Linger phase deliberate.** Returning is a vulnerable moment; linger gives the Astral cover for that split second, making it less obvious you just phased.
 - **No custom RPCs.** Movement and state arrive via standard TOU-Mira channels (`RpcSnapTo`, `RpcAddModifier/RemoveModifier`), keeping the implementation simple.
 
+## Playtest history
+
+- **2026-07 first playtest:** core loop (phase, wall-walk, snap-back) reported working. The tester reported "crewmates see the outline and can chase the astral". Analysis: on crewmate clients the code sets BOTH `RendererColor = Color.clear` AND `Player.Visible = false` — the faint outline is only ever built for the astral themself, impostor-aligned viewers, and the informed dead (`TheDeadKnow` on), matching TOU-Mira's Swooper exactly (`SwoopModifier.GetVisualAppearance`). The likely explanations for the sighting: the observing account was the astral's own view (owner always sees their outline), an impostor teammate, or a dead player with The Dead Know enabled. Two real handoff bugs that could flash the astral visible on remote clients WERE found and fixed (RPC-latency linger gap; ResetAppearance-after-RawSetAppearance ordering — both above). **Needs a re-test observing from a living crewmate's client**; if crew still see an outline there, capture which client observed it and what the two invisibility phases showed.
+
 ## Not yet verified in-game / known follow-ups
 
-- Manual in-game verification needed (no automated test suite).
+- Re-test crew-view invisibility from a genuine crewmate client (see Playtest history).
 - Role icon and ability sprite are placeholder art — swap out when real art exists.
-- Kill-button usability while phased needs verification: can the impostors' standard kill button be used during ghost form, or is it disabled?
-- `TimedInvisibilityModifier.ApplyLocalVisibility()` re-asserts visibility every tick to counter vanilla flipping it back during vent/ladder animations; this mirrors InvisibleBoyModifier's fix but the underlying vanilla bug (if still present) should be re-confirmed.
+- Kill-button usability while phased needs verification: can the impostors' standard kill button be used during ghost form, or is it disabled? (Killing while phased snaps the astral to the victim per vanilla murder; the end-of-phase snap-back to the phase origin still applies afterwards — that's the spec.)
+- If the astral dies mid-phase inside a wall, the body may be unreachable/unreportable. Unlikely (vanilla kill targeting raycasts walls), but worth keeping in mind.

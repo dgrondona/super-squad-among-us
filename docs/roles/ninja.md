@@ -8,7 +8,7 @@ Design: ported from TheOtherRoles; see `docs/porting/README.md`.
 
 ## How it works
 
-**Two-click button pattern.** `NinjaMarkButton` toggles between mark and assassinate phases. Mark state is button-local only (`Marked` field on the button, never synced). Arming delay is fixed at 5 seconds per TOR.
+**Two-click button pattern.** `NinjaMarkButton` toggles between mark and assassinate phases. Mark state is button-local only (`Marked` field on the button, never synced). Arming delay is fixed at 5 seconds per TOR. The `ClickHandler` override replicates the `GlitchHackedModifier`/`DisabledModifier` gating from `TownOfUsButton.ClickHandler` — any button that overrides `ClickHandler` must re-add those checks or it can be used while hacked/incapacitated.
 
 **Local-only arrow.** The tracking arrow (`NinjaMarkedModifier`) is added directly to the marked target's local modifier list, not via RPC — only the Ninja's client sees it. Removes itself on meeting start or target death.
 

@@ -46,3 +46,46 @@ there's no compiler error if e.g. a role class doesn't actually implement `ICust
 an option group isn't a subclass of `AbstractOptionGroup<T>` — it just won't show up in-game. If a new
 role/button/option "does nothing" after a clean build, check the interface/base-class list first
 before assuming a networking or logic bug.
+
+## Mouse clicks must be polled per rendered frame, never in button FixedUpdate
+
+MiraAPI button `FixedUpdate(PlayerControl)` runs on `PlayerControl.FixedUpdate`'s fixed tick, and
+`Input.GetMouseButtonDown` is only true during the single rendered frame of the press — polling it
+from the fixed tick silently drops most clicks whenever FPS exceeds the tick rate. This has now
+bitten twice (Apparater map click, Sniper aim click). The fix both times: a `HudManager.Update`
+postfix (`Patches/ApparaterMapClickPatch.cs`, `Patches/SniperAimPatch.cs`) that calls a self-guarding
+handler on the button. Also record `Time.frameCount` when the ability is armed so the arming click
+can't double as the action click in the same frame.
+
+## `EventSystem.IsPointerOverGameObject()` does not see Among Us HUD buttons
+
+The vanilla HUD (kill/use/report/sabotage/custom buttons) is collider-based `PassiveButton`s, not
+uGUI, so the EventSystem check misses them entirely. To test "did this click land on HUD?", also
+probe the UI layer under the cursor: `Physics2D.OverlapPoint(HudManager.Instance.UICamera
+.ScreenToWorldPoint(Input.mousePosition), LayerMask.GetMask("UI"))`. See
+`SniperSnipeButton.IsClickOnHud()`.
+
+## Overriding `TownOfUsButton.ClickHandler` drops the hacked/disabled gating
+
+TOU-Mira's base `ClickHandler` checks `GlitchHackedModifier` and `DisabledModifier` before running
+the click. Any override must re-add both checks (see `NinjaMarkButton.ClickHandler`), and any custom
+non-button trigger path (like the Sniper's world click) needs the same gating manually.
+
+## MiraAPI vanilla events fire on every client — sync via local state changes, not host gating
+
+`StartMeetingEvent`, `EjectionEvent`, and `PlayerDeathEvent` are invoked from postfixes on
+`MeetingHud`, `ExileController.Begin`, and `PlayerControl.Die`, all of which run on all clients.
+TOU-Mira's own handlers (e.g. `LoverEvents`) therefore apply kills with *local* calls
+(`DeathHandlerModifier.UpdateDeathHandlerImmediate` + vanilla `player.Exiled()`) ungated — every
+client performs the same deterministic change on its own copy. Do not add `AmHost` gates or RPCs in
+these handlers; that's TOR's model, not TOU-Mira's. Deciding *which* client acts is only needed for
+client-authoritative things like movement (`RpcSnapTo` from the owner).
+
+## Incapacitating a player: use TOU-Mira's `DisabledModifier`, not manual button fiddling
+
+One-shot `HudManager.Instance.ReportButton.SetDisabled()` gets re-enabled by vanilla the next time
+its state refreshes. The house pattern is a `DisabledModifier` subclass (`CanReport`,
+`CanUseAbilities`, `CanUseConsoles`, `CanOpenMap`, `CanBeInteractedWith`) — TOU-Mira's
+`ButtonClickPatches` and targeting utilities consume it, so it also makes the player untargetable by
+kill/ability buttons. Pair with Ambusher's freeze for movement: owner-only `moveable = false` +
+`MyPhysics.ResetMoveState()` + `NetTransform.SetPaused(true)`. See `DevouredDisabledModifier`.

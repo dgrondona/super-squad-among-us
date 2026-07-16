@@ -51,6 +51,28 @@ public static class PelicanEvents
     }
 
     /// <summary>
+    /// Pelican disconnected: release its stomach in place. Without this, devoured players would stay
+    /// pinned and hidden forever - the death handler below never fires for a disconnect.
+    /// </summary>
+    [RegisterEvent]
+    public static void PlayerLeaveEventHandler(PlayerLeaveEvent @event)
+    {
+        var player = @event.ClientData.Character;
+        if (player == null || player.Data?.Role is not PelicanRole)
+        {
+            return;
+        }
+
+        foreach (var devoured in ModifierUtils.GetActiveModifiers<DevouredModifier>().ToList())
+        {
+            if (devoured.Pelican != null && devoured.Pelican.PlayerId == player.PlayerId)
+            {
+                devoured.ModifierComponent?.RemoveModifier(devoured);
+            }
+        }
+    }
+
+    /// <summary>
     /// Pelican killed mid-round: everyone in its stomach is released alive where it died. Each client
     /// removes the modifier locally (state is already synced); only the released player's own client
     /// performs the position snap, since movement is client-authoritative.

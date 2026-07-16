@@ -1,7 +1,10 @@
 using MiraAPI.Events;
+using MiraAPI.Events.Vanilla.Gameplay;
 using MiraAPI.Events.Vanilla.Meeting;
 using MiraAPI.GameOptions;
+using MiraAPI.Hud;
 using MiraAPI.Modifiers;
+using SuperSquadAmongUs.Buttons.Impostor;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
@@ -20,6 +23,19 @@ namespace SuperSquadAmongUs.Events;
 /// </summary>
 public static class WitchEvents
 {
+    /// <summary>
+    /// Resets the hex cooldown penalty at game start. TOR keeps the penalty across meetings and only
+    /// clears it on game reset; the button singleton outlives games, so this is where that happens.
+    /// </summary>
+    [RegisterEvent]
+    public static void RoundStartEventHandler(RoundStartEvent @event)
+    {
+        if (@event.TriggeredByIntro)
+        {
+            CustomButtonSingleton<WitchHexButton>.Instance.ResetCooldownAddition();
+        }
+    }
+
     [RegisterEvent]
     public static void EjectionEventHandler(EjectionEvent @event)
     {

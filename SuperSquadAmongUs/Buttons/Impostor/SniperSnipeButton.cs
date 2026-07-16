@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
+using MiraAPI.Modifiers;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modules;
@@ -7,6 +8,8 @@ using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Buttons;
+using TownOfUs.Modifiers;
+using TownOfUs.Modifiers.Neutral;
 using TownOfUs.Modules.Localization;
 using TownOfUs.Networking;
 using TownOfUs.Utilities;
@@ -19,11 +22,17 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// The Sniper's shot (user design): press the button to shoulder the rifle, then click anywhere in the
 /// world within the aim window. A piercing bullet flies from the sniper's body through the clicked
 /// point, through walls, killing everyone on the line. While aiming, a guide sprite points from the
-/// sniper toward the cursor.
+/// sniper toward the cursor. Aiming and firing run per rendered frame via
+/// <see cref="Patches.SniperAimPatch"/> - the button's own FixedUpdate runs on the fixed tick and
+/// drops mouse clicks (same pitfall as the Apparater's map click, see docs/roles/apparater.md).
 /// </summary>
 public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
 {
     private GameObject? aimGuide;
+
+    // The frame the aim window was armed, so the button-press click can't also fire the shot
+    // (HUD buttons are collider-based PassiveButtons, invisible to EventSystem UI checks).
+    private int armedFrame;
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleSniperSnipe", "Snipe");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
@@ -44,32 +53,19 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
 
     protected override void OnClick()
     {
-        // Arming is local-only; nothing to sync until the trigger is pulled.
+        armedFrame = Time.frameCount;
     }
 
     protected override void FixedUpdate(PlayerControl playerControl)
     {
         base.FixedUpdate(playerControl);
 
-        if (!EffectActive || playerControl.HasDied() || MeetingHud.Instance)
+        // Only aim-window cancellation lives here; clicks and the guide are per-frame in HandleAimFrame.
+        if (EffectActive && (playerControl.HasDied() || MeetingHud.Instance))
         {
+            EffectActive = false;
+            SetTimer(Cooldown);
             ClearAimGuide();
-            if (EffectActive && (playerControl.HasDied() || MeetingHud.Instance))
-            {
-                EffectActive = false;
-                SetTimer(Cooldown);
-            }
-
-            return;
-        }
-
-        UpdateAimGuide(playerControl);
-
-        // Fire on left click, ignoring clicks on UI (HUD buttons, open map, chat).
-        if (Input.GetMouseButtonDown(0) && !IsPointerOverUi() &&
-            !(MapBehaviour.Instance && MapBehaviour.Instance.IsOpen))
-        {
-            Fire(playerControl);
         }
     }
 
@@ -78,9 +74,53 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
         ClearAimGuide();
     }
 
-    private static bool IsPointerOverUi()
+    /// <summary>
+    /// Updates the aim guide and fires on left click. Called every rendered frame from
+    /// <see cref="Patches.SniperAimPatch"/> while the aim window is active.
+    /// </summary>
+    public void HandleAimFrame()
     {
-        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        var sniper = PlayerControl.LocalPlayer;
+        if (!EffectActive || sniper == null || sniper.HasDied() || MeetingHud.Instance)
+        {
+            ClearAimGuide();
+            return;
+        }
+
+        UpdateAimGuide(sniper);
+
+        if (Time.frameCount == armedFrame || !Input.GetMouseButtonDown(0))
+        {
+            return;
+        }
+
+        if (IsClickOnHud() || (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen))
+        {
+            return;
+        }
+
+        // Same gating the TOU base ClickHandler applies to the arming click - being hacked or
+        // disabled mid-window must also block the trigger pull.
+        if (sniper.HasModifier<GlitchHackedModifier>() || sniper.HasModifier<DisabledModifier>())
+        {
+            return;
+        }
+
+        Fire(sniper);
+    }
+
+    // Whether the current click landed on a HUD element rather than the game world. Among Us HUD
+    // buttons are collider-based PassiveButtons on the UI layer, so probe that layer through the UI
+    // camera; the EventSystem check still covers uGUI overlays like chat.
+    private static bool IsClickOnHud()
+    {
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            return true;
+        }
+
+        var uiPoint = (Vector2)HudManager.Instance.UICamera.ScreenToWorldPoint(Input.mousePosition);
+        return Physics2D.OverlapPoint(uiPoint, LayerMask.GetMask("UI"));
     }
 
     private void Fire(PlayerControl sniper)

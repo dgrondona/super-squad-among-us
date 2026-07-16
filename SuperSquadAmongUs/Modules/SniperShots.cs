@@ -1,9 +1,12 @@
 using System.Collections;
+using MiraAPI.Modifiers;
 using MiraAPI.Utilities.Assets;
 using Reactor.Networking.Attributes;
 using Reactor.Networking.Rpc;
 using Reactor.Utilities;
 using SuperSquadAmongUs.Assets;
+using TownOfUs.Modifiers;
+using TownOfUs.Utilities;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Modules;
@@ -17,9 +20,14 @@ namespace SuperSquadAmongUs.Modules;
 public static class SniperShots
 {
     /// <summary>
-    /// Perpendicular distance from the shot line within which a player is hit (ATR's 0.2-unit width).
+    /// Half-thickness of the bullet itself; each player's body radius is added on top, so the test is
+    /// bullet-circle vs body-circle rather than line vs center point (a center-point test made shots
+    /// whiff unless they passed within 0.2 units of the feet).
     /// </summary>
     public const float HitHalfWidth = 0.2f;
+
+    // Used when a player's body sprite is unavailable (roughly half a player's visual height).
+    private const float FallbackBodyRadius = 0.4f;
 
     // How far the travel visual flies and how fast, purely cosmetic (the kill line is infinite).
     private const float VisualRange = 60f;
@@ -40,31 +48,55 @@ public static class SniperShots
         foreach (var player in PlayerControl.AllPlayerControls)
         {
             if (player == null || player.PlayerId == shooter.PlayerId || player.Data == null ||
-                player.Data.IsDead || player.Data.Disconnected)
+                player.Data.IsDead || player.Data.Disconnected || player.inVent)
             {
                 continue;
             }
 
-            if (!includeImpostors && player.Data.Role != null && player.Data.Role.IsImpostor)
+            if (!includeImpostors && player.IsImpostorAligned())
             {
                 continue;
             }
 
-            var toPlayer = (Vector2)player.GetTruePosition() - origin;
+            // Respect the same protections other TOU kill sources do: the first-death shield, and
+            // states that make a player untargetable (devoured, ambush-hidden, ...).
+            if (player.HasModifier<FirstDeadShield>() ||
+                player.GetModifiers<DisabledModifier>().Any(x => !x.CanBeInteractedWith))
+            {
+                continue;
+            }
+
+            var (center, radius) = GetBodyCircle(player);
+            var toPlayer = center - origin;
             var along = Vector2.Dot(toPlayer, direction);
-            if (along < 0f)
+            if (along < -radius)
             {
                 continue;
             }
 
             var perpendicular = (toPlayer - (along * direction)).magnitude;
-            if (perpendicular <= HitHalfWidth)
+            if (perpendicular <= HitHalfWidth + radius)
             {
                 hits.Add((player, along));
             }
         }
 
         return hits.OrderBy(x => x.Distance).Select(x => x.Player).ToList();
+    }
+
+    // A player's hittable area: their visible body sprite as a circle (what the shooter is aiming at),
+    // falling back to the physics collider position if the sprite isn't available.
+    private static (Vector2 Center, float Radius) GetBodyCircle(PlayerControl player)
+    {
+        var cosmetics = player.cosmetics;
+        var body = cosmetics ? cosmetics!.currentBodySprite?.BodySprite : null;
+        if (body)
+        {
+            var bounds = body!.bounds;
+            return (bounds.center, Mathf.Max(bounds.extents.x, bounds.extents.y));
+        }
+
+        return (player.GetTruePosition(), FallbackBodyRadius);
     }
 
     /// <summary>

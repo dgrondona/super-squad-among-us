@@ -9,6 +9,7 @@
     <string name="SuperSquadDiedToWitchHex">Hexed</string>
     <string name="SuperSquadDiedToPelican">Digested</string>
     <string name="DiedToSuperSquadSniper">Sniped</string>
+    <string name="SuperSquadDiedToAstral">Faded</string>
     <!-- Sentinel - Neutral Killing -->
     <string name="SuperSquadRoleSentinel">Sentinel</string>
     <string name="SuperSquadRoleSentinelIntroBlurb">Eliminate those who stand in your path.</string>
@@ -55,6 +56,7 @@
     <string name="SuperSquadOptionAstralFormDuration">Astral Form Duration</string>
     <string name="SuperSquadOptionAstralLingerDuration">Invisibility Linger After Return</string>
     <string name="SuperSquadOptionAstralCanVent">Astral Can Vent</string>
+    <string name="SuperSquadOptionAstralDieWithoutKill">Astral Dies Without a Kill</string>
     <!-- Ninja - Impostor Assassin -->
     <string name="SuperSquadRoleNinja">Ninja</string>
     <string name="SuperSquadRoleNinjaIntroBlurb">Surprise and assassinate your foes.</string>

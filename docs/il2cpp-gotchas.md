@@ -81,6 +81,17 @@ client performs the same deterministic change on its own copy. Do not add `AmHos
 these handlers; that's TOR's model, not TOU-Mira's. Deciding *which* client acts is only needed for
 client-authoritative things like movement (`RpcSnapTo` from the owner).
 
+## Vanilla kill/vent/ladder animations silently reset player state you disabled manually
+
+Anything toggled once in a modifier's `OnActivate` (collider, `Player.Visible`, appearance) can get
+flipped back by vanilla code mid-animation — `CustomMurder`/`CoPerformCustomKill`'s
+`KillAnimation.SetMovement` re-enables the collider partway through a kill, and vent/ladder animations
+similarly reset `Visible`/appearance (see `TimedInvisibilityModifier`). This bit the Astral: its
+collider was disabled once on activation, so killing someone while phased silently re-enabled it and
+ended wall-passing early even though the modifier and invisibility were still active. The fix is always
+the same: don't just set the state once, self-heal it every `FixedUpdate` tick for as long as the
+modifier is active (see `AstralFormModifier.FixedUpdate`, `TimedInvisibilityModifier.FixedUpdate`).
+
 ## Incapacitating a player: use TOU-Mira's `DisabledModifier`, not manual button fiddling
 
 One-shot `HudManager.Instance.ReportButton.SetDisabled()` gets re-enabled by vanilla the next time

@@ -21,15 +21,14 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// <summary>
 /// The Sniper's shot (user design): press the button to shoulder the rifle, then click anywhere in the
 /// world within the aim window. A piercing bullet flies from the sniper's body through the clicked
-/// point, through walls, killing everyone on the line. While aiming, a guide sprite points from the
-/// sniper toward the cursor. Aiming and firing run per rendered frame via
+/// point, through walls, killing everyone on the line. There is no aim assist while deciding where to
+/// click - the projectile visual only appears at the moment of firing (see <see cref="Fire"/> and
+/// <see cref="SniperShots.ShowShotLocally"/>). Aiming and firing run per rendered frame via
 /// <see cref="Patches.SniperAimPatch"/> - the button's own FixedUpdate runs on the fixed tick and
 /// drops mouse clicks (same pitfall as the Apparater's map click, see docs/roles/apparater.md).
 /// </summary>
 public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
 {
-    private GameObject? aimGuide;
-
     // The frame the aim window was armed, so the button-press click can't also fire the shot
     // (HUD buttons are collider-based PassiveButtons, invisible to EventSystem UI checks).
     private int armedFrame;
@@ -60,34 +59,25 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
     {
         base.FixedUpdate(playerControl);
 
-        // Only aim-window cancellation lives here; clicks and the guide are per-frame in HandleAimFrame.
+        // Only aim-window cancellation lives here; clicks are handled per-frame in HandleAimFrame.
         if (EffectActive && (playerControl.HasDied() || MeetingHud.Instance))
         {
             EffectActive = false;
             SetTimer(Cooldown);
-            ClearAimGuide();
         }
     }
 
-    public override void OnEffectEnd()
-    {
-        ClearAimGuide();
-    }
-
     /// <summary>
-    /// Updates the aim guide and fires on left click. Called every rendered frame from
-    /// <see cref="Patches.SniperAimPatch"/> while the aim window is active.
+    /// Fires on left click. Called every rendered frame from <see cref="Patches.SniperAimPatch"/>
+    /// while the aim window is active.
     /// </summary>
     public void HandleAimFrame()
     {
         var sniper = PlayerControl.LocalPlayer;
         if (!EffectActive || sniper == null || sniper.HasDied() || MeetingHud.Instance)
         {
-            ClearAimGuide();
             return;
         }
-
-        UpdateAimGuide(sniper);
 
         if (Time.frameCount == armedFrame || !Input.GetMouseButtonDown(0))
         {
@@ -138,7 +128,6 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
         // End the aim window and start the cooldown regardless of whether anything was hit.
         EffectActive = false;
         SetTimer(Cooldown);
-        ClearAimGuide();
 
         if (options.BulletVisibleToOthers)
         {
@@ -157,31 +146,4 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
         }
     }
 
-    private void UpdateAimGuide(PlayerControl sniper)
-    {
-        if (aimGuide == null)
-        {
-            aimGuide = new GameObject("SuperSquadSniperAimGuide");
-            var renderer = aimGuide.AddComponent<SpriteRenderer>();
-            renderer.sprite = SuperSquadImpAssets.SniperGuideSprite.LoadAsset();
-        }
-
-        var origin = (Vector2)sniper.GetTruePosition();
-        var mouseWorld = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        var direction = (mouseWorld - origin).normalized;
-        var angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-
-        var position = origin + (direction * 0.6f);
-        aimGuide.transform.position = new Vector3(position.x, position.y, position.y / 1000f - 1f);
-        aimGuide.transform.rotation = Quaternion.Euler(0f, 0f, angle);
-    }
-
-    private void ClearAimGuide()
-    {
-        if (aimGuide != null)
-        {
-            UnityEngine.Object.Destroy(aimGuide);
-            aimGuide = null;
-        }
-    }
 }

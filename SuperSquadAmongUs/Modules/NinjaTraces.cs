@@ -14,8 +14,10 @@ namespace SuperSquadAmongUs.Modules;
 /// World-space "someone dashed through here" markers left by the Ninja's assassination, one at the
 /// Ninja's launch position and one at the victim. Unlike the tracking arrow these are real scene
 /// objects every client renders (and cameras can see), so placement is RPC-synced. Visual follows
-/// TOR's NinjaTrace: tinted with the Ninja's player color, lerping to green over the color-fade
-/// option, then alpha-fading out at the end of the trace duration.
+/// TOR's NinjaTrace exactly, including its quirk: the "tint" isn't actually the Ninja's player color -
+/// TOR's isLighterColor(PlayerControl) is just `playerId % 2 == 0` (Helpers.cs), so the start color is
+/// white for even-ID Ninjas and black (Palette.PlayerColors[6]) for odd-ID ones, before lerping to
+/// green over the color-fade option and alpha-fading out at the end of the trace duration.
 /// </summary>
 public static class NinjaTraces
 {
@@ -35,7 +37,9 @@ public static class NinjaTraces
         var renderer = traceObject.AddComponent<SpriteRenderer>();
         renderer.sprite = SuperSquadImpAssets.NinjaTraceSprite.LoadAsset();
 
-        var startColor = Palette.PlayerColors[source.Data.DefaultOutfit.ColorId];
+        // TOR's isLighterColor is a player-ID parity check, not an actual color comparison - replicated
+        // faithfully rather than "fixed" to use the Ninja's real outfit color.
+        var startColor = source.PlayerId % 2 == 0 ? Color.white : (Color)Palette.PlayerColors[6];
         Coroutines.Start(CoAnimateTrace(renderer, startColor, options.TraceColorFadeDuration, options.TraceDuration));
     }
 

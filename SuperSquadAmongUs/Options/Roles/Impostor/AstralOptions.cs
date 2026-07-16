@@ -21,4 +21,7 @@ public sealed class AstralOptions : AbstractOptionGroup<AstralRole>
 
     [ModdedToggleOption("SuperSquadOptionAstralCanVent")]
     public bool CanVent { get; set; }
+
+    [ModdedToggleOption("SuperSquadOptionAstralDieWithoutKill")]
+    public bool DieWithoutKill { get; set; }
 }

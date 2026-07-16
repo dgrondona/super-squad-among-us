@@ -1,6 +1,6 @@
 # Sniper
 
-Impostor Killing role. Press the secondary ability button to shoulder the rifle and enter aiming mode. While aiming, a guide sprite points from your body toward your cursor. Click anywhere in the world to fire a piercing bullet that goes through walls and kills everyone within 0.2 units of the bullet's path. Aiming lasts for a configurable window (default 10s); if you don't fire, the aim times out and the cooldown begins. The bullet can optionally be invisible to other players (configurable).
+Impostor Killing role. Press the secondary ability button to shoulder the rifle and enter aiming mode — no aim assist is shown while deciding where to click; the projectile visual only appears at the moment you fire. Click anywhere in the world to fire a piercing bullet that goes through walls and kills everyone within 0.2 units of the bullet's path. Aiming lasts for a configurable window (default 10s); if you don't fire, the aim times out and the cooldown begins. The bullet can optionally be invisible to other players (configurable).
 
 Files: `Roles/Impostor/SniperRole.cs`, `Buttons/Impostor/SniperSnipeButton.cs`, `Modules/SniperShots.cs`, `Options/Roles/Impostor/SniperOptions.cs`.
 
@@ -14,7 +14,7 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 **Hit detection is line-vs-hitbox, not line-vs-point.** `SniperShots.FindHits` treats each player as a circle around their **body sprite bounds** (center + max extent, ~0.5u; collider-position fallback) and hits when perpendicular distance to the shot line ≤ 0.2 (bullet half-width) + that radius. The original line-vs-`GetTruePosition()` test whiffed unless the line passed within 0.2u of the feet — the second playtest bug. Pierces clusters (all hits, ordered by distance). Skips: the Sniper, dead/disconnected, players in vents, `FirstDeadShield` holders, players with a `DisabledModifier` that has `CanBeInteractedWith == false` (devoured, ambush-hidden, ...), and — if configured — impostor-aligned players (`IsImpostorAligned()`, which covers alliance modifiers too).
 
-**Aim guide sprite.** Updates every rendered frame (via the same patch) to point from the Sniper's position toward the cursor; destroyed when aiming ends.
+**No aim guide.** Earlier versions rendered a persistent local arrow pointing from the Sniper's body toward the cursor for the whole aim window, using the same sprite as the bullet travel visual (`SniperGuideSprite`). Removed per playtest feedback (2026-07-16): the projectile placeholder should only be visible when the Sniper actually fires, not while still deciding where to aim. Direction is now computed purely from the cursor position at the instant of the click in `Fire()` — no visual feedback during the aim window itself.
 
 **Bullet visual.** Either RPC-synced (`SniperShots.RpcShowShot`, all clients see it) if `BulletVisibleToOthers` is on, or shown locally to the Sniper only. Visual flies for 60 units at 40 units/second (purely cosmetic; the kill line is infinite). Multi-kill resolution uses `RpcSpecialMultiMurder` (TOU-Mira utility) to kill all victims on one RPC; it handles Guardian Angel protection internally (first-death shields are the caller's job, handled in `FindHits`).
 
@@ -31,11 +31,12 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 ## Playtest history
 
 - **2026-07 first playtest: "sniper doesn't work".** Two root causes found and fixed: (1) click polling lived in the button's FixedUpdate and dropped most clicks (see above); (2) hit test was line-vs-center-point with a 0.2u corridor, so even registered shots whiffed. Both reworked — needs a re-test.
+- **2026-07-16 second playtest: "sniper works now, but the projectile placeholder should only be visible when they actually fire".** The continuous aim guide (visible for the whole aim window) was removed; see "No aim guide" above.
 
 ## Not yet verified in-game / known follow-ups
 
 - Re-test after the click/hit-detection rework (see Playtest history).
+- Re-test aiming without the guide sprite: confirm the shot still fires accurately toward the clicked point and the bullet visual only appears on fire.
 - Role icon and ability sprite are placeholder art.
-- Aim guide rotation and positioning should be visually confirmed (standard `atan2` projection, magnitude 0.6 from the Sniper).
 - The UI-layer `Physics2D.OverlapPoint` probe assumes HUD button colliders live on the "UI" layer — confirm no HUD element is missed (clicking the kill button while aiming must not fire).
-- Z-depth sorting (`position.y / 1000f - 1f`) should be verified to ensure the bullet and guide render correctly relative to the environment.
+- Z-depth sorting (`position.y / 1000f - 1f`) should be verified to ensure the bullet renders correctly relative to the environment.

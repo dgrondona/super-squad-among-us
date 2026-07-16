@@ -80,11 +80,26 @@ with the same UnityPy recipe if we want them; check
       invisibility grace; Sniper = 10s aim window, piercing cross-map line shot. Ninja/Witch follow
       TOR behavior.
 - [x] Credits section added to root `README.md`.
-- [ ] Implement roles in the order below (one commit per role; follow `docs/architecture.md` layout).
-- [ ] Role icons sourced/made for the five roles (ATR has none — see Assets section).
-- [ ] Per-role docs `docs/roles/<name>.md` written as each role is implemented.
-- [ ] Pick final Devour button sprite; delete the unused `DevourButtonAlt.png`
-      (ATR's Pelican button is the sprite named `PelicanButton` = our `DevourButton.png`).
+- [x] **All five roles implemented and compiling** (commits `8996e37` Astral, `cd1598b` the rest).
+      None are verified in-game yet — see "Post-implementation follow-ups" below.
+- [ ] Role icons: current icons are placeholder copies of the button art in
+      `Resources/RoleIcons/` — replace with proper TOU-style icons.
+- [x] Per-role docs `docs/roles/<name>.md` written.
+- [x] Devour button sprite picked (`DevourButton.png`); unused alt deleted.
+
+## Post-implementation follow-ups
+
+- **Manual in-game verification needed for everything** (no automated tests exist). Highest-risk
+  spots: Astral collider re-enable on all exit paths + kill button while phased; Ninja teleport-kill
+  + trace RPC; Witch ejection-event resolution + meeting overlay position; Pelican devoured
+  camera-follow (position pinning) + digestion at meeting + release on Pelican murder; Sniper
+  UI-click guard (`EventSystem.IsPointerOverGameObject` under IL2CPP) + line-hit math.
+- Sounds: no cast/mark/shot sounds yet. TOR's `warlockCurse`/`witchSpell` clips are in the TOR
+  `toraudio` bundle (see Assets section); a shot sound needs sourcing.
+- Witch: cumulative additional-cooldown resets when a meeting starts (mirrors TOR's presumed
+  behavior — unverified against TOR in practice).
+- Pelican: devoured players keep their tasks (crew could in theory still win on tasks while
+  devoured) — decide if task completion should be blocked.
 
 ## Porting plan
 

@@ -39,4 +39,17 @@
     <string name="SuperSquadRoleInvisibleBoyWikiDescription">The Invisible Boy is a Crewmate Support role that turns invisible whenever no living player has line of sight to him. The moment anyone can see even a sliver of him, he is visible again.</string>
     <string name="SuperSquadRoleInvisibleBoyPassive">Unseen</string>
     <string name="SuperSquadRoleInvisibleBoyPassiveWikiDescription">While no living player can see you, you are invisible - hidden from players, cameras, and the admin table. You see yourself as a ghostly outline. Dead players don't count; players in vents do.</string>
+    <!-- Astral - Impostor Concealing -->
+    <string name="SuperSquadRoleAstral">Astral</string>
+    <string name="SuperSquadRoleAstralIntroBlurb">Enter the spirit realm and kill before your tether to reality breaks.</string>
+    <string name="SuperSquadRoleAstralTabDescription">Phase into an \%b\%invisible spirit\%/b\% that walks through walls.\%nl\%When your tether breaks, you snap back to where you phased from.</string>
+    <!-- Astral Wiki -->
+    <string name="SuperSquadRoleAstralWikiDescription">The Astral is an Impostor Concealing role that can phase into a spirit form: invisible, able to walk through walls, and still able to kill. When the form ends they are pulled back to the spot they phased from, staying invisible for a few seconds longer to slip away.</string>
+    <string name="SuperSquadRoleAstralForm">Astral</string>
+    <string name="SuperSquadRoleAstralFormWikiDescription">Become an invisible spirit that walks through walls and can still kill. When the form ends, you return to where you phased from and remain invisible briefly.</string>
+    <!-- Astral Options -->
+    <string name="SuperSquadOptionAstralFormCooldown">Astral Form Cooldown</string>
+    <string name="SuperSquadOptionAstralFormDuration">Astral Form Duration</string>
+    <string name="SuperSquadOptionAstralLingerDuration">Invisibility Linger After Return</string>
+    <string name="SuperSquadOptionAstralCanVent">Astral Can Vent</string>
 </resources>

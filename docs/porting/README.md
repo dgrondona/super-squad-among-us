@@ -257,35 +257,47 @@ bullet hits dies — it pierces through multiple people and goes through walls.*
 - **User decision (2026-07-15):** the bullet is NOT visible to others by default, but it's a
   toggle option ("bullet visible" bool, default false) — a future similar role may default it on.
 
-## Wave 2 porting plan (from TOR): Godfather, Mafioso, Eraser, Vulture
+## Wave 2 porting plan (from TOR): Mafia trio (Godfather/Mafioso/Mafia Janitor), Eraser, Vulture
 
-Planned 2026-07-16; research complete (`tor-mafia.md`, `tor-eraser-vulture.md` — file:line evidence
-for every claim below lives there). All four come from TOR, which has readable source. Not yet
-implemented. Suggested order: **Godfather → Mafioso** (trivial roles, but settle the assignment
-question first) → **Vulture** (self-contained neutral) → **Eraser** (role-changing is the riskiest
-mechanic).
+Planned and **implemented 2026-07-16** (compiles clean; NOT yet tested in-game). Research with
+file:line evidence: `tor-mafia.md`, `tor-eraser-vulture.md`. Implementation notes live in
+`docs/roles/{godfather,mafioso,mafia-janitor,eraser,vulture}.md`. Key wiring:
 
-### Open questions for the user (answer before implementing)
+- **Trio assignment**: `Patches/MafiaAssignmentPatch.cs` — host-side `RoleManager.SelectRoles`
+  postfix (Priority.VeryLow, after TOU-Mira's own selection): one spawn-chance roll
+  (`MafiaOptions.SpawnChance`), requires 3+ impostor-team players, converts three of them via
+  TOU-Mira's `RpcChangeRole` (players holding plain vanilla impostor roles are converted first).
+  The three roles have `DefaultRoleCount = 0` + `HideSettings`, so the patch is the only spawn path.
+- **Mafioso gates**: `Patches/MafiosoGatePatches.cs` — local-only prefixes on
+  `KillButton.DoClick`/`SabotageButton.DoClick` plus a per-frame hide/show, exactly TOR's model.
+- **Mafia labels**: `Patches/MafiaLabelsPatch.cs` — "(G)/(M)/(J)" name suffixes, mafia-only viewers.
+- **Erase resolution**: `Events/EraserEvents.cs` on `EjectionEvent`; host sends
+  `RpcChangeRole((ushort)RoleTypes.Crewmate)`; `Modifiers/FutureErasedModifier.cs` carries the mark.
+- **Body removal**: `Modules/SuperSquadBodies.cs` RPCs (mafia clean + vulture eat with win count).
+- **Vulture win**: `VultureRole.WinConditionMet()` — TOU-Mira's `NeutralRoleWinCondition` polls it
+  every frame, so the game ends instantly at the threshold (TOR-style).
 
-1. **Mafia assignment:** TOR spawns the mafia strictly as a trio (Godfather+Mafioso+Janitor, needs
-   3+ impostors); we're porting only two. Should Godfather and Mafioso spawn independently like any
-   other impostor roles, or linked (Mafioso only spawns if a Godfather does)? Linked assignment has
-   no TOU-Mira precedent and needs custom role-assignment wiring.
-2. **Janitor:** port later to complete the trio, or skip permanently?
-3. **Vulture win:** TOR ends the game *instantly* when the Nth body is eaten. Keep that, or convert
-   to the Arsonist-style "wins alongside game end" format like our Pelican?
-4. **Eraser result role:** in TOR an erased player (even an impostor!) becomes vanilla Crewmate.
-   With TOU-Mira roles in play: erased crew role → vanilla Crewmate, but what should an erased
-   impostor become — vanilla Impostor (keeps teams intact) or Crewmate (TOR-faithful, flips teams)?
-5. **Erased notification:** should the erased player get told they lost their role (TOR shows it on
-   the next intro-like flash)?
+### User decisions (2026-07-16) — all questions answered, TOR-faithful throughout
+
+1. **Mafia assignment: TOR trio, including the Janitor.** Godfather + Mafioso + **Mafia Janitor**
+   spawn together as a trio exactly like TOR (needs 3+ impostors and 3 free impostor role slots;
+   single spawn-chance roll for the whole trio). Our Mafia Janitor is a *separate role* from
+   TOU-Mira's existing standalone Janitor, which stays available independently — name ours "Mafia
+   Janitor" (class `MafiaJanitorRole`) to avoid any collision.
+2. **Vulture win: TOR style** — the game ends instantly when the Nth body is eaten.
+3. **Erased players are NOT notified** — no message/flash; they'll notice their role UI is gone.
+   Everything else about erasure stays TOR-faithful (erased player becomes plain Crewmate, even a
+   former impostor; modifiers are kept; tasks unchanged).
+
+The per-role sections below are the original planning record; where they differ from the wiring
+summary above, the summary (and `docs/roles/*.md`) reflect what was actually built.
 
 ### 6. Godfather (Impostor)
 
 - Near-vanilla impostor: normal kill/vent/sabotage, no custom button. The role IS the Mafioso's
   enabling condition. TOR evidence: no custom abilities beyond team labels.
-- Team display: TOR appends "(G)/(M)" to mafia names for mafia members. TOU impostors already see
-  each other; decide at implementation whether tags add anything.
+- Team display: TOR appends "(G)/(M)/(J)" to mafia names for mafia members — implemented as
+  `MafiaLabelsPatch` (tags matter: the Mafioso needs to know who the Godfather is).
 - Template: any plain impostor role; `Roles/Impostor/GodfatherRole.cs` + options + locale only.
 
 ### 7. Mafioso (Impostor)

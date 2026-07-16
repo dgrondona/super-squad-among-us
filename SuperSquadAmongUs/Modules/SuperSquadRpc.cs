@@ -8,4 +8,6 @@ public enum SuperSquadRpc : uint
 {
     PlaceNinjaTrace = 1,
     ShowSniperShot = 2,
+    MafiaCleanBody = 3,
+    VultureEatBody = 4,
 }

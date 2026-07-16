@@ -20,8 +20,8 @@ See [CLAUDE.md](./CLAUDE.md) for build instructions and architecture notes.
   Sniper, and Pelican** role designs and their button art originate from AllTheRoles and were
   ported to this addon re-implemented on MiraAPI/TOU-Mira.
 - [TheOtherRoles](https://github.com/TheOtherRolesAU/TheOtherRoles) (GPL-3.0, the mod AllTheRoles
-  descends from) — the **Ninja and Witch** role designs, their button art, and the trace/spell
-  overlay sprites come from TheOtherRoles.
+  descends from) — the **Ninja, Witch, Godfather, Mafioso, Mafia Janitor, Eraser, and Vulture**
+  role designs, their button art, and the trace/spell/arrow sprites come from TheOtherRoles.
 
 # License
 This software is distributed under the GNU GPLv3 License. BepInEx is distributed under the LGPL-2.1 License.

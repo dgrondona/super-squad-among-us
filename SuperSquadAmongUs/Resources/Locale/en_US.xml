@@ -90,7 +90,7 @@
     <string name="SuperSquadOptionWitchCanVent">Witch Can Vent</string>
     <!-- Sniper - Impostor Marksman -->
     <string name="SuperSquadRoleSniper">Sniper</string>
-    <string name="SuperSquadRoleSniperintroBlurb">Kill from across the map with a piercing shot.</string>
+    <string name="SuperSquadRoleSniperIntroBlurb">Kill from across the map with a piercing shot.</string>
     <string name="SuperSquadRoleSniperTabDescription">\%b\%Aim\%/b\% and \%b\%snipe\%/b\% players from anywhere on the map.\%nl\%Precision kills from a distance.</string>
     <!-- Sniper Wiki -->
     <string name="SuperSquadRoleSniperWikiDescription">The Sniper is an Impostor Marksman role that can aim at targets and take a piercing shot that kills from across the map. They have a limited aiming window to line up their shot.</string>
@@ -114,4 +114,50 @@
     <string name="SuperSquadOptionPelicanDevourCooldown">Devour Cooldown</string>
     <string name="SuperSquadOptionPelicanCanVent">Pelican Can Vent</string>
     <string name="SuperSquadOptionPelicanImpostorVision">Pelican Has Impostor Vision</string>
+    <!-- Mafia Roles (Godfather, Mafioso, Mafia Janitor) - Impostor -->
+    <string name="SuperSquadRoleMafia">Mafia</string>
+    <string name="SuperSquadRoleGodfather">Godfather</string>
+    <string name="SuperSquadRoleGodfatherIntroBlurb">Lead the Mafia to victory.</string>
+    <string name="SuperSquadRoleGodfatherTabDescription">You are the head of the Mafia.\%nl\%The Mafioso answers to you and cannot act while you live.</string>
+    <!-- Godfather Wiki -->
+    <string name="SuperSquadRoleGodfatherWikiDescription">The Godfather is an Impostor Killing role and the leader of the Mafia. They are a standard Impostor with kill and sabotage abilities. The Mafioso cannot kill or sabotage while the Godfather is alive, ensuring the hierarchy of the family.</string>
+    <string name="SuperSquadRoleMafioso">Mafioso</string>
+    <string name="SuperSquadRoleMafiosoIntroBlurb">Inherit the family business when your boss falls.</string>
+    <string name="SuperSquadRoleMafiosoTabDescription">You work under the Godfather.\%nl\%You cannot kill or sabotage while they live, but you inherit their powers when they die.</string>
+    <!-- Mafioso Wiki -->
+    <string name="SuperSquadRoleMafiosoWikiDescription">The Mafioso is an Impostor Killing role and a member of the Mafia under the Godfather's command. While the Godfather lives, the Mafioso cannot kill or sabotage. When the Godfather dies, the Mafioso immediately gains full Impostor powers and becomes the new leader.</string>
+    <string name="SuperSquadRoleMafiaJanitor">Mafia Janitor</string>
+    <string name="SuperSquadRoleMafiaJanitorIntroBlurb">Clean up after the Mafia's dirty work.</string>
+    <string name="SuperSquadRoleMafiaJanitorTabDescription">You have a \%b\%clean\%/b\% button instead of a kill button.\%nl\%Use it to remove bodies and cover the Mafia's tracks.</string>
+    <!-- Mafia Janitor Wiki -->
+    <string name="SuperSquadRoleMafiaJanitorWikiDescription">The Mafia Janitor is an Impostor Support role that cleans up after the Mafia. Instead of a kill button, they have a clean button to remove bodies from the game, one at a time. This helps the Mafia avoid detection while covering their tracks.</string>
+    <string name="SuperSquadRoleMafiaJanitorClean">Clean</string>
+    <string name="SuperSquadRoleMafiaJanitorCleanWikiDescription">Remove a dead body from the game.</string>
+    <!-- Mafia Options -->
+    <string name="SuperSquadOptionMafiaSpawnChance">Spawn Chance</string>
+    <string name="SuperSquadOptionMafiaJanitorCleanCooldown">Clean Cooldown</string>
+    <!-- Eraser - Impostor Support -->
+    <string name="SuperSquadRoleEraser">Eraser</string>
+    <string name="SuperSquadRoleEraserIntroBlurb">Mark players and strip them of their role at the next meeting.</string>
+    <string name="SuperSquadRoleEraserTabDescription">\%b\%Mark\%/b\% your targets.\%nl\%At the next meeting's end, they lose their role and become plain Crewmates. Each use adds cooldown time.</string>
+    <!-- Eraser Wiki -->
+    <string name="SuperSquadRoleEraserWikiDescription">The Eraser is an Impostor Support role that can mark players to be erased. At the end of each meeting's exile phase, all marked players lose their modded role and become plain Crewmates without being informed. Each use of the erase ability adds 10 seconds to the cooldown permanently.</string>
+    <string name="SuperSquadRoleEraserErase">Erase</string>
+    <string name="SuperSquadRoleEraserEraseWikiDescription">Mark a player to lose their role at the next meeting's end.</string>
+    <!-- Eraser Options -->
+    <string name="SuperSquadOptionEraserEraseCooldown">Erase Cooldown</string>
+    <string name="SuperSquadOptionEraserCanEraseAnyone">Eraser Can Erase Non-Crewmates</string>
+    <!-- Vulture - Neutral Scavenger -->
+    <string name="SuperSquadRoleVulture">Vulture</string>
+    <string name="SuperSquadRoleVultureIntroBlurb">Scavenge corpses and win alone.</string>
+    <string name="SuperSquadRoleVultureTabDescription">\%b\%Eat\%/b\% dead bodies to consume them.\%nl\%When you've eaten enough, you win instantly.</string>
+    <!-- Vulture Wiki -->
+    <string name="SuperSquadRoleVultureWikiDescription">The Vulture is a Neutral Scavenger role that can eat dead bodies, permanently removing them from the game. They can see arrows pointing to nearby corpses and win instantly once they have consumed the required number of bodies. They win alone and do not align with any other faction.</string>
+    <string name="SuperSquadRoleVultureEat">Eat</string>
+    <string name="SuperSquadRoleVultureEatWikiDescription">Consume a dead body, removing it from the game and increasing your meal count toward victory.</string>
+    <!-- Vulture Options -->
+    <string name="SuperSquadOptionVultureEatCooldown">Eat Cooldown</string>
+    <string name="SuperSquadOptionVultureBodiesNeededToWin">Bodies Needed to Win</string>
+    <string name="SuperSquadOptionVultureCanVent">Vulture Can Vent</string>
+    <string name="SuperSquadOptionVultureShowBodyArrows">Vulture Sees Body Arrows</string>
 </resources>

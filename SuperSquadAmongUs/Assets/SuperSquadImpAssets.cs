@@ -15,4 +15,6 @@ public static class SuperSquadImpAssets
     public static LoadableAsset<Sprite> WitchHexedOverlaySprite { get; } = new LoadableResourceAsset($"{ShortPath}.SpellButtonMeeting.png", 225);
     public static LoadableAsset<Sprite> SniperSnipeSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SniperButton.png");
     public static LoadableAsset<Sprite> SniperGuideSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SniperGuide.png");
+    public static LoadableAsset<Sprite> MafiaJanitorCleanSprite { get; } = new LoadableResourceAsset($"{ShortPath}.MafiaJanitorCleanButton.png");
+    public static LoadableAsset<Sprite> EraserSprite { get; } = new LoadableResourceAsset($"{ShortPath}.EraserButton.png");
 }

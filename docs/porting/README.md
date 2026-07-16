@@ -51,8 +51,14 @@ save `Sprite` objects whose `m_Name` matches) into the repo:
   delete or repurpose).
 
 ATR has **no TOU-style role icons** for these roles (only button art), and the ATR bundle's only
-AudioClip is `HeartbeatPing` (not ours). Role icons for `Resources/RoleIcons/` still need to be
-sourced/made. Sounds: TOR plays `warlockCurse` (ninja mark) and `witchSpell` (hex cast) from the
+AudioClip is `HeartbeatPing` (not ours). **Confirmed 2026-07-16 by enumerating the full bundle**
+(every Sprite/Texture2D/AudioClip): only 150x150 button sprites, team icons
+(Crewmate/Impostor/NeutralIcon), banners, and misc art — same story for TOR's `Resources/` (buttons
+only). Consequently the five `Resources/RoleIcons/*.png` for the ported roles are byte-for-byte
+copies of the source mods' button art — the best per-role art either mod ships (the Witch icon uses
+ATR's nicer 300x300 `HexSymbol` glyph instead of the button graphic). Proper TOU-style icons would
+need to be commissioned/drawn — no upstream source exists.
+Sounds: TOR plays `warlockCurse` (ninja mark) and `witchSpell` (hex cast) from the
 Unity bundle `reference/TheOtherRoles/TheOtherRoles/Resources/SoundEffects/toraudio` — extractable
 with the same UnityPy recipe if we want them; check
 `Resources/SoundEffects/SoundEffectSourcesAndLicenses.md` for attribution requirements first.
@@ -63,6 +69,8 @@ with the same UnityPy recipe if we want them; check
 - `atr-pelican-witch-astral.md` — same for the other three.
 - `tor-ninja-witch.md` — TOR's readable Ninja/Witch implementation (preferred reference for those two).
 - `tou-mira-patterns.md` — which TOU-Mira/MiraAPI roles to use as implementation templates per mechanic.
+- `tor-mafia.md` — TOR Godfather/Mafioso (/Janitor, out of scope) research for the wave-2 port.
+- `tor-eraser-vulture.md` — TOR Eraser + Vulture research for the wave-2 port.
 
 ## Status / resume point
 
@@ -99,10 +107,19 @@ with the same UnityPy recipe if we want them; check
   - Pelican (proactive, still untested): freeze now uses Ambusher's owner-only
     `SetPaused`/`ResetMoveState` pattern; new `DevouredDisabledModifier` (TOU `DisabledModifier`)
     blocks report/abilities/targeting while devoured; Pelican disconnect now releases the stomach.
+- [x] **Reference-parity review round (2026-07-16)** — compared all five implementations line-by-line
+      against TOR source / ATR decompile. Fixed: ninja trace fade math (TOR's exact rule), ninja
+      can't assassinate from/into vents, mark clears when the ninja dies, witch hexes now fire for a
+      *dead* (not disconnected) witch (ghost-role check bug), witch-as-lover exiled-partner save rule
+      (TOR's `witchDiesWithExiledLover`), pelican win condition no longer blocked by a devoured rival
+      killer. Confirmed intentional: devour can be countered by an alerted Veteran (kill-button
+      convention).
+- [x] Role icons audited (2026-07-16): the five ported icons were already byte-for-byte source-mod
+      button art (never AI-generated); neither TOR nor ATR ships dedicated role icons (full bundle
+      enumerated). Witch icon upgraded to ATR's 300x300 `HexSymbol`. Proper TOU-style icons still
+      need an artist.
 - [ ] **Re-test in a real lobby** — per-role checklists live in the "Playtest history" /
       "follow-ups" sections of `docs/roles/*.md`.
-- [ ] Role icons: current icons are placeholder copies of the button art in
-      `Resources/RoleIcons/` — replace with proper TOU-style icons.
 
 ## Post-implementation follow-ups
 
@@ -239,6 +256,78 @@ bullet hits dies — it pierces through multiple people and goes through walls.*
   meeting/death/vent.
 - **User decision (2026-07-15):** the bullet is NOT visible to others by default, but it's a
   toggle option ("bullet visible" bool, default false) — a future similar role may default it on.
+
+## Wave 2 porting plan (from TOR): Godfather, Mafioso, Eraser, Vulture
+
+Planned 2026-07-16; research complete (`tor-mafia.md`, `tor-eraser-vulture.md` — file:line evidence
+for every claim below lives there). All four come from TOR, which has readable source. Not yet
+implemented. Suggested order: **Godfather → Mafioso** (trivial roles, but settle the assignment
+question first) → **Vulture** (self-contained neutral) → **Eraser** (role-changing is the riskiest
+mechanic).
+
+### Open questions for the user (answer before implementing)
+
+1. **Mafia assignment:** TOR spawns the mafia strictly as a trio (Godfather+Mafioso+Janitor, needs
+   3+ impostors); we're porting only two. Should Godfather and Mafioso spawn independently like any
+   other impostor roles, or linked (Mafioso only spawns if a Godfather does)? Linked assignment has
+   no TOU-Mira precedent and needs custom role-assignment wiring.
+2. **Janitor:** port later to complete the trio, or skip permanently?
+3. **Vulture win:** TOR ends the game *instantly* when the Nth body is eaten. Keep that, or convert
+   to the Arsonist-style "wins alongside game end" format like our Pelican?
+4. **Eraser result role:** in TOR an erased player (even an impostor!) becomes vanilla Crewmate.
+   With TOU-Mira roles in play: erased crew role → vanilla Crewmate, but what should an erased
+   impostor become — vanilla Impostor (keeps teams intact) or Crewmate (TOR-faithful, flips teams)?
+5. **Erased notification:** should the erased player get told they lost their role (TOR shows it on
+   the next intro-like flash)?
+
+### 6. Godfather (Impostor)
+
+- Near-vanilla impostor: normal kill/vent/sabotage, no custom button. The role IS the Mafioso's
+  enabling condition. TOR evidence: no custom abilities beyond team labels.
+- Team display: TOR appends "(G)/(M)" to mafia names for mafia members. TOU impostors already see
+  each other; decide at implementation whether tags add anything.
+- Template: any plain impostor role; `Roles/Impostor/GodfatherRole.cs` + options + locale only.
+
+### 7. Mafioso (Impostor)
+
+- Core gimmick (TOR `UpdatePatch.cs:296`, `UsablesPatch.cs:210`): while any living player is
+  Godfather, the Mafioso's KILL button is hidden AND SABOTAGE is blocked. When the Godfather dies,
+  both unlock immediately, no cooldown reset. Both gates are pure local UI logic — no RPC.
+- TOU mapping: gate via Harmony prefixes following TOU's `ButtonClickPatches` convention
+  (KillButton.DoClick / SabotageButton.DoClick + hide in HudManager update), condition = "any
+  living player's `Data.Role is GodfatherRole`". Watch: the dead-godfather check must use
+  `HasDied()`-style logic, not `Data.Role` (ghost-role swap — same bug we fixed in WitchEvents).
+- Files: `Roles/Impostor/MafiosoRole.cs`, `Patches/MafiosoGatePatches.cs`, options, locale.
+
+### 8. Eraser (Impostor)
+
+- Ability: target a player (option: anyone vs crew only); on click, the target is *future-erased*;
+  the erase resolves at the next meeting's exile screen (TOR `ExileControllerPatch.cs:36-46`) — the
+  target loses their modded role. Cumulative cooldown: `MaxTimer += 10` per use, persists all game
+  (verified `Buttons.cs:1103`).
+- TOU mapping: clone our Witch skeleton — `FutureErasedModifier` (synced, like HexedModifier) +
+  `EjectionEvent` handler that performs the role change + a Witch-style cooldown-addition button
+  (+10 fixed). Role change: use TOU-Mira's mid-game role-change utility (grep `ChangeRole` /
+  Traitor-conversion path at implementation time) rather than vanilla `SetRole`.
+- Watch: erased player's tasks/win-condition state; erasing a lover (TOR edge cases in research
+  doc); erased-then-dead-before-meeting (skip, like witch's dead-target skip); our own roles being
+  erased must clean up their modifiers/buttons (test with Astral phased? — erase resolves only at
+  meetings, when phases are already stripped, so should be safe).
+- Sprite: TOR `Resources/EraserButton.png` (copy directly). Sound: `eraserErase` in TOR audio bundle.
+
+### 9. Vulture (Neutral)
+
+- Ability: eat corpses (button near a body, default 4 to win, option range in research doc); eaten
+  bodies are removed for everyone (TOR `cleanBody`); options: arrows to bodies, can vent, impostor
+  vision. Win: instant game end on Nth body (`RPC.cs:542` → `triggerVultureWin`) — pending open
+  question 3.
+- TOU mapping: research doc's sketch — body targeting/cleaning precedents exist in TOU-Mira
+  (Janitor-style clean; body arrows via TOU's arrow classes — see doc); win via TOU's neutral
+  end-game path (Jester-style trigger if instant, Arsonist format if not). Neutral team, own color,
+  `NeutButtons/` sprite from TOR `VultureButton.png`.
+- Watch: meetings clear bodies (vulture progress survives, bodies don't); Janitor/Cleaner-eaten
+  bodies; Altruist-style revives of a body the vulture is running toward; count sync must be
+  RPC-synced so late wins are consistent.
 
 ### Cross-cutting notes
 

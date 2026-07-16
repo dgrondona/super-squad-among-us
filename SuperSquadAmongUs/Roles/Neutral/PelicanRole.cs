@@ -65,7 +65,8 @@ public sealed class PelicanRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsR
     /// <summary>
     /// Arsonist-format neutral win (user decision, see docs/porting/README.md), with one twist:
     /// devoured players are as-good-as-dead (they die at the next meeting and can't act), so they
-    /// don't count as alive - otherwise a full stomach could soft-lock the round.
+    /// count neither as alive nor as living killers - otherwise a full stomach (or a devoured rival
+    /// killer) could soft-lock the round.
     /// </summary>
     /// <returns>True if the Pelican wins alongside game end.</returns>
     public bool WinConditionMet()
@@ -77,7 +78,15 @@ public sealed class PelicanRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsR
 
         var aliveNotDevoured = Helpers.GetAlivePlayers().Count(x => !x.HasModifier<DevouredModifier>());
 
-        return aliveNotDevoured <= 2 && MiscUtils.KillersAliveCount == 1;
+        // KillersAliveCount includes devoured players (they're technically alive), so subtract the
+        // impostor/neutral-killer ones sitting in a stomach. (A devoured power-crew killer with
+        // CrewKillersContinue on would still count - rare enough to accept.)
+        var devouredKillers = ModifierUtils.GetActiveModifiers<DevouredModifier>()
+            .Select(x => x.Player)
+            .Count(x => x != null && !x.HasDied() &&
+                        (x.IsImpostor() || x.Is(RoleAlignment.NeutralKilling)));
+
+        return aliveNotDevoured <= 2 && MiscUtils.KillersAliveCount - devouredKillers == 1;
     }
 
     public override bool DidWin(GameOverReason gameOverReason)

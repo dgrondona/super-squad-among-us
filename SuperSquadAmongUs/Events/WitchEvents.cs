@@ -10,7 +10,9 @@ using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs.Events;
 using TownOfUs.Modifiers;
+using TownOfUs.Modifiers.Game.Alliance;
 using TownOfUs.Modules.Localization;
+using TownOfUs.Options.Modifiers.Alliance;
 using TownOfUs.Utilities;
 
 namespace SuperSquadAmongUs.Events;
@@ -48,12 +50,15 @@ public static class WitchEvents
             var target = hex.Player;
             hex.ModifierComponent?.RemoveModifier(hex);
 
-            // The hex fizzles if the witch no longer holds the role (role swap/disconnect), or if the
+            // The hex fizzles if the witch disconnected or was role-swapped while alive, or if the
             // witch was exiled this meeting with the save option on. Note the TOR asymmetry: a witch
-            // merely *killed* during the meeting does NOT save the targets - only being voted out does.
-            var witchInvalid = witch == null || witch.Data == null ||
-                               witch.Data.Disconnected || witch.Data.Role is not WitchRole;
-            var savedByVote = voteSaves && exiled != null && witch == exiled;
+            // merely *killed* does NOT save the targets - her hexes still fire (a dead player's
+            // Data.Role is their ghost role, so the WitchRole check must only apply to the living).
+            // TOR also saves the targets when the witch is a lover dying alongside her exiled partner.
+            var witchInvalid = witch == null || witch.Data == null || witch.Data.Disconnected ||
+                               (!witch.HasDied() && witch.Data.Role is not WitchRole);
+            var savedByVote = !witchInvalid && voteSaves && exiled != null &&
+                              (witch == exiled || WitchDiesWithExiledLover(witch!, exiled));
 
             if (witchInvalid || savedByVote || target == null || target.HasDied() || target == exiled)
             {
@@ -70,5 +75,14 @@ public static class WitchEvents
 
             target.Exiled();
         }
+    }
+
+    // TOR's witchDiesWithExiledLover: the witch is a lover, lovers die together, and the exiled
+    // player is her partner - the vote effectively killed the witch, so the save rule applies.
+    private static bool WitchDiesWithExiledLover(PlayerControl witch, PlayerControl exiled)
+    {
+        return OptionGroupSingleton<LoversOptions>.Instance.BothLoversDie &&
+               witch.TryGetModifier<LoverModifier>(out var loveMod) &&
+               loveMod!.OtherLover != null && loveMod.OtherLover == exiled;
     }
 }

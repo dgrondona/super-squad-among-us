@@ -18,7 +18,9 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 **Mid-round release.** `PelicanEvents.PlayerDeathEventHandler` runs when the Pelican dies: every devoured player is released with a position snap via `RpcSnapTo` (client-authoritative). Devoured player's own client performs the snap. **Disconnect release:** `PlayerLeaveEventHandler` releases the stomach in place if the Pelican disconnects (a disconnect never fires `PlayerControl.Die`, so without this the devoured would stay pinned and hidden forever).
 
-**Win condition excludes devoured.** `PelicanRole.WinConditionMet()` treats devoured players as dead (excluded from the alive count) to prevent a scenario where the Pelican is the only killer alive but has a full stomach — soft-lock prevention.
+**Win condition excludes devoured.** `PelicanRole.WinConditionMet()` treats devoured players as dead — excluded from the alive count AND subtracted from `MiscUtils.KillersAliveCount` (that utility counts devoured players since they're technically alive; without the subtraction a devoured rival killer would block the Pelican's win forever — fixed 2026-07-16). Known accepted gap: a devoured power-crew killer with CrewKillersContinue on still counts.
+
+**Devour respects Veteran alert.** The devour button implements `IKillButton`, so TOU-Mira's Veteran counter-kill fires: devouring an alerted Veteran kills the Pelican instead. Intentional — matches every other kill button's contract.
 
 ## Design decisions
 

@@ -22,7 +22,9 @@ Design: ported from TheOtherRoles; see `docs/porting/README.md`.
 
 - **Arrow is Ninja-local only.** Only the Ninja sees it; the kill itself is the tell to other players. Keeps the Ninja's planning hidden.
 - **Traces are world objects, not client-only UI.** They appear in admin feeds and provide a forensic trail post-kill. Other players can see the Ninja dashed through here.
-- **Mark clears on meeting start or target death.** Meeting ejection is a natural reset point; dead targets can't be killed again.
+- **Mark clears on meeting start, target death, or ninja death.** Meeting ejection is a natural reset point; dead targets can't be killed again; a dead ninja's arrow disappears (TOR parity).
+- **No assassinating from or into vents.** TOR gates the strike on the ninja's `CanMove` and on the target not being vented; we mirror both in `CanUse()` (parity fix, 2026-07-16).
+- **Trace fade matches TOR exactly:** 1s fade-out, shrunk to half the lifetime for sub-1s traces.
 - **Fixed 5s arming delay.** Per TOR. Prevents instant mark→kill from the button cooldown alone.
 - **Multi-mark edge case:** if another player walks closer during the arm window, the mark does not auto-retarget. The Ninja must manually re-mark. (TOR behavior.)
 

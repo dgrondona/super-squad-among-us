@@ -43,7 +43,8 @@ public static class NinjaTraces
     {
         // TOR keeps the trace fully opaque until the last stretch, then alpha-fades it out over at
         // most one second (or half the trace time for very short traces).
-        var fadeOutDuration = Mathf.Min(1f, traceDuration / 2f);
+        // TOR's exact rule (NinjaTrace.cs): 1s fade, shrunk to half the lifetime for sub-1s traces.
+        var fadeOutDuration = traceDuration >= 1f ? 1f : 0.5f * traceDuration;
         var elapsed = 0f;
 
         while (elapsed < traceDuration)

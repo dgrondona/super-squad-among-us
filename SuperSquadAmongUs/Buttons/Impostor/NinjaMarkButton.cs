@@ -48,8 +48,10 @@ public sealed class NinjaMarkButton : TownOfUsKillRoleButton<NinjaRole, PlayerCo
             return base.CanUse();
         }
 
-        // Assassinate phase: works from anywhere, no proximity target needed.
-        if (HudManager.Instance.Chat.IsOpenOrOpening || MeetingHud.Instance || PlayerControl.LocalPlayer.HasDied())
+        // Assassinate phase: works from anywhere, no proximity target needed. TOR gates the strike on
+        // CanMove (no assassinating from inside a vent) and on the target not being vented either.
+        if (HudManager.Instance.Chat.IsOpenOrOpening || MeetingHud.Instance || PlayerControl.LocalPlayer.HasDied() ||
+            !PlayerControl.LocalPlayer.CanMove || Marked.inVent)
         {
             return false;
         }
@@ -61,9 +63,9 @@ public sealed class NinjaMarkButton : TownOfUsKillRoleButton<NinjaRole, PlayerCo
     {
         base.FixedUpdate(playerControl);
 
-        // The mark doesn't survive meetings or the target dying first (the marked modifier cleans up
-        // its own arrow in both cases; this resets the button state to match).
-        if (Marked != null && (MeetingHud.Instance || Marked.HasDied()))
+        // The mark doesn't survive meetings, the target dying first, or the ninja dying (TOR hides the
+        // arrow for a dead ninja). The marked modifier cleans up its own arrow; this resets the button.
+        if (Marked != null && (MeetingHud.Instance || Marked.HasDied() || playerControl.HasDied()))
         {
             ClearMark();
         }

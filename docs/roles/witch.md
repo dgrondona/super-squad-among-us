@@ -21,7 +21,8 @@ Design: ported from TheOtherRoles; see `docs/porting/README.md`.
 ## Design decisions
 
 - **Pure hex state.** Victim is alive but marked to die at ejection — no in-game indication, no death message until ejection completes.
-- **Asymmetric save rule.** Only a voted-out Witch saves targets. A Witch killed mid-meeting does NOT save — only the exile vote matters. (TOR convention, deliberate asymmetry.)
+- **Asymmetric save rule.** Only a voted-out Witch saves targets. A Witch killed mid-meeting (or mid-round) does NOT save — her hexes still fire; only the exile vote matters. (TOR convention, deliberate asymmetry.) Implementation note: a dead player's `Data.Role` is their *ghost* role, so the handler's "still holds WitchRole" validity check applies only to living witches — checking it on a dead witch silently fizzled her hexes (bug fixed 2026-07-16).
+- **Lover-witch save rule (TOR's `witchDiesWithExiledLover`).** If the Witch is a lover, Both Lovers Die is on, and her *partner* is the one exiled, the vote effectively killed the Witch — the save rule applies just as if she'd been exiled herself (parity fix, 2026-07-16).
 - **Channel cancels if target changes.** Prevents fire-and-forget casting while moving around. Forces the Witch to commit and stay focused on a target.
 - **Cumulative cooldown.** Never resets mid-game (TOR behavior; an earlier draft wrongly reset it per meeting). The more you hex, the longer you wait for the next one, all game.
 - **Hex overlay visible to everyone.** Including the Witch and victim after the hex is cast. Transparent in hindsight.

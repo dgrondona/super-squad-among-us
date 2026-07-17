@@ -163,4 +163,15 @@
     <string name="SuperSquadOptionVultureBodiesNeededToWin">Bodies Needed to Win</string>
     <string name="SuperSquadOptionVultureCanVent">Vulture Can Vent</string>
     <string name="SuperSquadOptionVultureShowBodyArrows">Vulture Sees Body Arrows</string>
+    <!-- Invisibility Cloak - Universal Modifier -->
+    <string name="SuperSquadModifierInvisibilityCloak">Invisibility Cloak</string>
+    <string name="SuperSquadModifierInvisibilityCloakTabDescription">Throw on your \%b\%cloak\%/b\% to turn invisible for a short while.</string>
+    <string name="SuperSquadModifierInvisibilityCloakWikiDescription">The Invisibility Cloak is a Universal Modifier that grants its holder a Cloak button. Using it turns the holder completely invisible - hidden from players, cameras, and the admin table - for a short duration. Only the wearer (and the informed dead) see a faint outline.</string>
+    <string name="SuperSquadModifierInvisibilityCloakButton">Cloak</string>
+    <string name="SuperSquadModifierInvisibilityCloakButtonWikiDescription">Become invisible for a short duration.</string>
+    <!-- Invisibility Cloak Options -->
+    <string name="SuperSquadOptionInvisibilityCloakAmount">Invisibility Cloak Amount</string>
+    <string name="SuperSquadOptionInvisibilityCloakChance">Invisibility Cloak Chance</string>
+    <string name="SuperSquadOptionInvisibilityCloakCooldown">Cloak Cooldown</string>
+    <string name="SuperSquadOptionInvisibilityCloakDuration">Cloak Duration</string>
 </resources>

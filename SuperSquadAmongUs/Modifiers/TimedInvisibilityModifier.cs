@@ -119,9 +119,13 @@ public abstract class TimedInvisibilityModifier : ConcealedModifier, IVisualAppe
         Player.RemoveModifier(this);
     }
 
-    // Whether the local viewer should see the faint outline rather than nothing: the Astral player,
-    // a fellow impostor, or a dead player when "the dead know" is on (Swooper convention).
-    private bool LocalViewerSeesOutline()
+    /// <summary>
+    /// Whether the local viewer should see the faint outline rather than nothing: the phased player,
+    /// a fellow impostor, or a dead player when "the dead know" is on (Swooper convention). Virtual so
+    /// non-impostor users (e.g. <see cref="CloakInvisibilityModifier"/>) can drop the impostor clause.
+    /// </summary>
+    /// <returns>True if the local viewer sees the faint outline.</returns>
+    protected virtual bool LocalViewerSeesOutline()
     {
         return Player.AmOwner ||
                (PlayerControl.LocalPlayer &&

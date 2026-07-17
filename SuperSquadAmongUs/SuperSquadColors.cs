@@ -14,4 +14,6 @@ public static class SuperSquadColors
     public static Color Sentinel => new Color32(143, 162, 141, 255);
     public static Color Pelican => new Color32(106, 21, 171, 255);
     public static Color Vulture => new Color32(139, 69, 19, 255);
+    // Modifier Colors
+    public static Color InvisibilityCloak => new Color32(197, 213, 232, 255);
 }

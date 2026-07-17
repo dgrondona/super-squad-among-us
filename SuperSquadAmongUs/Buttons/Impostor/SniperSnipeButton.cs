@@ -96,6 +96,18 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
             return;
         }
 
+        // Camera.main does a tag lookup every call and can be transiently null (TOU-Mira's own
+        // Sentry surveillance click-handler guards the exact same call for the same reason). Bailing
+        // out here leaves EffectActive true, so the aim window silently stays open for the next
+        // click - this is what "clicking sometimes does nothing" looked like: an unguarded
+        // Camera.main.ScreenToWorldPoint would throw mid-Fire(), aborting before EffectActive was
+        // ever set false, so the very next click a moment later (once Camera.main was valid again)
+        // would just work, with no pattern visible from the player's side.
+        if (Camera.main == null)
+        {
+            return;
+        }
+
         Fire(sniper);
     }
 
@@ -116,7 +128,7 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
     private void Fire(PlayerControl sniper)
     {
         var options = OptionGroupSingleton<SniperOptions>.Instance;
-        var origin = (Vector2)sniper.GetTruePosition();
+        var origin = SniperShots.GetShotOrigin(sniper);
         var clickPoint = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
         var direction = (clickPoint - origin).normalized;
 

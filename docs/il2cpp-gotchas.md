@@ -92,6 +92,43 @@ ended wall-passing early even though the modifier and invisibility were still ac
 the same: don't just set the state once, self-heal it every `FixedUpdate` tick for as long as the
 modifier is active (see `AstralFormModifier.FixedUpdate`, `TimedInvisibilityModifier.FixedUpdate`).
 
+## When reference/ source doesn't cover it: decompile the real game assembly
+
+`reference/TOU-Mira` and `reference/MiraAPI` are plain C# source, but the base game itself (roles,
+`PlayerControl`, `LightSource`, cameras, etc.) is IL2CPP and not checked in anywhere in this repo. The
+interop assembly BepInEx builds against is cached locally and is real, decompilable .NET metadata:
+
+```
+~/.cache/bepinex/game-libs/AmongUs.GameLibs.Steam/<version>/interop/<hash>/Assembly-CSharp.dll
+```
+
+(the exact `<version>` is whatever `AmongUs.props` pins). Decompile a type with `ilspycmd` (already
+installed as a global dotnet tool):
+
+```
+ilspycmd -t <TypeName> <path-to-Assembly-CSharp.dll>
+```
+
+Method **bodies** are useless (IL2CPP native-call stubs, not real logic), but field/property/method
+**signatures**, types, and inheritance are 100% accurate ground truth — this is the actual shipped
+game, not a guess. Large types decompile slowly and verbosely; redirect to a file and `grep` for
+declaration lines rather than reading the whole dump. This is how the Sniper's vision fix
+(`ShipStatus.MaxLightRadius`/`LightSource`) and the ruled-out nametag-click theory
+(`PlayerControl.cosmetics.nameText` is a plain `TMPro.TextMeshPro`, not a UI-raycastable
+`TextMeshProUGUI`) were confirmed rather than guessed.
+
+## `Camera.main` can be transiently null — this codebase already defends against it, in several places
+
+`Camera.main` does a tag-based scene lookup every call, not a cached reference, and TOU-Mira's own
+source guards it defensively in multiple spots (e.g. `SentryCameraSurveillancePatch.cs` checks
+`Camera.main != null` before the exact same `ScreenToWorldPoint` pattern the Sniper's click handling
+uses). An unguarded null dereference inside a Harmony-postfix-driven per-frame handler doesn't crash
+the game — it just aborts that one method silently, which can look like "an action sometimes does
+nothing, no pattern I can find" if the abort happens before whatever state change would normally follow
+(see `SniperSnipeButton.HandleAimFrame`, which bails before `Fire()` so the aim window simply stays
+open for the next click attempt instead of consuming this one). Don't assume `Camera.main` is safe to
+dereference directly in per-frame code; check for null first, matching existing precedent.
+
 ## Incapacitating a player: use TOU-Mira's `DisabledModifier`, not manual button fiddling
 
 One-shot `HudManager.Instance.ReportButton.SetDisabled()` gets re-enabled by vanilla the next time

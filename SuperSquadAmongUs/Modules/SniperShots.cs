@@ -100,6 +100,19 @@ public static class SniperShots
     }
 
     /// <summary>
+    /// The point a shot should originate from: the shooter's body sprite center, not
+    /// <see cref="PlayerControl.GetTruePosition"/> (which sits at the collider/feet, well below the
+    /// visible sprite). Reuses the same body-bounds lookup used for hit detection, so the line the
+    /// shooter sees and the line that's actually tested agree.
+    /// </summary>
+    /// <param name="shooter">The sniper.</param>
+    /// <returns>World-space origin point for the shot.</returns>
+    public static Vector2 GetShotOrigin(PlayerControl shooter)
+    {
+        return GetBodyCircle(shooter).Center;
+    }
+
+    /// <summary>
     /// Shows the bullet travel visual on every client (used when the bullet-visible option is on).
     /// </summary>
     /// <param name="source">The sniper.</param>

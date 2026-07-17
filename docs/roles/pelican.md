@@ -42,9 +42,9 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 - Manual in-game verification needed — untestable solo (needs a second player to devour). Highest-value checks: camera-follow feel while devoured, meeting digestion showing the victims as dead in the vote list, release position after killing the Pelican, and a devoured player being unable to report/use anything.
 - Role icon and the Devour button sprite have no dedicated art yet. The role icon uses Town of Us:
-  Mira's generic Neutral team icon (`Resources/Placeholders/Neutral.png`); the Devour button uses the
-  generic HUD button placeholder (`Resources/Placeholders/GenericButton.png`, the vanilla
-  Shapeshifter's Shift button art - the team icon was too large to read as a HUD button). Swap out
+  Mira's generic Neutral team icon (`Resources/Placeholders/Neutral.png`); the Devour button
+  temporarily reuses TOU-Mira's Time Lord Rewind sprite (`TouCrewAssets.RewindSprite`, same one the
+  Astral's Phase button borrows) - the team icon was too large to read as a HUD button. Swap out
   when real art exists.
 - Devoured players' camera-follow behavior needs verification — especially edge cases like the Pelican entering a vent or using a ladder.
 - Soft-lock prevention via win-condition logic should be confirmed by testing a round where the Pelican devours multiple players.

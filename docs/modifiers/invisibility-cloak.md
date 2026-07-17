@@ -29,6 +29,8 @@ plus the shared `Options/Modifiers/SuperSquadModifierOptions.cs` (amount/chance)
 
 ## Known follow-ups
 
-- No dedicated art — button/wiki use the generic HUD button placeholder (`Resources/Placeholders/GenericButton.png`, the vanilla Shapeshifter's Shift button art from TheOtherRoles).
+- No dedicated art — button/wiki temporarily reuse TOU-Mira's Time Lord Rewind sprite
+  (`TouCrewAssets.RewindSprite`, same one the Astral's Phase button borrows) until a dedicated
+  placeholder exists.
 - Needs in-game verification of the options landing in the Modifiers tab under pinned MiraAPI 0.3.5,
   and a second client confirming an impostor viewer sees no outline.

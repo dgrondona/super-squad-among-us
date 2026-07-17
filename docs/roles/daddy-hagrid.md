@@ -60,8 +60,8 @@ can't hide someone already in a stomach.
   releasing alive and voting normally, Hagrid death/disconnect releases, and the Pelican regression
   pass (devour, meeting digestion, death release).
 - No dedicated art — role icon uses the generic Crewmate placeholder
-  (`Resources/Placeholders/Crewmate.png`); the Hide button uses the generic HUD button placeholder
-  (`Resources/Placeholders/GenericButton.png`).
+  (`Resources/Placeholders/Crewmate.png`); the Hide button temporarily reuses TOU-Mira's Time Lord
+  Rewind sprite (`TouCrewAssets.RewindSprite`) until a dedicated placeholder exists.
 - If Hagrid himself gets devoured by a Pelican mid-hide, his passenger stays hidden until their own
   timer releases them at Hagrid's pinned position (inside the stomach ride). Weird but harmless;
   revisit if it plays badly.

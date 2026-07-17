@@ -35,4 +35,6 @@ the shared `Options/Modifiers/SuperSquadModifierOptions.cs` (amount/chance).
 - An already-open task minigame isn't force-closed by the stun (accepted for a 2s effect).
 - Needs 2-client verification: stun duration/recovery, momentum kill, no report/kill/ability while
   stunned, stunned player still killable, vent-entry blocked.
-- No dedicated art — button/wiki use the generic HUD button placeholder (`Resources/Placeholders/GenericButton.png`, the vanilla Shapeshifter's Shift button art from TheOtherRoles).
+- No dedicated art — button/wiki temporarily reuse TOU-Mira's Time Lord Rewind sprite
+  (`TouCrewAssets.RewindSprite`, same one the Astral's Phase button borrows) until a dedicated
+  placeholder exists.

@@ -163,6 +163,18 @@
     <string name="SuperSquadOptionVultureBodiesNeededToWin">Bodies Needed to Win</string>
     <string name="SuperSquadOptionVultureCanVent">Vulture Can Vent</string>
     <string name="SuperSquadOptionVultureShowBodyArrows">Vulture Sees Body Arrows</string>
+    <!-- Daddy Hagrid - Crewmate Protective -->
+    <string name="SuperSquadRoleDaddyHagrid">Daddy Hagrid</string>
+    <string name="SuperSquadRoleDaddyHagridIntroBlurb">Hide players in your cloak to keep them safe.</string>
+    <string name="SuperSquadRoleDaddyHagridTabDescription">\%b\%Hide\%/b\% a player in your cloak.\%nl\%They're protected until they pop back out.</string>
+    <!-- Daddy Hagrid Wiki -->
+    <string name="SuperSquadRoleDaddyHagridWikiDescription">Daddy Hagrid is a Crewmate Protective role that can hide a player in his cloak. A hidden player is invisible, untargetable, and rides along with Hagrid until the hide duration runs out, popping back out at his position. Unlike a certain hungry bird, a meeting releases them unharmed - and if Hagrid dies, they're released alive where he fell.</string>
+    <string name="SuperSquadRoleDaddyHagridHide">Hide</string>
+    <string name="SuperSquadRoleDaddyHagridHideWikiDescription">Tuck the nearest player into your cloak. They're hidden and protected until they pop back out.</string>
+    <!-- Daddy Hagrid Options -->
+    <string name="SuperSquadOptionDaddyHagridHideCooldown">Hide Cooldown</string>
+    <string name="SuperSquadOptionDaddyHagridHideDuration">Hide Duration</string>
+    <string name="SuperSquadOptionDaddyHagridMaxUses">Max Uses</string>
     <!-- Invisibility Cloak - Universal Modifier -->
     <string name="SuperSquadModifierInvisibilityCloak">Invisibility Cloak</string>
     <string name="SuperSquadModifierInvisibilityCloakTabDescription">Throw on your \%b\%cloak\%/b\% to turn invisible for a short while.</string>

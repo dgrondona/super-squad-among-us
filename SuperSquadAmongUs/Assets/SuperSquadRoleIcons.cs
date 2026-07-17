@@ -20,6 +20,9 @@ public static class SuperSquadRoleIcons
     public static LoadableAsset<Sprite> Apparater { get; } = new LoadableResourceAsset($"{ShortPath}.RoleIcons.Apparater.png", 200);
     public static LoadableAsset<Sprite> InvisibleBoy { get; } = new LoadableResourceAsset($"{ShortPath}.RoleIcons.InvisibleBoy.png", 200);
 
+    // Daddy Hagrid has no dedicated icon yet - uses the generic Crewmate placeholder (see SuperSquadAssets).
+    public static LoadableAsset<Sprite> DaddyHagrid => SuperSquadAssets.CrewmatePlaceholderIcon;
+
     // Impostors
     public static LoadableAsset<Sprite> Witch { get; } = new LoadableResourceAsset($"{ShortPath}.RoleIcons.Witch.png", 200);
     public static LoadableAsset<Sprite> Godfather { get; } = new LoadableResourceAsset($"{ShortPath}.RoleIcons.Godfather.png", 200);

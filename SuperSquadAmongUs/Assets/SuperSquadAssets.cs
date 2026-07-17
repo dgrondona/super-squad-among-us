@@ -13,6 +13,8 @@ public static class SuperSquadAssets
     // Separate instances per usage since role icons and HUD buttons use different pixelsPerUnit conventions.
     public static LoadableAsset<Sprite> ImpostorPlaceholderIcon { get; } = new LoadableResourceAsset($"{ShortPath}.Placeholders.Impostor.png", 200);
     public static LoadableAsset<Sprite> NeutralPlaceholderIcon { get; } = new LoadableResourceAsset($"{ShortPath}.Placeholders.Neutral.png", 200);
+    public static LoadableAsset<Sprite> CrewmatePlaceholderIcon { get; } = new LoadableResourceAsset($"{ShortPath}.Placeholders.Crewmate.png", 200);
     public static LoadableAsset<Sprite> ImpostorPlaceholderButton { get; } = new LoadableResourceAsset($"{ShortPath}.Placeholders.Impostor.png");
     public static LoadableAsset<Sprite> NeutralPlaceholderButton { get; } = new LoadableResourceAsset($"{ShortPath}.Placeholders.Neutral.png");
+    public static LoadableAsset<Sprite> CrewmatePlaceholderButton { get; } = new LoadableResourceAsset($"{ShortPath}.Placeholders.Crewmate.png");
 }

@@ -36,6 +36,13 @@ follows the same shape:
   `Assets/` (`SuperSquadRoleIcons.cs` for role icons; `SuperSquadNeutAssets.cs` / `SuperSquadCrewAssets.cs`
   for buttons/banners) wrapping a `LoadableResourceAsset`. Anything shared across roles (e.g. the mod
   banner) goes in `Assets/SuperSquadAssets.cs`.
+- **No final art yet for a role/button?** Don't generate placeholder art. Point that role/button's
+  `Assets/` property at `SuperSquadAssets.ImpostorPlaceholderIcon`/`NeutralPlaceholderIcon` (role icons)
+  or `ImpostorPlaceholderButton`/`NeutralPlaceholderButton` (button sprites) instead — these wrap Town of
+  Us: Mira's own generic team icons (`Resources/Placeholders/{Impostor,Neutral}.png`, copied from
+  `reference/TOU-Mira/Images/Icons/`). Role icons and buttons use different `pixelsPerUnit` conventions
+  (200 vs. the 100 default), which is why there are separate icon/button properties wrapping the same
+  underlying image.
 - Locale strings live in `Resources/Locale/en_US.xml`, using the key prefixes `SuperSquadRole...` and
   `SuperSquadOption...`. Only `en_US.xml` needs the new keys — the other language files in that folder
   are optional translations and are not expected to have every key (missing keys fall back to the

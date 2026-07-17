@@ -1,6 +1,6 @@
 # Sniper
 
-<p align="center"><img src="../../SuperSquadAmongUs/Resources/RoleIcons/Sniper.png" width="128" alt="Sniper icon"></p>
+<p align="center"><img src="../../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="128" alt="Sniper icon (placeholder)"></p>
 
 <p align="center"><b>Team:</b> Impostor &nbsp;|&nbsp; <b>Alignment:</b> Impostor Killing</p>
 

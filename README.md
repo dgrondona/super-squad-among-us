@@ -42,15 +42,15 @@ Super Squad Among Us adds **13 custom roles** across Crewmate, Impostor, and Neu
   <a href="wiki/roles/Godfather.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Godfather.png" title="Godfather"/></a>
   <a href="wiki/roles/Mafioso.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Mafioso.png" title="Mafioso"/></a>
   <a href="wiki/roles/MafiaJanitor.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/MafiaJanitor.png" title="Mafia Janitor"/></a>
-  <a href="wiki/roles/Ninja.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Ninja.png" title="Ninja"/></a>
-  <a href="wiki/roles/Sniper.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Sniper.png" title="Sniper"/></a>
-  <a href="wiki/roles/Astral.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Astral.png" title="Astral"/></a>
+  <a href="wiki/roles/Ninja.md"><img width="10%" src="SuperSquadAmongUs/Resources/Placeholders/Impostor.png" title="Ninja"/></a>
+  <a href="wiki/roles/Sniper.md"><img width="10%" src="SuperSquadAmongUs/Resources/Placeholders/Impostor.png" title="Sniper"/></a>
+  <a href="wiki/roles/Astral.md"><img width="10%" src="SuperSquadAmongUs/Resources/Placeholders/Impostor.png" title="Astral"/></a>
   <a href="wiki/roles/Eraser.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Eraser.png" title="Eraser"/></a>
   <a href="wiki/roles/Witch.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Witch.png" title="Witch"/></a>
 </p>
 <p align="center">
   <b>Neutral</b><br/>
-  <a href="wiki/roles/Pelican.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Pelican.png" title="Pelican"/></a>
+  <a href="wiki/roles/Pelican.md"><img width="10%" src="SuperSquadAmongUs/Resources/Placeholders/Neutral.png" title="Pelican"/></a>
   <a href="wiki/roles/Sentinel.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Sentinel.png" title="Sentinel"/></a>
   <a href="wiki/roles/Vulture.md"><img width="10%" src="SuperSquadAmongUs/Resources/RoleIcons/Vulture.png" title="Vulture"/></a>
 </p>

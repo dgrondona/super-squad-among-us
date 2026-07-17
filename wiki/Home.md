@@ -27,9 +27,9 @@ For build/install instructions, see the [root README](../README.md).
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Godfather.png" width="40"> | [Godfather](roles/Godfather.md) | Killing | Kill all Crewmates. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Mafioso.png" width="40"> | [Mafioso](roles/Mafioso.md) | Killing | Work with the Mafia to kill the Crewmates. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/MafiaJanitor.png" width="40"> | [Mafia Janitor](roles/MafiaJanitor.md) | Support | Work with the Mafia by hiding dead bodies. |
-| <img src="../SuperSquadAmongUs/Resources/RoleIcons/Ninja.png" width="40"> | [Ninja](roles/Ninja.md) | Killing | Surprise and assassinate your foes. |
-| <img src="../SuperSquadAmongUs/Resources/RoleIcons/Sniper.png" width="40"> | [Sniper](roles/Sniper.md) | Killing | Shoot the crew with your sniper. |
-| <img src="../SuperSquadAmongUs/Resources/RoleIcons/Astral.png" width="40"> | [Astral](roles/Astral.md) | Concealing | Pass through walls with ease. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [Ninja](roles/Ninja.md) | Killing | Surprise and assassinate your foes. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [Sniper](roles/Sniper.md) | Killing | Shoot the crew with your sniper. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [Astral](roles/Astral.md) | Concealing | Pass through walls with ease. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Eraser.png" width="40"> | [Eraser](roles/Eraser.md) | Support | Mark players and strip them of their role — immediately or at the next meeting. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Witch.png" width="40"> | [Witch](roles/Witch.md) | Support | Cast a hex upon your foes. |
 
@@ -37,7 +37,7 @@ For build/install instructions, see the [root README](../README.md).
 
 | | Role | Alignment | Summary |
 |---|---|---|---|
-| <img src="../SuperSquadAmongUs/Resources/RoleIcons/Pelican.png" width="40"> | [Pelican](roles/Pelican.md) | Killing | You're soooo hungry. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Neutral.png" width="40"> | [Pelican](roles/Pelican.md) | Killing | You're soooo hungry. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Sentinel.png" width="40"> | [Sentinel](roles/Sentinel.md) | Killing | Eliminate those who stand in your path. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Vulture.png" width="40"> | [Vulture](roles/Vulture.md) | Evil | Eat corpses to win. |
 

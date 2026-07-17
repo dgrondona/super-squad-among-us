@@ -38,6 +38,6 @@ Design: ported from TheOtherRoles; see `docs/porting/README.md`.
 ## Not yet verified in-game / known follow-ups
 
 - Manual in-game verification needed, including a re-test of the trace scale/color fix and the smaller tracking arrow.
-- Role icon and ability sprite are placeholder art.
+- Role icon has no dedicated art yet — uses Town of Us: Mira's generic Impostor team icon (`Resources/Placeholders/Impostor.png`) as a stand-in; the old AI-generated icon was removed. Swap out when real art exists.
 - Mark and assassination sound effects are missing. TOR's `warlockCurse` (mark) and `witchSpell` sounds are extractable from the TOR sound bundle; see `docs/porting/README.md`.
 - Multi-target retargeting: test a scenario where the closest target changes mid-mark to confirm it clears as intended.

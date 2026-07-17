@@ -1,6 +1,6 @@
 # Pelican
 
-<p align="center"><img src="../../SuperSquadAmongUs/Resources/RoleIcons/Pelican.png" width="128" alt="Pelican icon"></p>
+<p align="center"><img src="../../SuperSquadAmongUs/Resources/Placeholders/Neutral.png" width="128" alt="Pelican icon (placeholder)"></p>
 
 <p align="center"><b>Team:</b> Neutral &nbsp;|&nbsp; <b>Alignment:</b> Neutral Killing</p>
 

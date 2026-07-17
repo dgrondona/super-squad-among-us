@@ -1,6 +1,6 @@
 # Astral
 
-<p align="center"><img src="../../SuperSquadAmongUs/Resources/RoleIcons/Astral.png" width="128" alt="Astral icon"></p>
+<p align="center"><img src="../../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="128" alt="Astral icon (placeholder)"></p>
 
 <p align="center"><b>Team:</b> Impostor &nbsp;|&nbsp; <b>Alignment:</b> Impostor Concealing</p>
 

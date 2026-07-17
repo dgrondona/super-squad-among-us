@@ -10,7 +10,9 @@ public static class SuperSquadNeutAssets
     public static LoadableAsset<Sprite> SentinelVentSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SentinelVentButton.png");
     public static LoadableAsset<Sprite> SentinelExplodeSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SentinelExplodeButton.png");
     public static LoadableAsset<Sprite> SentinelKillSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SentinelKillButton.png");
-    public static LoadableAsset<Sprite> PelicanDevourSprite { get; } = new LoadableResourceAsset($"{ShortPath}.DevourButton.png");
+    // No dedicated button art yet - uses the generic Neutral placeholder (see SuperSquadAssets)
+    // instead of the old AI-generated art.
+    public static LoadableAsset<Sprite> PelicanDevourSprite => SuperSquadAssets.NeutralPlaceholderButton;
     public static LoadableAsset<Sprite> VultureEatSprite { get; } = new LoadableResourceAsset($"{ShortPath}.VultureButton.png");
     public static LoadableAsset<Sprite> VultureArrowSprite { get; } = new LoadableResourceAsset($"{ShortPath}.VultureArrow.png", 200);
 }

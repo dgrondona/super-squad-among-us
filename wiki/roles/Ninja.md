@@ -1,6 +1,6 @@
 # Ninja
 
-<p align="center"><img src="../../SuperSquadAmongUs/Resources/RoleIcons/Ninja.png" width="128" alt="Ninja icon"></p>
+<p align="center"><img src="../../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="128" alt="Ninja icon (placeholder)"></p>
 
 <p align="center"><b>Team:</b> Impostor &nbsp;|&nbsp; <b>Alignment:</b> Impostor Killing</p>
 

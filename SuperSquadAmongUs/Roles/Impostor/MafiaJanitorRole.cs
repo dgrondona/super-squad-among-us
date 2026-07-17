@@ -52,7 +52,7 @@ public sealed class MafiaJanitorRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITow
 
     public CustomRoleConfiguration Configuration => new(this)
     {
-        Icon = SuperSquadRoleIcons.MafiaJanitor,
+        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         UseVanillaKillButton = false,
         CanUseVent = true,
         CanUseSabotage = true,

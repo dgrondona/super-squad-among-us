@@ -41,6 +41,19 @@ public sealed class NinjaMarkButton : TownOfUsKillRoleButton<NinjaRole, PlayerCo
     /// </summary>
     public PlayerControl? Marked { get; private set; }
 
+    /// <inheritdoc />
+    public override void CreateButton(Transform parent)
+    {
+        base.CreateButton(parent);
+
+        // The ability icon already shows the name (user request 2026-07-16) - the redundant text
+        // label underneath is hidden. Sprite/cooldown/click handling are untouched.
+        if (Button?.buttonLabelText != null)
+        {
+            Button.buttonLabelText.gameObject.SetActive(false);
+        }
+    }
+
     public override bool CanUse()
     {
         if (Marked == null)

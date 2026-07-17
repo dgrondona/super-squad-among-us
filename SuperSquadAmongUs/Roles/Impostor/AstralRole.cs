@@ -1,7 +1,6 @@
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Roles;
-using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Assets;
@@ -36,9 +35,9 @@ public sealed class AstralRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsR
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Form", "Astral"),
+                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Form", "Phase"),
                     TouLocale.GetParsed($"SuperSquadRole{LocaleKey}FormWikiDescription"),
-                    SuperSquadImpAssets.AstralFormSprite),
+                    TouCrewAssets.RewindSprite),
             };
         }
     }
@@ -50,7 +49,7 @@ public sealed class AstralRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsR
     public CustomRoleConfiguration Configuration => new(this)
     {
         CanUseVent = OptionGroupSingleton<AstralOptions>.Instance.CanVent,
-        Icon = SuperSquadRoleIcons.Astral,
+        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         IntroSound = TouAudio.PhantomIntroSound,
     };
 }

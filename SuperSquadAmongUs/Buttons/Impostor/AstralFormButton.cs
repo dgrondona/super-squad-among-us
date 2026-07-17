@@ -2,11 +2,11 @@ using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
 using MiraAPI.Utilities.Assets;
-using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
+using TownOfUs.Assets;
 using TownOfUs.Buttons;
 using TownOfUs.Modules.Localization;
 using UnityEngine;
@@ -15,7 +15,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 
 public sealed class AstralFormButton : TownOfUsRoleButton<AstralRole>
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleAstralForm", "Astral");
+    public override string Name => TouLocale.GetParsed("SuperSquadRoleAstralForm", "Phase");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<AstralOptions>.Instance.FormCooldown + MapCooldown, 5f, 120f);
@@ -26,7 +26,9 @@ public sealed class AstralFormButton : TownOfUsRoleButton<AstralRole>
         OptionGroupSingleton<AstralOptions>.Instance.FormDuration +
         OptionGroupSingleton<AstralOptions>.Instance.LingerDuration;
 
-    public override LoadableAsset<Sprite> Sprite => SuperSquadImpAssets.AstralFormSprite;
+    // Placeholder art swap (user request 2026-07-16): reuses TOU-Mira's TimeLord Rewind button sprite
+    // from its own compiled asset bundle until this role gets real button art.
+    public override LoadableAsset<Sprite> Sprite => TouCrewAssets.RewindSprite;
 
     public override bool CanUse()
     {

@@ -1,7 +1,6 @@
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Roles;
-using SuperSquadAmongUs.Assets;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
@@ -46,7 +45,7 @@ public sealed class GodfatherRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOf
 
     public CustomRoleConfiguration Configuration => new(this)
     {
-        Icon = SuperSquadRoleIcons.Godfather,
+        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         UseVanillaKillButton = true,
         CanUseVent = true,
         CanUseSabotage = true,

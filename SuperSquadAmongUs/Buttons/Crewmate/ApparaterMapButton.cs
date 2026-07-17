@@ -30,7 +30,7 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
     // nearest walkable floor around it instead of being rejected.
     private const float InRoomSnapDistance = 6f;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Apparate");
+    public override string Name => TouLocale.GetParsed("SuperSquadRoleApparaterTeleport", "Teleport");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Apparater;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<ApparaterOptions>.Instance.TeleportCooldown + MapCooldown, 5f, 120f);

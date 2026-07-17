@@ -38,21 +38,29 @@ public static class EraserEvents
         {
             var target = erased.Player;
             erased.ModifierComponent?.RemoveModifier(erased);
+            EraseRole(target);
+        }
+    }
 
-            // TOR technically "erases" dead players too, but there it's just static-list bookkeeping;
-            // for us a role change on a dead player would replace their ghost role with a living one,
-            // so the dead are skipped. TOR does NOT check the eraser's own state at resolution -
-            // marks fire even if the eraser died or was erased - and neither do we.
-            if (target == null || target.Data == null || target.Data.Disconnected || target.HasDied())
-            {
-                continue;
-            }
+    /// <summary>
+    /// Strips a player's modded role, turning them into a plain Crewmate. Shared by the meeting-exile
+    /// resolution above and by <see cref="EraserEraseButton"/>'s immediate-erase option.
+    /// </summary>
+    public static void EraseRole(PlayerControl? target)
+    {
+        // TOR technically "erases" dead players too, but there it's just static-list bookkeeping;
+        // for us a role change on a dead player would replace their ghost role with a living one,
+        // so the dead are skipped. TOR does NOT check the eraser's own state at resolution -
+        // marks fire even if the eraser died or was erased - and neither do we.
+        if (target == null || target.Data == null || target.Data.Disconnected || target.HasDied())
+        {
+            return;
+        }
 
-            // Role changes are RPCs - send exactly once, from the host (TOR's authority model).
-            if (AmongUsClient.Instance && AmongUsClient.Instance.AmHost)
-            {
-                target.RpcChangeRole((ushort)RoleTypes.Crewmate);
-            }
+        // Role changes are RPCs - send exactly once, from the host (TOR's authority model).
+        if (AmongUsClient.Instance && AmongUsClient.Instance.AmHost)
+        {
+            target.RpcChangeRole((ushort)RoleTypes.Crewmate);
         }
     }
 }

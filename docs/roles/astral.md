@@ -35,5 +35,5 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 - Re-test crew-view invisibility from a genuine crewmate client (see Playtest history).
 - Re-test killing mid-phase: confirm wall-passing now survives a kill until the phase's own timeout, and confirm `DieWithoutKill` correctly triggers a self-death when no kill happens (and correctly does NOT trigger one when a kill does happen).
-- Role icon and ability sprite are placeholder art — swap out when real art exists.
+- Role icon has no dedicated art yet — uses Town of Us: Mira's generic Impostor team icon (`Resources/Placeholders/Impostor.png`) as a stand-in; the old AI-generated icon was removed. Swap out when real art exists.
 - If the astral dies mid-phase inside a wall (e.g. `DieWithoutKill` triggers while still off any snap-back path — shouldn't happen since snap-back runs first, but worth double-checking), the body may be unreachable/unreportable.

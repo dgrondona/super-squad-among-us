@@ -12,7 +12,9 @@ public static class SuperSquadImpAssets
     public static LoadableAsset<Sprite> NinjaTraceSprite { get; } = new LoadableResourceAsset($"{ShortPath}.NinjaTraceW.png", 225);
     public static LoadableAsset<Sprite> WitchHexSprite { get; } = new LoadableResourceAsset($"{ShortPath}.HexButton.png");
     public static LoadableAsset<Sprite> WitchHexedOverlaySprite { get; } = new LoadableResourceAsset($"{ShortPath}.SpellButtonMeeting.png", 225);
-    public static LoadableAsset<Sprite> SniperSnipeSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SniperButton.png");
+    // No dedicated button art yet - uses the generic Impostor placeholder (see SuperSquadAssets)
+    // instead of the old AI-generated art.
+    public static LoadableAsset<Sprite> SniperSnipeSprite => SuperSquadAssets.ImpostorPlaceholderButton;
     public static LoadableAsset<Sprite> SniperGuideSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SniperGuide.png");
     public static LoadableAsset<Sprite> MafiaJanitorCleanSprite { get; } = new LoadableResourceAsset($"{ShortPath}.MafiaJanitorCleanButton.png");
     public static LoadableAsset<Sprite> EraserSprite { get; } = new LoadableResourceAsset($"{ShortPath}.EraserButton.png");

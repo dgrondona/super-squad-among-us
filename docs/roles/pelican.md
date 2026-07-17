@@ -33,7 +33,7 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 ## Not yet verified in-game / known follow-ups
 
 - Manual in-game verification needed — untestable solo (needs a second player to devour). Highest-value checks: camera-follow feel while devoured, meeting digestion showing the victims as dead in the vote list, release position after killing the Pelican, and a devoured player being unable to report/use anything.
-- Role icon and ability sprite are placeholder art.
+- Role icon and the Devour button sprite have no dedicated art yet — both use Town of Us: Mira's generic Neutral team icon (`Resources/Placeholders/Neutral.png`) as a stand-in; the old AI-generated art was removed. Swap out when real art exists.
 - Devoured players' camera-follow behavior needs verification — especially edge cases like the Pelican entering a vent or using a ladder.
 - Soft-lock prevention via win-condition logic should be confirmed by testing a round where the Pelican devours multiple players.
 - Pelican disconnect now releases the stomach in place (`PlayerLeaveEventHandler`) — verify in a real lobby.

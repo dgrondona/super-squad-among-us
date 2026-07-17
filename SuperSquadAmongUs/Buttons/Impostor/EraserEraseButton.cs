@@ -3,6 +3,7 @@ using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
+using SuperSquadAmongUs.Events;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
@@ -15,9 +16,11 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Buttons.Impostor;
 
 /// <summary>
-/// The Eraser's mark (TOR): target a player to strip their modded role at the next meeting's exile
-/// screen. Every use permanently adds 10s to the cooldown (TOR's <c>MaxTimer += 10</c>) - the
-/// penalty persists across meetings and only resets at game start (see EraserEvents).
+/// The Eraser's mark (TOR): target a player to strip their modded role, either immediately or at the
+/// next meeting's exile screen depending on <see cref="EraserOptions.EraseImmediately"/> (defaults to
+/// the next-meeting TOR behavior). Every use permanently adds 10s to the cooldown (TOR's
+/// <c>MaxTimer += 10</c>) - the penalty persists across meetings and only resets at game start (see
+/// EraserEvents). Limited to <see cref="EraserOptions.MaxUses"/> uses.
 /// </summary>
 public sealed class EraserEraseButton : TownOfUsRoleButton<EraserRole, PlayerControl>
 {
@@ -29,6 +32,7 @@ public sealed class EraserEraseButton : TownOfUsRoleButton<EraserRole, PlayerCon
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(
         OptionGroupSingleton<EraserOptions>.Instance.EraseCooldown + CurrentCooldownAddition + MapCooldown, 5f, 240f);
+    public override int MaxUses => (int)OptionGroupSingleton<EraserOptions>.Instance.MaxUses;
     public override LoadableAsset<Sprite> Sprite => SuperSquadImpAssets.EraserSprite;
 
     /// <summary>
@@ -64,7 +68,14 @@ public sealed class EraserEraseButton : TownOfUsRoleButton<EraserRole, PlayerCon
             return;
         }
 
-        Target.RpcAddModifier<FutureErasedModifier>(PlayerControl.LocalPlayer);
+        if (OptionGroupSingleton<EraserOptions>.Instance.EraseImmediately)
+        {
+            EraserEvents.EraseRole(Target);
+        }
+        else
+        {
+            Target.RpcAddModifier<FutureErasedModifier>(PlayerControl.LocalPlayer);
+        }
 
         CurrentCooldownAddition += CooldownEscalation;
         SetTimer(Cooldown);

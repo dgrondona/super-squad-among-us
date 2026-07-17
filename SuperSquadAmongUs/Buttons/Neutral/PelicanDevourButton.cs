@@ -33,8 +33,9 @@ public sealed class PelicanDevourButton : TownOfUsRoleButton<PelicanRole, Player
 
     public override PlayerControl? GetTarget()
     {
-        // The Pelican is a neutral killer: anyone is food, impostors included.
+        // The Pelican is a neutral killer: anyone is food, impostors included - but not someone
+        // already carried (devoured or hidden in a Hagrid's cloak).
         return PlayerControl.LocalPlayer.GetClosestLivingPlayer(true, Distance, false,
-            x => !x.HasModifier<DevouredModifier>());
+            x => !x.HasModifier<CarriedModifier>());
     }
 }

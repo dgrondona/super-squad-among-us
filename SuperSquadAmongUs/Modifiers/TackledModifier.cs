@@ -9,7 +9,7 @@ namespace SuperSquadAmongUs.Modifiers;
 /// The stun applied by a slide tackle (see <see cref="Buttons.Modifiers.SlideTackleButton"/>): the
 /// victim can't move, use abilities, or report for the configured duration, but CAN still be
 /// interacted with (a downed player is easy prey). Synced via RpcAddModifier; the timer runs on every
-/// client and the movement freeze is owner-side only, like <see cref="DevouredModifier"/>'s.
+/// client and the movement freeze is owner-side only, like <see cref="CarriedModifier"/>'s.
 /// </summary>
 public sealed class TackledModifier : DisabledModifier
 {

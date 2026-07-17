@@ -175,6 +175,19 @@
     <string name="SuperSquadOptionDaddyHagridHideCooldown">Hide Cooldown</string>
     <string name="SuperSquadOptionDaddyHagridHideDuration">Hide Duration</string>
     <string name="SuperSquadOptionDaddyHagridMaxUses">Max Uses</string>
+    <!-- Elusive - Crewmate Protective -->
+    <string name="SuperSquadRoleElusive">Elusive</string>
+    <string name="SuperSquadRoleElusiveIntroBlurb">Send your attackers somewhere far, far away.</string>
+    <string name="SuperSquadRoleElusiveTabDescription">Raise your \%b\%shield\%/b\%.\%nl\%Anyone who interacts with you while it's up is teleported across the map.</string>
+    <!-- Elusive Wiki -->
+    <string name="SuperSquadRoleElusiveWikiDescription">The Elusive is a Crewmate Protective role with a shield ability. While the shield is up, anyone who interacts with the Elusive - a kill attempt or a targeted ability - is blocked and instantly teleported to a random spot on the map. Attackers can't tell the shield is up until it's too late.</string>
+    <string name="SuperSquadRoleElusiveShield">Shield</string>
+    <string name="SuperSquadRoleElusiveShielding">Shielding</string>
+    <string name="SuperSquadRoleElusiveShieldWikiDescription">Raise a shield for a short duration. Anyone who interacts with you while shielded is teleported to a random spot on the map.</string>
+    <!-- Elusive Options -->
+    <string name="SuperSquadOptionElusiveShieldCooldown">Shield Cooldown</string>
+    <string name="SuperSquadOptionElusiveShieldDuration">Shield Duration</string>
+    <string name="SuperSquadOptionElusiveMaxShields">Max Shields</string>
     <!-- Invisibility Cloak - Universal Modifier -->
     <string name="SuperSquadModifierInvisibilityCloak">Invisibility Cloak</string>
     <string name="SuperSquadModifierInvisibilityCloakTabDescription">Throw on your \%b\%cloak\%/b\% to turn invisible for a short while.</string>

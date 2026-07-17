@@ -14,6 +14,12 @@ internal static class WalkableRegionSolver
     private const float MaxCellSize = 0.25f;
     private const int MaxExpandedCells = 8000;
     private const int AnchorRingSamples = 16;
+    private const float FallbackProbeRadius = 0.2f;
+
+    // Random-destination search: how many raw targets to try, and how far from a spawn center a raw
+    // target may land (25 units spans every map from any of its spawn rings).
+    private const int RandomAttempts = 3;
+    private const float RandomTargetMaxRadius = 25f;
 
     // Landing needs extra clearance beyond the body's radius; traversal deliberately doesn't - see docs.
     private const float WallPadding = 0.1f;
@@ -138,6 +144,63 @@ internal static class WalkableRegionSolver
         }
 
         return bestCell != originCell;
+    }
+
+    /// <summary>
+    /// Finds a reachable point at a random spot on the map by aiming <see cref="TryFindReachablePoint"/>
+    /// at random targets scattered around the map's spawn centers. Prefers a point at least
+    /// <paramref name="minDistance"/> from <paramref name="origin"/>; falls back to the farthest
+    /// candidate found. Pure randomness is fine here - exactly one client computes the destination and
+    /// syncs it with a snap.
+    /// </summary>
+    /// <returns><see langword="true"/> if any reachable point other than <paramref name="origin"/> was found.</returns>
+    public static bool TryFindRandomReachablePoint(Vector2 origin, float probeRadius, float minDistance, out Vector2 result)
+    {
+        result = origin;
+        var ship = ShipStatus.Instance;
+        if (!ship)
+        {
+            return false;
+        }
+
+        var centers = new[] { ship.MeetingSpawnCenter, ship.InitialSpawnCenter, ship.MeetingSpawnCenter2 };
+        var found = false;
+        var bestSqrDist = -1f;
+        var minSqrDist = minDistance * minDistance;
+
+        for (var attempt = 0; attempt < RandomAttempts; attempt++)
+        {
+            var center = centers[UnityEngine.Random.Range(0, centers.Length)];
+            var rawTarget = center + (UnityEngine.Random.insideUnitCircle * RandomTargetMaxRadius);
+
+            if (!TryFindReachablePoint(origin, rawTarget, probeRadius, out var candidate))
+            {
+                continue;
+            }
+
+            var sqrDist = (candidate - origin).sqrMagnitude;
+            if (sqrDist >= minSqrDist)
+            {
+                result = candidate;
+                return true;
+            }
+
+            if (sqrDist > bestSqrDist)
+            {
+                bestSqrDist = sqrDist;
+                result = candidate;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>Gets the probe radius matching a player's collider (their body's half-extents), for feeding the solver.</summary>
+    public static float GetProbeRadius(PlayerControl player)
+    {
+        var collider = player.Collider;
+        return collider ? Mathf.Max(collider.bounds.extents.x, collider.bounds.extents.y) : FallbackProbeRadius;
     }
 
     /// <summary>Finds a clear point on the map's spawn ring(s) to use as a position-independent search seed.</summary>

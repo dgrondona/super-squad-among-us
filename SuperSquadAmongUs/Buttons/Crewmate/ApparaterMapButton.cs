@@ -14,8 +14,6 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
 {
     // Used only if the local player's collider is somehow unavailable when checking.
-    private const float FallbackProbeRadius = 0.2f;
-
     // Fallback-only snap cap, used when the minimap texture can't be sampled (see HandleMapClick):
     // beyond this, a click's nearest reachable point is treated as "not actually on the map".
     private const float MaxSnapDistance = 1.5f;
@@ -145,7 +143,7 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         var playerControl = PlayerControl.LocalPlayer;
         var rawTarget = GetRawClickWorldPosition(clickWorldPoint);
         var origin = playerControl.GetTruePosition();
-        var probeRadius = GetPlayerProbeRadius();
+        var probeRadius = WalkableRegionSolver.GetProbeRadius(playerControl);
 
         if (!WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, out var target))
         {
@@ -176,9 +174,4 @@ public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
         return (Vector2)(localPoint * ShipStatus.Instance.MapScale);
     }
 
-    private static float GetPlayerProbeRadius()
-    {
-        var collider = PlayerControl.LocalPlayer.Collider;
-        return collider ? Mathf.Max(collider.bounds.extents.x, collider.bounds.extents.y) : FallbackProbeRadius;
-    }
 }

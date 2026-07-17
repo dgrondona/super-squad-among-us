@@ -11,6 +11,7 @@ public static class SuperSquadColors
     public static Color Apparater => TownOfUsColors.UseBasic ? Palette.CrewmateBlue : new Color32(46, 204, 113, 255);
     public static Color InvisibleBoy => TownOfUsColors.UseBasic ? Palette.CrewmateBlue : new Color32(190, 220, 245, 255);
     public static Color DaddyHagrid => TownOfUsColors.UseBasic ? Palette.CrewmateBlue : new Color32(139, 94, 60, 255);
+    public static Color Elusive => TownOfUsColors.UseBasic ? Palette.CrewmateBlue : new Color32(72, 209, 204, 255);
     // Neutral Colors
     public static Color Sentinel => new Color32(143, 162, 141, 255);
     public static Color Pelican => new Color32(106, 21, 171, 255);

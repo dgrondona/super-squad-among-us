@@ -7,7 +7,6 @@ public static class SuperSquadImpAssets
 {
     // THIS FILE SHOULD ONLY HOLD BUTTONS AND ROLE BANNERS, EVERYTHING ELSE BELONGS IN SuperSquadAssets.cs
     private const string ShortPath = "SuperSquadAmongUs.Resources.ImpButtons";
-    public static LoadableAsset<Sprite> AstralFormSprite { get; } = new LoadableResourceAsset($"{ShortPath}.AstralButton.png");
     public static LoadableAsset<Sprite> NinjaMarkSprite { get; } = new LoadableResourceAsset($"{ShortPath}.NinjaMarkButton.png");
     public static LoadableAsset<Sprite> NinjaAssassinateSprite { get; } = new LoadableResourceAsset($"{ShortPath}.NinjaAssassinateButton.png");
     public static LoadableAsset<Sprite> NinjaTraceSprite { get; } = new LoadableResourceAsset($"{ShortPath}.NinjaTraceW.png", 225);

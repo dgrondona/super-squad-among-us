@@ -12,9 +12,8 @@ using TownOfUs.Utilities;
 namespace SuperSquadAmongUs.Events;
 
 /// <summary>
-/// Resolves the Pelican's stomach contents. Two rules (user design, deliberately different from ATR):
-/// a meeting digests everyone currently devoured (they die, no bodies), and a Pelican killed mid-round
-/// releases everyone alive from its stomach at the spot it died.
+/// Resolves the Pelican's stomach contents. A meeting digests everyone currently devoured (they die,
+/// no bodies), and a Pelican killed mid-round releases everyone alive from its stomach at the spot it died.
 /// </summary>
 public static class PelicanEvents
 {

@@ -12,6 +12,8 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-mafia.md`.
 
 **Instant removal.** Unlike TOU-Mira's Janitor, which has a configurable clean delay and use limit per meeting, the Mafia Janitor cleans instantly with no delay or limit. Bodies are gone immediately, leaving no corpse report opportunity.
 
+**Pet removal.** `SuperSquadBodies.DestroyBodies` mirrors TOU-Mira's own Janitor/Chef clean behavior: if the host's Vanilla Tweaks options have "Remove Pets Upon Janitor/Chef Clean" on and pet visibility set to Always Visible, the cleaned player's pet is removed along with the body (see `docs/il2cpp-gotchas.md` for why this isn't just a direct call into TOU-Mira's own method).
+
 **No kill button.** Configuration sets `UseVanillaKillButton = false`, so the Mafia Janitor relies entirely on the clean button. They are a support role, not a killer.
 
 **Mafia labels.** Every frame, `MafiaLabelsPatch` appends "(J)" to the Mafia Janitor's name, visible only to other mafia members. Dead impostors lose the tag — a deviation from TOR where dead mafia stay labeled.

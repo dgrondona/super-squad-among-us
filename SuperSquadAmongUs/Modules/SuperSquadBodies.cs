@@ -1,6 +1,9 @@
+using MiraAPI.GameOptions;
 using Reactor.Networking.Attributes;
 using Reactor.Networking.Rpc;
 using SuperSquadAmongUs.Roles.Neutral;
+using TownOfUs.Options;
+using TownOfUs.Utilities;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Modules;
@@ -44,6 +47,20 @@ public static class SuperSquadBodies
 
     private static void DestroyBodies(byte parentId)
     {
+        // Same pet-hiding rule TOU-Mira's own Janitor/Chef clean uses (Extensions.CoClean), reimplemented
+        // here since that method is body-owned and private: only strip the pet if the host both enabled
+        // "Remove Pets Upon Janitor/Chef Clean" and set pet visibility to Always Visible (the option is
+        // moot under the other visibility modes).
+        var petOptions = OptionGroupSingleton<VanillaTweakOptions>.Instance;
+        if (petOptions.HidePetsOnBodyRemove.Value && petOptions.ShowPetsMode.Value == (int)PetVisiblity.AlwaysVisible)
+        {
+            var player = MiscUtils.PlayerById(parentId);
+            if (player != null && !player.AmOwner)
+            {
+                MiscUtils.RemovePet(player);
+            }
+        }
+
         foreach (var body in UnityEngine.Object.FindObjectsOfType<DeadBody>())
         {
             if (body.ParentId == parentId)

@@ -119,6 +119,19 @@ radius mechanism, but the actual wall-occlusion overlay is `HudManager.ShadowQua
 TOU-Mira source). This is a good lesson: decompiled metadata tells you what exists and its type, but
 not which mechanism does what at runtime — cross-check against readable mod source when possible.
 
+## `reference/TOU-Mira` can be ahead of the pinned `TownOfUsMira` package
+
+The reference checkout is a live source tree; the package this addon actually compiles against is
+whatever version is pinned in `AmongUs.props` (currently `1.5.0-beta.1`), which can lag behind it. A
+member that exists in `reference/TOU-Mira` source may not exist yet in the compiled DLL, and reference
+source can't stand in for that mismatch. Confirmed case: `VanillaTweakOptions.PetVisibilityUponDeath`
+and the `PetHidden`-enum overload of `MiscUtils.RemovePet` exist in reference source but not in
+1.5.0-beta.1 — the actual pinned API is a plain `HidePetsOnBodyRemove` bool option, checked alongside
+`ShowPetsMode == PetVisiblity.AlwaysVisible`, and `RemovePet(PlayerControl)` takes no second argument
+(see `SuperSquadBodies.DestroyBodies`). When a reference-source signature doesn't compile, decompile
+the actual pinned DLL to check first (`~/.nuget/packages/townofusmira/<version>/lib/net6.0/TownOfUsMira.dll`,
+same `ilspycmd -t <TypeName> <path>` recipe as above) before assuming the reference source is wrong.
+
 ## `Camera.main` can be transiently null — this codebase already defends against it, in several places
 
 `Camera.main` does a tag-based scene lookup every call, not a cached reference, and TOU-Mira's own

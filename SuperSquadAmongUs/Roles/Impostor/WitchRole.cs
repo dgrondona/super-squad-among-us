@@ -50,7 +50,6 @@ public sealed class WitchRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsRo
     public CustomRoleConfiguration Configuration => new(this)
     {
         CanUseVent = OptionGroupSingleton<WitchOptions>.Instance.CanVent,
-        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         IntroSound = TouAudio.PhantomIntroSound,
     };
 }

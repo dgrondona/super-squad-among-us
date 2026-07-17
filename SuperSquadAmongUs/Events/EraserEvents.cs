@@ -13,8 +13,8 @@ namespace SuperSquadAmongUs.Events;
 /// <summary>
 /// Resolves the Eraser's marks at the meeting's exile screen (TOR's ExileControllerPatch hook):
 /// every marked player's modded role is stripped - they become a plain vanilla Crewmate, even a
-/// former impostor or neutral (TOR-faithful, user decision 2026-07-16). Modifiers are deliberately
-/// NOT cleared (TOR keeps Lovers/Mini/etc. through an erase). No notification is shown.
+/// former impostor or neutral. Modifiers are deliberately NOT cleared (TOR keeps Lovers/Mini/etc.
+/// through an erase). No notification is shown.
 /// </summary>
 public static class EraserEvents
 {

@@ -26,8 +26,7 @@ public sealed class AstralFormButton : TownOfUsRoleButton<AstralRole>
         OptionGroupSingleton<AstralOptions>.Instance.FormDuration +
         OptionGroupSingleton<AstralOptions>.Instance.LingerDuration;
 
-    // Placeholder art swap (user request 2026-07-16): reuses TOU-Mira's TimeLord Rewind button sprite
-    // from its own compiled asset bundle until this role gets real button art.
+    // Reuses TOU-Mira's TimeLord Rewind button sprite until this role gets real button art.
     public override LoadableAsset<Sprite> Sprite => TouCrewAssets.RewindSprite;
 
     public override bool CanUse()

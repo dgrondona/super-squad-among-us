@@ -16,6 +16,8 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-eraser-vulture.md`.
 
 **Dead bodies only.** The Vulture can consume player corpses, not vanilla sabotage debris or other game objects. Bodies cleaned by TOU-Mira's standalone Janitor are gone before the Vulture can eat them, so they don't count toward the threshold — known gap.
 
+**Pet removal.** Eating a body removes the eaten player's pet too, same rule and same shared code path as the Mafia Janitor's clean — see `docs/roles/mafia-janitor.md`.
+
 **Win condition is frame-checked.** TOU-Mira's `NeutralRoleWinCondition` polls every active role's `WinConditionMet()` every frame. When the Vulture's returns true, the neutral win-condition triggers immediately, ending the game. No meeting required.
 
 ## Design decisions

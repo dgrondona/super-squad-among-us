@@ -45,7 +45,6 @@ public sealed class MafiosoRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUs
 
     public CustomRoleConfiguration Configuration => new(this)
     {
-        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         UseVanillaKillButton = true,
         CanUseVent = true,
         CanUseSabotage = true,

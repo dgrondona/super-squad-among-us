@@ -19,16 +19,12 @@ using UnityEngine.EventSystems;
 namespace SuperSquadAmongUs.Buttons.Impostor;
 
 /// <summary>
-/// The Sniper's shot (user design): press the button to shoulder the rifle, then click anywhere in the
-/// world within the aim window. A piercing bullet flies from the sniper's body through the clicked
-/// point, through walls, killing everyone on the line. While aiming the sniper is rooted in place
-/// (Ambusher-style freeze) and sees through walls (wall shadows disabled, TOU-Mira's MedSpirit/
-/// Spectator pattern); both revert when the shot fires, the window times out, or the aim is cancelled
-/// by death/meeting. No projectile or aim guide is rendered (user decision 2026-07-16; the visual
-/// machinery lives on in <see cref="SniperShots"/> for future roles). Aiming and firing run per
-/// rendered frame via <see cref="Patches.SniperAimPatch"/> - the button's own FixedUpdate runs on the
-/// fixed tick and drops mouse clicks (same pitfall as the Apparater's map click, see
-/// docs/roles/apparater.md).
+/// Press to aim; a click anywhere in the aim window fires a piercing shot from the sniper's body
+/// through the click point, through walls and players. While aiming, the sniper is frozen in place and
+/// sees through walls (shadows disabled). No projectile/aim guide is rendered - the visual machinery
+/// survives in <see cref="SniperShots"/> for future use. Aiming and firing run per rendered frame via
+/// <see cref="Patches.SniperAimPatch"/>, not this button's FixedUpdate (fixed tick drops clicks - see
+/// docs/il2cpp-gotchas.md).
 /// </summary>
 public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
 {
@@ -46,19 +42,6 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<SniperOptions>.Instance.SnipeCooldown + MapCooldown, 5f, 120f);
     public override float EffectDuration => OptionGroupSingleton<SniperOptions>.Instance.AimWindow;
     public override LoadableAsset<Sprite> Sprite => SuperSquadImpAssets.SniperSnipeSprite;
-
-    /// <inheritdoc />
-    public override void CreateButton(Transform parent)
-    {
-        base.CreateButton(parent);
-
-        // The ability icon already shows the name (user request 2026-07-16) - the redundant text
-        // label underneath is hidden. Sprite/cooldown/click handling are untouched.
-        if (Button?.buttonLabelText != null)
-        {
-            Button.buttonLabelText.gameObject.SetActive(false);
-        }
-    }
 
     public override bool CanUse()
     {

@@ -50,7 +50,6 @@ public sealed class SniperRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsR
     public CustomRoleConfiguration Configuration => new(this)
     {
         CanUseVent = OptionGroupSingleton<SniperOptions>.Instance.CanVent,
-        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         IntroSound = TouAudio.PhantomIntroSound,
     };
 }

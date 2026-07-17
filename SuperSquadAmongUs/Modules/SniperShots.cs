@@ -12,12 +12,10 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Modules;
 
 /// <summary>
-/// The Sniper's bullet: hit math, plus a travel visual the Sniper itself no longer uses (user decision
-/// 2026-07-16: the Sniper's shot renders nothing). The shot is an infinite piercing line from the
-/// sniper's body through the clicked point - it goes through walls and kills everyone within
-/// <see cref="HitHalfWidth"/> of the line (user design; ATR's closest-target-only cone is not used).
-/// <see cref="RpcShowShot"/>/<see cref="ShowShotLocally"/> are kept as reusable machinery for a future
-/// role that copies this shot logic but wants a visible projectile.
+/// Hit math for the Sniper's piercing shot (an infinite line through the sniper's body and clicked
+/// point) and unused travel visual machinery. The shot kills everyone within <see cref="HitHalfWidth"/>
+/// of the line and passes through walls. <see cref="RpcShowShot"/>/<see cref="ShowShotLocally"/> are
+/// kept for a future role that wants a visible projectile.
 /// </summary>
 public static class SniperShots
 {

@@ -32,8 +32,6 @@ public sealed class MafiaJanitorCleanButton : TownOfUsRoleButton<MafiaJanitorRol
     {
         base.CreateButton(parent);
 
-        // The ability icon already shows the name (user request 2026-07-16) - the redundant text
-        // label underneath is hidden. Sprite/cooldown/click handling are untouched.
         if (Button?.buttonLabelText != null)
         {
             Button.buttonLabelText.gameObject.SetActive(false);

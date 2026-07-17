@@ -31,6 +31,17 @@ public sealed class VultureEatButton : TownOfUsRoleButton<VultureRole, DeadBody>
         OptionGroupSingleton<VultureOptions>.Instance.EatCooldown + MapCooldown, 5f, 120f);
     public override LoadableAsset<Sprite> Sprite => SuperSquadNeutAssets.VultureEatSprite;
 
+    /// <inheritdoc />
+    public override void CreateButton(Transform parent)
+    {
+        base.CreateButton(parent);
+
+        if (Button?.buttonLabelText != null)
+        {
+            Button.buttonLabelText.gameObject.SetActive(false);
+        }
+    }
+
     protected override void OnClick()
     {
         if (Target == null)

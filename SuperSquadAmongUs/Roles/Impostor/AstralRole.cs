@@ -49,7 +49,6 @@ public sealed class AstralRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsR
     public CustomRoleConfiguration Configuration => new(this)
     {
         CanUseVent = OptionGroupSingleton<AstralOptions>.Instance.CanVent,
-        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         IntroSound = TouAudio.PhantomIntroSound,
     };
 }

@@ -53,7 +53,6 @@ public sealed class VultureRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsR
     {
         CanUseVent = OptionGroupSingleton<VultureOptions>.Instance.CanVent,
         IntroSound = TouAudio.GlitchSound,
-        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         GhostRole = (RoleTypes)RoleId.Get<NeutralGhostRole>(),
     };
 

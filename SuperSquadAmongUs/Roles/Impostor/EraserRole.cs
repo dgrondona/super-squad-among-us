@@ -52,7 +52,6 @@ public sealed class EraserRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsR
 
     public CustomRoleConfiguration Configuration => new(this)
     {
-        // Cover icon intentionally unset (user request 2026-07-16) until real role art exists.
         UseVanillaKillButton = true,
         CanUseVent = true,
         CanUseSabotage = true,

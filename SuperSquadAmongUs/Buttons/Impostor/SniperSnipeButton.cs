@@ -21,17 +21,24 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// <summary>
 /// The Sniper's shot (user design): press the button to shoulder the rifle, then click anywhere in the
 /// world within the aim window. A piercing bullet flies from the sniper's body through the clicked
-/// point, through walls, killing everyone on the line. There is no aim assist while deciding where to
-/// click - the projectile visual only appears at the moment of firing (see <see cref="Fire"/> and
-/// <see cref="SniperShots.ShowShotLocally"/>). Aiming and firing run per rendered frame via
-/// <see cref="Patches.SniperAimPatch"/> - the button's own FixedUpdate runs on the fixed tick and
-/// drops mouse clicks (same pitfall as the Apparater's map click, see docs/roles/apparater.md).
+/// point, through walls, killing everyone on the line. While aiming the sniper is rooted in place
+/// (Ambusher-style freeze) and sees through walls (wall shadows disabled, TOU-Mira's MedSpirit/
+/// Spectator pattern); both revert when the shot fires, the window times out, or the aim is cancelled
+/// by death/meeting. No projectile or aim guide is rendered (user decision 2026-07-16; the visual
+/// machinery lives on in <see cref="SniperShots"/> for future roles). Aiming and firing run per
+/// rendered frame via <see cref="Patches.SniperAimPatch"/> - the button's own FixedUpdate runs on the
+/// fixed tick and drops mouse clicks (same pitfall as the Apparater's map click, see
+/// docs/roles/apparater.md).
 /// </summary>
 public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
 {
     // The frame the aim window was armed, so the button-press click can't also fire the shot
     // (HUD buttons are collider-based PassiveButtons, invisible to EventSystem UI checks).
     private int armedFrame;
+
+    // Whether the freeze + wall-vision aim state is currently applied, so EndAim is idempotent
+    // (it can be reached from Fire, OnEffectEnd, and the FixedUpdate cancel path).
+    private bool aimLockActive;
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleSniperSnipe", "Snipe");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
@@ -53,6 +60,7 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
     protected override void OnClick()
     {
         armedFrame = Time.frameCount;
+        BeginAim();
     }
 
     protected override void FixedUpdate(PlayerControl playerControl)
@@ -64,7 +72,15 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
         {
             EffectActive = false;
             SetTimer(Cooldown);
+            EndAim();
         }
+    }
+
+    public override void OnEffectEnd()
+    {
+        // Natural aim-window timeout without a shot. Fire()'s own path already ran EndAim by the
+        // time the framework gets here - EndAim self-guards, so calling it again is a no-op.
+        EndAim();
     }
 
     /// <summary>
@@ -79,12 +95,45 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
             return;
         }
 
-        if (Time.frameCount == armedFrame || !Input.GetMouseButtonDown(0))
+        // Self-heal the aim state every rendered frame (house doctrine, see docs/il2cpp-gotchas.md):
+        // vanilla animations flip moveable back on, and other patches (zoom, death handling) touch
+        // ShadowQuad on their own schedule.
+        if (aimLockActive)
+        {
+            sniper.moveable = false;
+            if (HudManager.Instance.ShadowQuad.gameObject.activeSelf)
+            {
+                HudManager.Instance.ShadowQuad.gameObject.SetActive(false);
+            }
+        }
+
+        if (!Input.GetMouseButtonDown(0))
         {
             return;
         }
 
-        if (IsClickOnHud() || (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen))
+        // A click happened during an active aim window - from here on every rejection is logged, so
+        // a playtest "clicking did nothing" report can be diagnosed from the BepInEx log
+        // (BepInEx/LogOutput.log) instead of guessed at.
+        if (Time.frameCount == armedFrame)
+        {
+            Info("Sniper: click ignored - same frame the aim window was armed");
+            return;
+        }
+
+        if (HudManager.Instance.Chat.IsOpenOrOpening)
+        {
+            Info("Sniper: click ignored - chat is open");
+            return;
+        }
+
+        if (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen)
+        {
+            Info("Sniper: click ignored - map is open");
+            return;
+        }
+
+        if (IsClickOnHud())
         {
             return;
         }
@@ -93,64 +142,80 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
         // disabled mid-window must also block the trigger pull.
         if (sniper.HasModifier<GlitchHackedModifier>() || sniper.HasModifier<DisabledModifier>())
         {
+            Info("Sniper: click ignored - sniper is hacked or disabled");
             return;
         }
 
-        // Camera.main does a tag lookup every call and can be transiently null (TOU-Mira's own
-        // Sentry surveillance click-handler guards the exact same call for the same reason). Bailing
-        // out here leaves EffectActive true, so the aim window silently stays open for the next
-        // click - this is what "clicking sometimes does nothing" looked like: an unguarded
-        // Camera.main.ScreenToWorldPoint would throw mid-Fire(), aborting before EffectActive was
-        // ever set false, so the very next click a moment later (once Camera.main was valid again)
-        // would just work, with no pattern visible from the player's side.
+        // Camera.main does a tag lookup every call and can be transiently null (TOU-Mira guards the
+        // same call in its own click handlers). Bailing leaves EffectActive true, so the aim window
+        // stays open and the next click simply retries.
         if (Camera.main == null)
         {
+            Info("Sniper: click ignored - Camera.main unavailable this frame");
             return;
         }
 
         Fire(sniper);
     }
 
-    // Whether the current click landed on a HUD element rather than the game world. Among Us HUD
+    // Whether the current click landed on a HUD control rather than the game world. Among Us HUD
     // buttons are collider-based PassiveButtons on the UI layer, so probe that layer through the UI
-    // camera; the EventSystem check still covers uGUI overlays like chat.
+    // camera; the EventSystem check covers uGUI overlays like chat. Only colliders that actually
+    // belong to a PassiveButton block the shot: HudManager is parented to the camera, so UI-layer
+    // objects physically overlap the play area in world space, and non-interactive things live there
+    // too (e.g. TOU's tracking arrows are created on layer 5) - blocking on ANY UI-layer collider
+    // silently ate legitimate aim clicks.
     private static bool IsClickOnHud()
     {
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
+            Info("Sniper: click ignored - EventSystem reports pointer over uGUI");
             return true;
         }
 
-        var uiPoint = (Vector2)HudManager.Instance.UICamera.ScreenToWorldPoint(Input.mousePosition);
-        return Physics2D.OverlapPoint(uiPoint, LayerMask.GetMask("UI"));
+        var uiCamera = HudManager.Instance.UICamera;
+        if (uiCamera == null)
+        {
+            return false;
+        }
+
+        var uiPoint = (Vector2)uiCamera.ScreenToWorldPoint(Input.mousePosition);
+        var hit = Physics2D.OverlapPoint(uiPoint, LayerMask.GetMask("UI"));
+        if (hit == null)
+        {
+            return false;
+        }
+
+        if (hit.GetComponentInParent<PassiveButton>() != null)
+        {
+            Info($"Sniper: click ignored - on HUD control '{hit.name}'");
+            return true;
+        }
+
+        Info($"Sniper: click allowed - UI-layer collider '{hit.name}' is not a clickable control");
+        return false;
     }
 
     private void Fire(PlayerControl sniper)
     {
         var options = OptionGroupSingleton<SniperOptions>.Instance;
         var origin = SniperShots.GetShotOrigin(sniper);
-        var clickPoint = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        var clickPoint = (Vector2)Camera.main!.ScreenToWorldPoint(Input.mousePosition);
         var direction = (clickPoint - origin).normalized;
 
         if (direction == Vector2.zero)
         {
+            Info("Sniper: click ignored - click landed exactly on the shot origin");
             return;
         }
 
         // End the aim window and start the cooldown regardless of whether anything was hit.
         EffectActive = false;
         SetTimer(Cooldown);
-
-        if (options.BulletVisibleToOthers)
-        {
-            SniperShots.RpcShowShot(sniper, origin.x, origin.y, direction.x, direction.y);
-        }
-        else
-        {
-            SniperShots.ShowShotLocally(origin, direction);
-        }
+        EndAim();
 
         var victims = SniperShots.FindHits(sniper, origin, direction, options.CanKillImpostors);
+        Info($"Sniper: fired from {origin} toward {clickPoint}; {victims.Count} victim(s)");
         if (victims.Count > 0)
         {
             sniper.RpcSpecialMultiMurder(victims, true, teleportMurderer: false, playKillSound: true,
@@ -158,4 +223,35 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
         }
     }
 
+    // Root the sniper in place (same freeze DevouredModifier uses, minus the network pause sync
+    // concerns - this is the local player) and drop the wall shadows so they can line up shots
+    // through walls (HudManager.ShadowQuad, TOU-Mira's MedSpirit/Spectator/Teleporter pattern; the
+    // shadow quad is the sole wall-occlusion mechanism - light radius only sizes the darkness circle).
+    private void BeginAim()
+    {
+        var sniper = PlayerControl.LocalPlayer;
+        sniper.moveable = false;
+        sniper.MyPhysics.ResetMoveState();
+        sniper.NetTransform.SetPaused(true);
+        HudManager.Instance.ShadowQuad.gameObject.SetActive(false);
+        aimLockActive = true;
+    }
+
+    // Idempotent counterpart to BeginAim; reachable from Fire, timeout, and death/meeting cancel.
+    private void EndAim()
+    {
+        if (!aimLockActive)
+        {
+            return;
+        }
+
+        aimLockActive = false;
+        var sniper = PlayerControl.LocalPlayer;
+        sniper.moveable = true;
+        sniper.NetTransform.SetPaused(false);
+
+        // Vanilla's own restore rule (HudManagerPatches.cs:99 in TOU-Mira): shadows on for the
+        // living, off for the dead.
+        HudManager.Instance.ShadowQuad.gameObject.SetActive(!sniper.Data.IsDead);
+    }
 }

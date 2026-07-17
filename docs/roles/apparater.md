@@ -5,7 +5,7 @@ nearest reachable point.
 
 Files: `Roles/Crewmate/ApparaterRole.cs`, `Buttons/Crewmate/ApparaterMapButton.cs`,
 `Options/Roles/Crewmate/ApparaterOptions.cs`, `Modules/WalkableRegionSolver.cs`,
-`Modules/BareMapVisuals.cs`, `Patches/ApparaterMapClickPatch.cs`.
+`Modules/MiniMapMask.cs`, `Modules/BareMapVisuals.cs`, `Patches/ApparaterMapClickPatch.cs`.
 
 Thirteen rounds of play-test/fix cycles got the teleport from "doesn't work" to the design below —
 that's archived in [apparater-history.md](apparater-history.md). Read it when you need to know *why*
@@ -45,7 +45,7 @@ Load-bearing quirk: on this button's inheritance chain (`TownOfUsRoleButton<T>` 
 immediately. `TimerKeepAlive` (a small positive constant) is used instead, and `FixedUpdate` re-arms
 `Timer = TimerKeepAlive` every tick so it never actually counts down.
 
-### Click detection (`ApparaterMapClickPatch`)
+### Click detection and validation (`ApparaterMapClickPatch` + `MiniMapMask`)
 
 The click itself is detected from a Harmony postfix on `HudManager.Update`, not by polling the mouse in
 the button's own `FixedUpdate`. `FixedUpdate` runs on a fixed timestep, not once per rendered frame, so
@@ -53,6 +53,30 @@ a quick click can start and end between two ticks and never be sampled — confi
 of "clicks mostly don't register" in testing, not a theoretical concern. The patch reads
 `Input.GetMouseButtonDown(0)` (reliable here, since `Update` is the frame that sets that flag) and
 forwards to `ApparaterMapButton.HandleMapClick()`, which no-ops unless this player's map is open.
+
+**Playtest bug (2026-07-16)**: clicking large in-room obstacles (the crate pile in Storage's center)
+did nothing — the nearest reachable point was farther than the old 1.5u `MaxSnapDistance` cap, which
+existed only to stop wall/off-map clicks from snapping into rooms.
+
+**Click validity: minimap texture alpha.** Rather than geometric probing, `MiniMapMask` samples the
+minimap's own background sprite texture (via `MapBehaviour.ColorControl.rend`): the vanilla map texture
+is fully transparent (alpha ≈ 0) over walls and off-map, and semi-transparent over rooms and halls. A
+click's validity is literally `textureAlpha >= RoomAlphaThreshold` (0.05). This is the "is this on the
+ship" answer directly from the art asset, no collision-detection guesswork.
+
+**Sampling internals.** World click → sprite-local via `renderer.transform.InverseTransformPoint` →
+pixels via `sprite.rect.x/y + sprite.pivot + local * pixelsPerUnit`. Note: runtime `Sprite.pivot` is
+in PIXELS (the normalized pivot only exists on importer settings); an agent-suggested "correction" to
+normalized was tried and rejected. Points outside the sprite rect are classified as off-map. Game
+textures aren't CPU-readable, so a readable copy is blit once per texture (RenderTexture → ReadPixels)
+and cached by `GetInstanceID()`, rebuilt when the map changes between games. The `ColorControl.SetColor`
+tint in `BareMapVisuals` doesn't affect texture pixels, so recolors don't invalidate the cache.
+
+**Snap-distance generosity.** Alpha-confirmed clicks use `InRoomSnapDistance = 6f` (generous) so
+clicking a large in-room obstacle snaps to the surrounding walkable floor. Alpha-rejected (wall/off-map)
+clicks are ignored outright, never snapped. Only when the texture can't be sampled (no sprite, no map,
+copy failure) does the fallback `MaxSnapDistance = 1.5f` geometry-only path run — the same tight cap
+that used to apply to all clicks. Also added the same `Camera.main == null` guard the Sniper got.
 
 ### Coordinate conversion
 
@@ -91,11 +115,17 @@ the final landing spot, so the destination always has some clearance — deliber
 cells merely traveled through, since requiring it everywhere made narrow-but-walkable corridors
 unpathable and could strand the search when the player was already standing close to geometry.
 
+**Padding note (2026-07-16):** landing-point safety is UNCHANGED — `WalkableRegionSolver` still validates
+the destination with the player's `probeRadius` plus `WallPadding` (0.1u), so the teleport can't put the
+player inside or against a wall. The alpha mask only decides click validity; `WalkableRegionSolver` ensures
+safe landing.
+
 Bounded by `MaxExpandedCells` so a click clear across the ship can't cause a hitch; always returns the
 closest-to-click reachable point seen, even if the cap is hit. `ApparaterMapButton` rejects the result
-entirely (no teleport at all) if it's more than `MaxSnapDistance` from the raw click — this is what
-makes clicking on a wall or off the ship a no-op instead of snapping to the nearest room regardless of
-distance.
+entirely (no teleport at all) if it's more than the configured snap cap from the raw click. With alpha
+confirmation, the cap is generous (`InRoomSnapDistance = 6f`) to handle large obstacles; with alpha
+unavailable, the tight fallback cap (`MaxSnapDistance = 1.5f`) prevents snapping to unintended distant
+rooms.
 
 ### Map visuals (`BareMapVisuals`)
 

@@ -112,10 +112,12 @@ ilspycmd -t <TypeName> <path-to-Assembly-CSharp.dll>
 Method **bodies** are useless (IL2CPP native-call stubs, not real logic), but field/property/method
 **signatures**, types, and inheritance are 100% accurate ground truth — this is the actual shipped
 game, not a guess. Large types decompile slowly and verbosely; redirect to a file and `grep` for
-declaration lines rather than reading the whole dump. This is how the Sniper's vision fix
-(`ShipStatus.MaxLightRadius`/`LightSource`) and the ruled-out nametag-click theory
-(`PlayerControl.cosmetics.nameText` is a plain `TMPro.TextMeshPro`, not a UI-raycastable
-`TextMeshProUGUI`) were confirmed rather than guessed.
+declaration lines rather than reading the whole dump. This is how the ruled-out nametag-click theory (`PlayerControl.cosmetics.nameText` is a plain
+`TMPro.TextMeshPro`, not a UI-raycastable `TextMeshProUGUI`) was confirmed. Note on the Sniper's wall
+vision: decompiling found `ShipStatus.CalculateLightRadius`/`LightSource.viewDistance` as the light
+radius mechanism, but the actual wall-occlusion overlay is `HudManager.ShadowQuad` (found later in
+TOU-Mira source). This is a good lesson: decompiled metadata tells you what exists and its type, but
+not which mechanism does what at runtime — cross-check against readable mod source when possible.
 
 ## `Camera.main` can be transiently null — this codebase already defends against it, in several places
 
@@ -128,6 +130,26 @@ nothing, no pattern I can find" if the abort happens before whatever state chang
 (see `SniperSnipeButton.HandleAimFrame`, which bails before `Fire()` so the aim window simply stays
 open for the next click attempt instead of consuming this one). Don't assume `Camera.main` is safe to
 dereference directly in per-frame code; check for null first, matching existing precedent.
+
+## Wall shadows are HudManager.ShadowQuad, not the light radius
+
+`ShipStatus.CalculateLightRadius` and `LightSource.viewDistance` only size the darkness circle (the
+radial fade); the actual wall-occlusion overlay is `HudManager.Instance.ShadowQuad` (a MeshRenderer).
+It's toggled via `.gameObject.SetActive(...)`. The vanilla restore rule (from TOU-Mira
+`HudManagerPatches.cs:99`): `SetActive(!PlayerControl.LocalPlayer.Data.IsDead)` — shadows on for the
+living, off for ghosts and spectators. TOU-Mira precedents: `MedSpiritObject.cs:129/177`,
+`SpectatorRole.cs`. When a modifier needs to peek through walls (Sniper aiming, MedSpirit healing,
+Spectator watching), disable the shadow quad while active and self-heal it every rendered frame per
+the house doctrine (vanilla animations and other patches may flip it back).
+
+## One throwing Harmony postfix skips the rest of the chain
+
+When a postfix on a shared hot method (e.g. `HudManager.Update`) throws an exception, Harmony aborts
+the remaining postfixes for that invocation. For per-frame input handlers (clicks, typed keys), this
+silently eats the input with no visible pattern — the click or keypress simply never reaches the later
+patches. Defense: declare the postfix at `[HarmonyPriority(Priority.First)]` to run before other
+mods' patches, and wrap your own handler in try/catch (log via the global Reactor logger) so you never
+break theirs either. See `Patches/SniperAimPatch.cs` for the pattern.
 
 ## Incapacitating a player: use TOU-Mira's `DisabledModifier`, not manual button fiddling
 

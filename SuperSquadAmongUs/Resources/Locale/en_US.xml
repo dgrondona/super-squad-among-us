@@ -102,7 +102,6 @@
     <string name="SuperSquadOptionSniperSnipeCooldown">Snipe Cooldown</string>
     <string name="SuperSquadOptionSniperAimWindow">Aim Window</string>
     <string name="SuperSquadOptionSniperCanKillImpostors">Sniper Can Kill Impostors</string>
-    <string name="SuperSquadOptionSniperBulletVisibleToOthers">Bullet Visible To Others</string>
     <string name="SuperSquadOptionSniperCanVent">Sniper Can Vent</string>
     <!-- Pelican - Neutral Killing -->
     <string name="SuperSquadRolePelican">Pelican</string>

@@ -19,9 +19,6 @@ public sealed class SniperOptions : AbstractOptionGroup<SniperRole>
     [ModdedToggleOption("SuperSquadOptionSniperCanKillImpostors")]
     public bool CanKillImpostors { get; set; }
 
-    [ModdedToggleOption("SuperSquadOptionSniperBulletVisibleToOthers")]
-    public bool BulletVisibleToOthers { get; set; }
-
     [ModdedToggleOption("SuperSquadOptionSniperCanVent")]
     public bool CanVent { get; set; }
 }

@@ -14,6 +14,7 @@
 - [Eraser](roles/Eraser.md)
 - [Ninja](roles/Ninja.md)
 - [Sniper](roles/Sniper.md)
+- [RC-XD](roles/RcXd.md)
 - [Witch](roles/Witch.md)
 
 **Neutral**

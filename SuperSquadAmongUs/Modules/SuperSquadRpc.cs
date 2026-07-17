@@ -10,4 +10,8 @@ public enum SuperSquadRpc : uint
     ShowSniperShot = 2,
     MafiaCleanBody = 3,
     VultureEatBody = 4,
+    DeployRcXdCar = 5,
+    MoveRcXdCar = 6,
+    DetonateRcXdCar = 7,
+    DespawnRcXdCar = 8,
 }

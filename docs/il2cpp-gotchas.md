@@ -76,6 +76,15 @@ TOU-Mira's base `ClickHandler` checks `GlitchHackedModifier` and `DisabledModifi
 the click. Any override must re-add both checks (see `NinjaMarkButton.ClickHandler`), and any custom
 non-button trigger path (like the Sniper's world click) needs the same gating manually.
 
+The reverse also bites: `TownOfUsButton.ClickHandler` fully REPLACES MiraAPI's `ClickHandler` and
+does not replicate its cancellable-effect branch (`if (EffectActive && IsEffectCancellable()) {
+ResetCooldownAndOrEffect(); return; }`). A TOU-based button that wants "press again during the
+effect" behavior cannot rely on `IsEffectCancellable()` alone — with the effect active, TOU's
+handler goes straight to `OnClick()` and re-arms the effect (`EffectActive = true; Timer =
+EffectDuration`). The RC-XD's first Detonate press redeployed the car and restarted the countdown
+because of this. Handle the effect-active press in your own `ClickHandler` override (gating included)
+and call `ResetCooldownAndOrEffect()` yourself — see `RcXdDeployButton.ClickHandler`.
+
 ## MiraAPI vanilla events fire on every client — sync via local state changes, not host gating
 
 `StartMeetingEvent`, `EjectionEvent`, and `PlayerDeathEvent` are invoked from postfixes on
@@ -177,3 +186,24 @@ its state refreshes. The house pattern is a `DisabledModifier` subclass (`CanRep
 `ButtonClickPatches` and targeting utilities consume it, so it also makes the player untargetable by
 kill/ability buttons. Pair with Ambusher's freeze for movement: owner-only `moveable = false` +
 `MyPhysics.ResetMoveState()` + `NetTransform.SetPaused(true)`. See `DevouredDisabledModifier`.
+
+## Button singletons persist for the whole game process — stale ability state must self-heal
+
+MiraAPI creates ONE instance of each `CustomActionButton` per process; leaving a lobby or freeplay
+session does not reset its private fields. The RC-XD's first playtest (2026-07-17) hit the full
+failure chain: an exception in the ability-end path skipped the restore step, leaving a
+`driveLockActive` flag stuck true — and because the button's `FixedUpdate` re-asserts
+`moveable = false` while that flag is set (self-heal doctrine), every later game where the local
+player took the role had `CanMove == false` from the first tick. That greys out ALL ability buttons
+(`TownOfUsButton.CanUse()` gates on `CanMove`) until the game process is restarted. Two rules:
+
+1. In ability-end paths, restore player state (movement, camera, light) BEFORE doing anything that
+   can throw — RPC sends, object destruction. An exception after the restore is an inconvenience; an
+   exception before it is a soft-locked game.
+2. Treat "state flag set but its effect/world object is gone" as stale and recover in `FixedUpdate`,
+   rather than trusting that every exit path ran. See `RcXdDeployButton.FixedUpdate` for the pattern.
+
+Related: parenting the local player's `lightSource` to a spawned object means destroying that object
+destroys the light — a permanent black screen for the rest of the game. Any code that destroys such
+an object must first reparent the light back (see `RcXdCar.DestroyLocally`), and reparenting keeps
+the WORLD position, so also reset `localPosition` to zero afterward or the light stays where it was.

@@ -31,6 +31,7 @@ For build/install instructions, see the [root README](../README.md).
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/MafiaJanitor.png" width="40"> | [Mafia Janitor](roles/MafiaJanitor.md) | Support | Work with the Mafia by hiding dead bodies. |
 | <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [Ninja](roles/Ninja.md) | Killing | Surprise and assassinate your foes. |
 | <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [Sniper](roles/Sniper.md) | Killing | Shoot the crew with your sniper. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [RC-XD](roles/RcXd.md) | Killing | Deploy an explosive RC car. |
 | <img src="../SuperSquadAmongUs/Resources/Placeholders/Impostor.png" width="40"> | [Astral](roles/Astral.md) | Concealing | Pass through walls with ease. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Eraser.png" width="40"> | [Eraser](roles/Eraser.md) | Support | Mark players and strip them of their role — immediately or at the next meeting. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Witch.png" width="40"> | [Witch](roles/Witch.md) | Support | Cast a hex upon your foes. |

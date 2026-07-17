@@ -9,6 +9,7 @@
     <string name="SuperSquadDiedToWitchHex">Hexed</string>
     <string name="SuperSquadDiedToPelican">Digested</string>
     <string name="DiedToSuperSquadSniper">Sniped</string>
+    <string name="DiedToSuperSquadRcXd">Exploded</string>
     <string name="SuperSquadDiedToAstral">Faded</string>
     <!-- Sentinel - Neutral Killing -->
     <string name="SuperSquadRoleSentinel">Sentinel</string>
@@ -188,6 +189,23 @@
     <string name="SuperSquadOptionElusiveShieldCooldown">Shield Cooldown</string>
     <string name="SuperSquadOptionElusiveShieldDuration">Shield Duration</string>
     <string name="SuperSquadOptionElusiveMaxShields">Max Shields</string>
+    <!-- RC-XD - Impostor Killing -->
+    <string name="SuperSquadRoleRcXd">RC-XD</string>
+    <string name="SuperSquadRoleRcXdIntroBlurb">Deploy an explosive RC car.</string>
+    <string name="SuperSquadRoleRcXdTabDescription">\%b\%Deploy\%/b\% an RC car to drive around.\%nl\%Press again to \%b\%detonate\%/b\% it in a radius.</string>
+    <!-- RC-XD Wiki -->
+    <string name="SuperSquadRoleRcXdWikiDescription">The RC-XD is an Impostor Killing role that deploys a remote-controlled car. You freeze in place while driving it, and pressing the button again detonates it to kill everyone nearby.</string>
+    <string name="SuperSquadRoleRcXdDeploy">Deploy</string>
+    <string name="SuperSquadRoleRcXdDeployWikiDescription">Deploy an RC car at your feet. You freeze in place while driving it with movement controls.</string>
+    <string name="SuperSquadRoleRcXdDetonate">Detonate</string>
+    <string name="SuperSquadRoleRcXdDetonateWikiDescription">Explode the RC car, killing all nearby players.</string>
+    <!-- RC-XD Options -->
+    <string name="SuperSquadOptionRcXdDeployCooldown">Deploy Cooldown</string>
+    <string name="SuperSquadOptionRcXdDriveTime">Drive Time</string>
+    <string name="SuperSquadOptionRcXdCarSpeed">Car Speed</string>
+    <string name="SuperSquadOptionRcXdExplosionRadius">Explosion Radius</string>
+    <string name="SuperSquadOptionRcXdCanKillImpostors">RC-XD Can Kill Impostors</string>
+    <string name="SuperSquadOptionRcXdCanVent">RC-XD Can Vent</string>
     <!-- Invisibility Cloak - Universal Modifier -->
     <string name="SuperSquadModifierInvisibilityCloak">Invisibility Cloak</string>
     <string name="SuperSquadModifierInvisibilityCloakTabDescription">Throw on your \%b\%cloak\%/b\% to turn invisible for a short while.</string>

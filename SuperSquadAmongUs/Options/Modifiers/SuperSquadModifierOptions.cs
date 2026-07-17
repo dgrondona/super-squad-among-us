@@ -30,4 +30,13 @@ public sealed class SuperSquadModifierOptions : AbstractOptionGroup
         {
             Visible = () => OptionGroupSingleton<SuperSquadModifierOptions>.Instance.InvisibilityCloakAmount > 0,
         };
+
+    [ModdedNumberOption("SuperSquadOptionSlideTackleAmount", 0f, 5f, 1f)]
+    public float SlideTackleAmount { get; set; } = 0f;
+
+    public ModdedNumberOption SlideTackleChance { get; } =
+        new("SuperSquadOptionSlideTackleChance", 50f, 0f, 100f, 10f, MiraNumberSuffixes.Percent)
+        {
+            Visible = () => OptionGroupSingleton<SuperSquadModifierOptions>.Instance.SlideTackleAmount > 0,
+        };
 }

@@ -174,4 +174,15 @@
     <string name="SuperSquadOptionInvisibilityCloakChance">Invisibility Cloak Chance</string>
     <string name="SuperSquadOptionInvisibilityCloakCooldown">Cloak Cooldown</string>
     <string name="SuperSquadOptionInvisibilityCloakDuration">Cloak Duration</string>
+    <!-- Slide Tackle - Universal Modifier -->
+    <string name="SuperSquadModifierSlideTackle">Slide Tackle</string>
+    <string name="SuperSquadModifierSlideTackleTabDescription">\%b\%Slide tackle\%/b\% the nearest player, stunning them briefly.</string>
+    <string name="SuperSquadModifierSlideTackleWikiDescription">The Slide Tackle is a Universal Modifier that grants its holder a Tackle button. Using it lunges the holder at the nearest player and knocks them down: the victim can't move, use abilities, or report for a short duration - but they can still be killed while down.</string>
+    <string name="SuperSquadModifierSlideTackleButton">Tackle</string>
+    <string name="SuperSquadModifierSlideTackleButtonWikiDescription">Lunge at the nearest player and stun them briefly.</string>
+    <!-- Slide Tackle Options -->
+    <string name="SuperSquadOptionSlideTackleAmount">Slide Tackle Amount</string>
+    <string name="SuperSquadOptionSlideTackleChance">Slide Tackle Chance</string>
+    <string name="SuperSquadOptionSlideTackleCooldown">Tackle Cooldown</string>
+    <string name="SuperSquadOptionSlideTackleStunDuration">Stun Duration</string>
 </resources>

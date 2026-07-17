@@ -16,4 +16,5 @@ public static class SuperSquadColors
     public static Color Vulture => new Color32(139, 69, 19, 255);
     // Modifier Colors
     public static Color InvisibilityCloak => new Color32(197, 213, 232, 255);
+    public static Color SlideTackle => new Color32(120, 190, 90, 255);
 }

@@ -46,3 +46,129 @@ there's no compiler error if e.g. a role class doesn't actually implement `ICust
 an option group isn't a subclass of `AbstractOptionGroup<T>` — it just won't show up in-game. If a new
 role/button/option "does nothing" after a clean build, check the interface/base-class list first
 before assuming a networking or logic bug.
+
+## Mouse clicks must be polled per rendered frame, never in button FixedUpdate
+
+MiraAPI button `FixedUpdate(PlayerControl)` runs on `PlayerControl.FixedUpdate`'s fixed tick, and
+`Input.GetMouseButtonDown` is only true during the single rendered frame of the press — polling it
+from the fixed tick silently drops most clicks whenever FPS exceeds the tick rate. This has now
+bitten twice (Apparater map click, Sniper aim click). The fix both times: a `HudManager.Update`
+postfix (`Patches/ApparaterMapClickPatch.cs`, `Patches/SniperAimPatch.cs`) that calls a self-guarding
+handler on the button. Also record `Time.frameCount` when the ability is armed so the arming click
+can't double as the action click in the same frame.
+
+## `EventSystem.IsPointerOverGameObject()` does not see Among Us HUD buttons
+
+The vanilla HUD (kill/use/report/sabotage/custom buttons) is collider-based `PassiveButton`s, not
+uGUI, so the EventSystem check misses them entirely. To test "did this click land on HUD?", also
+probe the UI layer under the cursor: `Physics2D.OverlapPoint(HudManager.Instance.UICamera
+.ScreenToWorldPoint(Input.mousePosition), LayerMask.GetMask("UI"))`. See
+`SniperSnipeButton.IsClickOnHud()`.
+
+## Overriding `TownOfUsButton.ClickHandler` drops the hacked/disabled gating
+
+TOU-Mira's base `ClickHandler` checks `GlitchHackedModifier` and `DisabledModifier` before running
+the click. Any override must re-add both checks (see `NinjaMarkButton.ClickHandler`), and any custom
+non-button trigger path (like the Sniper's world click) needs the same gating manually.
+
+## MiraAPI vanilla events fire on every client — sync via local state changes, not host gating
+
+`StartMeetingEvent`, `EjectionEvent`, and `PlayerDeathEvent` are invoked from postfixes on
+`MeetingHud`, `ExileController.Begin`, and `PlayerControl.Die`, all of which run on all clients.
+TOU-Mira's own handlers (e.g. `LoverEvents`) therefore apply kills with *local* calls
+(`DeathHandlerModifier.UpdateDeathHandlerImmediate` + vanilla `player.Exiled()`) ungated — every
+client performs the same deterministic change on its own copy. Do not add `AmHost` gates or RPCs in
+these handlers; that's TOR's model, not TOU-Mira's. Deciding *which* client acts is only needed for
+client-authoritative things like movement (`RpcSnapTo` from the owner).
+
+## Vanilla kill/vent/ladder animations silently reset player state you disabled manually
+
+Anything toggled once in a modifier's `OnActivate` (collider, `Player.Visible`, appearance) can get
+flipped back by vanilla code mid-animation — `CustomMurder`/`CoPerformCustomKill`'s
+`KillAnimation.SetMovement` re-enables the collider partway through a kill, and vent/ladder animations
+similarly reset `Visible`/appearance (see `TimedInvisibilityModifier`). This bit the Astral: its
+collider was disabled once on activation, so killing someone while phased silently re-enabled it and
+ended wall-passing early even though the modifier and invisibility were still active. The fix is always
+the same: don't just set the state once, self-heal it every `FixedUpdate` tick for as long as the
+modifier is active (see `AstralFormModifier.FixedUpdate`, `TimedInvisibilityModifier.FixedUpdate`).
+
+## When reference/ source doesn't cover it: decompile the real game assembly
+
+`reference/TOU-Mira` and `reference/MiraAPI` are plain C# source, but the base game itself (roles,
+`PlayerControl`, `LightSource`, cameras, etc.) is IL2CPP and not checked in anywhere in this repo. The
+interop assembly BepInEx builds against is cached locally and is real, decompilable .NET metadata:
+
+```
+~/.cache/bepinex/game-libs/AmongUs.GameLibs.Steam/<version>/interop/<hash>/Assembly-CSharp.dll
+```
+
+(the exact `<version>` is whatever `AmongUs.props` pins). Decompile a type with `ilspycmd` (already
+installed as a global dotnet tool):
+
+```
+ilspycmd -t <TypeName> <path-to-Assembly-CSharp.dll>
+```
+
+Method **bodies** are useless (IL2CPP native-call stubs, not real logic), but field/property/method
+**signatures**, types, and inheritance are 100% accurate ground truth — this is the actual shipped
+game, not a guess. Large types decompile slowly and verbosely; redirect to a file and `grep` for
+declaration lines rather than reading the whole dump. This is how the ruled-out nametag-click theory (`PlayerControl.cosmetics.nameText` is a plain
+`TMPro.TextMeshPro`, not a UI-raycastable `TextMeshProUGUI`) was confirmed. Note on the Sniper's wall
+vision: decompiling found `ShipStatus.CalculateLightRadius`/`LightSource.viewDistance` as the light
+radius mechanism, but the actual wall-occlusion overlay is `HudManager.ShadowQuad` (found later in
+TOU-Mira source). This is a good lesson: decompiled metadata tells you what exists and its type, but
+not which mechanism does what at runtime — cross-check against readable mod source when possible.
+
+## `reference/TOU-Mira` can be ahead of the pinned `TownOfUsMira` package
+
+The reference checkout is a live source tree; the package this addon actually compiles against is
+whatever version is pinned in `AmongUs.props` (currently `1.5.0-beta.1`), which can lag behind it. A
+member that exists in `reference/TOU-Mira` source may not exist yet in the compiled DLL, and reference
+source can't stand in for that mismatch. Confirmed case: `VanillaTweakOptions.PetVisibilityUponDeath`
+and the `PetHidden`-enum overload of `MiscUtils.RemovePet` exist in reference source but not in
+1.5.0-beta.1 — the actual pinned API is a plain `HidePetsOnBodyRemove` bool option, checked alongside
+`ShowPetsMode == PetVisiblity.AlwaysVisible`, and `RemovePet(PlayerControl)` takes no second argument
+(see `SuperSquadBodies.DestroyBodies`). When a reference-source signature doesn't compile, decompile
+the actual pinned DLL to check first (`~/.nuget/packages/townofusmira/<version>/lib/net6.0/TownOfUsMira.dll`,
+same `ilspycmd -t <TypeName> <path>` recipe as above) before assuming the reference source is wrong.
+
+## `Camera.main` can be transiently null — this codebase already defends against it, in several places
+
+`Camera.main` does a tag-based scene lookup every call, not a cached reference, and TOU-Mira's own
+source guards it defensively in multiple spots (e.g. `SentryCameraSurveillancePatch.cs` checks
+`Camera.main != null` before the exact same `ScreenToWorldPoint` pattern the Sniper's click handling
+uses). An unguarded null dereference inside a Harmony-postfix-driven per-frame handler doesn't crash
+the game — it just aborts that one method silently, which can look like "an action sometimes does
+nothing, no pattern I can find" if the abort happens before whatever state change would normally follow
+(see `SniperSnipeButton.HandleAimFrame`, which bails before `Fire()` so the aim window simply stays
+open for the next click attempt instead of consuming this one). Don't assume `Camera.main` is safe to
+dereference directly in per-frame code; check for null first, matching existing precedent.
+
+## Wall shadows are HudManager.ShadowQuad, not the light radius
+
+`ShipStatus.CalculateLightRadius` and `LightSource.viewDistance` only size the darkness circle (the
+radial fade); the actual wall-occlusion overlay is `HudManager.Instance.ShadowQuad` (a MeshRenderer).
+It's toggled via `.gameObject.SetActive(...)`. The vanilla restore rule (from TOU-Mira
+`HudManagerPatches.cs:99`): `SetActive(!PlayerControl.LocalPlayer.Data.IsDead)` — shadows on for the
+living, off for ghosts and spectators. TOU-Mira precedents: `MedSpiritObject.cs:129/177`,
+`SpectatorRole.cs`. When a modifier needs to peek through walls (Sniper aiming, MedSpirit healing,
+Spectator watching), disable the shadow quad while active and self-heal it every rendered frame per
+the house doctrine (vanilla animations and other patches may flip it back).
+
+## One throwing Harmony postfix skips the rest of the chain
+
+When a postfix on a shared hot method (e.g. `HudManager.Update`) throws an exception, Harmony aborts
+the remaining postfixes for that invocation. For per-frame input handlers (clicks, typed keys), this
+silently eats the input with no visible pattern — the click or keypress simply never reaches the later
+patches. Defense: declare the postfix at `[HarmonyPriority(Priority.First)]` to run before other
+mods' patches, and wrap your own handler in try/catch (log via the global Reactor logger) so you never
+break theirs either. See `Patches/SniperAimPatch.cs` for the pattern.
+
+## Incapacitating a player: use TOU-Mira's `DisabledModifier`, not manual button fiddling
+
+One-shot `HudManager.Instance.ReportButton.SetDisabled()` gets re-enabled by vanilla the next time
+its state refreshes. The house pattern is a `DisabledModifier` subclass (`CanReport`,
+`CanUseAbilities`, `CanUseConsoles`, `CanOpenMap`, `CanBeInteractedWith`) — TOU-Mira's
+`ButtonClickPatches` and targeting utilities consume it, so it also makes the player untargetable by
+kill/ability buttons. Pair with Ambusher's freeze for movement: owner-only `moveable = false` +
+`MyPhysics.ResetMoveState()` + `NetTransform.SetPaused(true)`. See `DevouredDisabledModifier`.

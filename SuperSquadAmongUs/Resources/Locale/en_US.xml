@@ -6,6 +6,10 @@
     <!-- Cause of Deaths -->
     <string name="DiedToSentinel">Terminated</string>
     <string name="DiedToSentinelExplosion">Disintegrated</string>
+    <string name="SuperSquadDiedToWitchHex">Hexed</string>
+    <string name="SuperSquadDiedToPelican">Digested</string>
+    <string name="DiedToSuperSquadSniper">Sniped</string>
+    <string name="SuperSquadDiedToAstral">Faded</string>
     <!-- Sentinel - Neutral Killing -->
     <string name="SuperSquadRoleSentinel">Sentinel</string>
     <string name="SuperSquadRoleSentinelIntroBlurb">Eliminate those who stand in your path.</string>
@@ -26,7 +30,7 @@
     <string name="SuperSquadRoleApparaterTabDescription">Open the map and click anywhere on it to \%b\%teleport\%/b\% there.</string>
     <!-- Apparater Wiki -->
     <string name="SuperSquadRoleApparaterWikiDescription">The Apparater is a Crewmate Power role that can open the map and click a location to instantly teleport there.</string>
-    <string name="SuperSquadRoleApparaterTeleport">Aparate</string>
+    <string name="SuperSquadRoleApparaterTeleport">Teleport</string>
     <string name="SuperSquadRoleApparaterTeleportWikiDescription">Open the map. Click anywhere on it to teleport to that location.</string>
     <!-- Apparater Options -->
     <string name="SuperSquadOptionApparaterCooldown">Teleport Cooldown</string>
@@ -39,4 +43,122 @@
     <string name="SuperSquadRoleInvisibleBoyWikiDescription">The Invisible Boy is a Crewmate Support role that turns invisible whenever no living player has line of sight to him. The moment anyone can see even a sliver of him, he is visible again.</string>
     <string name="SuperSquadRoleInvisibleBoyPassive">Unseen</string>
     <string name="SuperSquadRoleInvisibleBoyPassiveWikiDescription">While no living player can see you, you are invisible - hidden from players, cameras, and the admin table. You see yourself as a ghostly outline. Dead players don't count; players in vents do.</string>
+    <!-- Astral - Impostor Concealing -->
+    <string name="SuperSquadRoleAstral">Astral</string>
+    <string name="SuperSquadRoleAstralIntroBlurb">Enter the spirit realm and kill before your tether to reality breaks.</string>
+    <string name="SuperSquadRoleAstralTabDescription">Phase into an \%b\%invisible spirit\%/b\% that walks through walls.\%nl\%When your tether breaks, you snap back to where you phased from.</string>
+    <!-- Astral Wiki -->
+    <string name="SuperSquadRoleAstralWikiDescription">The Astral is an Impostor Concealing role that can phase into a spirit form: invisible, able to walk through walls, and still able to kill. When the form ends they are pulled back to the spot they phased from, staying invisible for a few seconds longer to slip away.</string>
+    <string name="SuperSquadRoleAstralForm">Phase</string>
+    <string name="SuperSquadRoleAstralFormWikiDescription">Become an invisible spirit that walks through walls and can still kill. When the form ends, you return to where you phased from and remain invisible briefly.</string>
+    <!-- Astral Options -->
+    <string name="SuperSquadOptionAstralFormCooldown">Astral Form Cooldown</string>
+    <string name="SuperSquadOptionAstralFormDuration">Astral Form Duration</string>
+    <string name="SuperSquadOptionAstralLingerDuration">Invisibility Linger After Return</string>
+    <string name="SuperSquadOptionAstralCanVent">Astral Can Vent</string>
+    <string name="SuperSquadOptionAstralDieWithoutKill">Astral Dies Without a Kill</string>
+    <!-- Ninja - Impostor Assassin -->
+    <string name="SuperSquadRoleNinja">Ninja</string>
+    <string name="SuperSquadRoleNinjaIntroBlurb">Surprise and assassinate your foes.</string>
+    <string name="SuperSquadRoleNinjaTabDescription">Mark a target and \%b\%trace\%/b\% their location.\%nl\%Assassinate them to become \%b\%invisible\%/b\%.</string>
+    <!-- Ninja Wiki -->
+    <string name="SuperSquadRoleNinjaWikiDescription">The Ninja is an Impostor Assassin role that can mark players and see their trace. When they assassinate a marked target, they become invisible for a brief period to slip away unnoticed.</string>
+    <string name="SuperSquadRoleNinjaMark">Mark</string>
+    <string name="SuperSquadRoleNinjaMarkWikiDescription">Mark a target player and see their trace on the map.</string>
+    <string name="SuperSquadRoleNinjaAssassinate">Assassinate</string>
+    <string name="SuperSquadRoleNinjaAssassinateWikiDescription">Kill your marked target and become invisible.</string>
+    <!-- Ninja Options -->
+    <string name="SuperSquadOptionNinjaMarkCooldown">Mark Cooldown</string>
+    <string name="SuperSquadOptionNinjaKnowsTargetLocation">Knows Target Location</string>
+    <string name="SuperSquadOptionNinjaTraceDuration">Trace Duration</string>
+    <string name="SuperSquadOptionNinjaTraceColorFadeDuration">Trace Color Fade Duration</string>
+    <string name="SuperSquadOptionNinjaInvisibleDuration">Invisibility Duration</string>
+    <string name="SuperSquadOptionNinjaCanVent">Ninja Can Vent</string>
+    <!-- Witch - Impostor Curse -->
+    <string name="SuperSquadRoleWitch">Witch</string>
+    <string name="SuperSquadRoleWitchIntroBlurb">Cast a hex upon your foes; hexed players die at the next meeting unless you are voted out.</string>
+    <string name="SuperSquadRoleWitchTabDescription">\%b\%Hex\%/b\% your targets during the game.\%nl\%They will die at the next meeting unless they're protected or you're voted out.</string>
+    <!-- Witch Wiki -->
+    <string name="SuperSquadRoleWitchWikiDescription">The Witch is an Impostor Curse role that can hex players. Hexed players will die at the next meeting unless the Witch is voted out before then or the hex is somehow lifted.</string>
+    <string name="SuperSquadRoleWitchHex">Hex</string>
+    <string name="SuperSquadRoleWitchHexWikiDescription">Curse a player to die at the next meeting.</string>
+    <!-- Witch Options -->
+    <string name="SuperSquadOptionWitchHexCooldown">Hex Cooldown</string>
+    <string name="SuperSquadOptionWitchAdditionalCooldown">Additional Cooldown</string>
+    <string name="SuperSquadOptionWitchCanHexAnyone">Can Hex Anyone</string>
+    <string name="SuperSquadOptionWitchCastDuration">Cast Duration</string>
+    <string name="SuperSquadOptionWitchTriggerBothCooldowns">Trigger Both Cooldowns</string>
+    <string name="SuperSquadOptionWitchVotingWitchSavesTargets">Voting Out Witch Saves Targets</string>
+    <string name="SuperSquadOptionWitchCanVent">Witch Can Vent</string>
+    <!-- Sniper - Impostor Marksman -->
+    <string name="SuperSquadRoleSniper">Sniper</string>
+    <string name="SuperSquadRoleSniperIntroBlurb">Kill from across the map with a piercing shot.</string>
+    <string name="SuperSquadRoleSniperTabDescription">\%b\%Aim\%/b\% and \%b\%snipe\%/b\% players from anywhere on the map.\%nl\%Precision kills from a distance.</string>
+    <!-- Sniper Wiki -->
+    <string name="SuperSquadRoleSniperWikiDescription">The Sniper is an Impostor Marksman role that can aim at targets and take a piercing shot that kills from across the map. They have a limited aiming window to line up their shot.</string>
+    <string name="SuperSquadRoleSniperSnipe">Snipe</string>
+    <string name="SuperSquadRoleSniperSnipeWikiDescription">Aim and fire a shot at a targeted player from anywhere on the map.</string>
+    <!-- Sniper Options -->
+    <string name="SuperSquadOptionSniperSnipeCooldown">Snipe Cooldown</string>
+    <string name="SuperSquadOptionSniperAimWindow">Aim Window</string>
+    <string name="SuperSquadOptionSniperCanKillImpostors">Sniper Can Kill Impostors</string>
+    <string name="SuperSquadOptionSniperCanVent">Sniper Can Vent</string>
+    <!-- Pelican - Neutral Killing -->
+    <string name="SuperSquadRolePelican">Pelican</string>
+    <string name="SuperSquadRolePelicanIntroBlurb">You're soooo hungry - devour players and win alone.</string>
+    <string name="SuperSquadRolePelicanTabDescription">\%b\%Devour\%/b\% players to consume them.\%nl\%Win by being the last one alive.</string>
+    <!-- Pelican Wiki -->
+    <string name="SuperSquadRolePelicanWikiDescription">The Pelican is a Neutral Killing role that can devour other players. They win alone when they are the only player left alive.</string>
+    <string name="SuperSquadRolePelicanDevour">Devour</string>
+    <string name="SuperSquadRolePelicanDevourWikiDescription">Consume a player to remove them from the game.</string>
+    <!-- Pelican Options -->
+    <string name="SuperSquadOptionPelicanDevourCooldown">Devour Cooldown</string>
+    <string name="SuperSquadOptionPelicanCanVent">Pelican Can Vent</string>
+    <string name="SuperSquadOptionPelicanImpostorVision">Pelican Has Impostor Vision</string>
+    <!-- Mafia Roles (Godfather, Mafioso, Mafia Janitor) - Impostor -->
+    <string name="SuperSquadRoleMafia">Mafia</string>
+    <string name="SuperSquadRoleGodfather">Godfather</string>
+    <string name="SuperSquadRoleGodfatherIntroBlurb">Lead the Mafia to victory.</string>
+    <string name="SuperSquadRoleGodfatherTabDescription">You are the head of the Mafia.\%nl\%The Mafioso answers to you and cannot act while you live.</string>
+    <!-- Godfather Wiki -->
+    <string name="SuperSquadRoleGodfatherWikiDescription">The Godfather is an Impostor Killing role and the leader of the Mafia. They are a standard Impostor with kill and sabotage abilities. The Mafioso cannot kill or sabotage while the Godfather is alive, ensuring the hierarchy of the family.</string>
+    <string name="SuperSquadRoleMafioso">Mafioso</string>
+    <string name="SuperSquadRoleMafiosoIntroBlurb">Inherit the family business when your boss falls.</string>
+    <string name="SuperSquadRoleMafiosoTabDescription">You work under the Godfather.\%nl\%You cannot kill or sabotage while they live, but you inherit their powers when they die.</string>
+    <!-- Mafioso Wiki -->
+    <string name="SuperSquadRoleMafiosoWikiDescription">The Mafioso is an Impostor Killing role and a member of the Mafia under the Godfather's command. While the Godfather lives, the Mafioso cannot kill or sabotage. When the Godfather dies, the Mafioso immediately gains full Impostor powers and becomes the new leader.</string>
+    <string name="SuperSquadRoleMafiaJanitor">Mafia Janitor</string>
+    <string name="SuperSquadRoleMafiaJanitorIntroBlurb">Clean up after the Mafia's dirty work.</string>
+    <string name="SuperSquadRoleMafiaJanitorTabDescription">You have a \%b\%clean\%/b\% button instead of a kill button.\%nl\%Use it to remove bodies and cover the Mafia's tracks.</string>
+    <!-- Mafia Janitor Wiki -->
+    <string name="SuperSquadRoleMafiaJanitorWikiDescription">The Mafia Janitor is an Impostor Support role that cleans up after the Mafia. Instead of a kill button, they have a clean button to remove bodies from the game, one at a time. This helps the Mafia avoid detection while covering their tracks.</string>
+    <string name="SuperSquadRoleMafiaJanitorClean">Clean</string>
+    <string name="SuperSquadRoleMafiaJanitorCleanWikiDescription">Remove a dead body from the game.</string>
+    <!-- Mafia Options -->
+    <string name="SuperSquadOptionMafiaSpawnChance">Spawn Chance</string>
+    <string name="SuperSquadOptionMafiaJanitorCleanCooldown">Clean Cooldown</string>
+    <!-- Eraser - Impostor Support -->
+    <string name="SuperSquadRoleEraser">Eraser</string>
+    <string name="SuperSquadRoleEraserIntroBlurb">Mark players and strip them of their role at the next meeting.</string>
+    <string name="SuperSquadRoleEraserTabDescription">\%b\%Mark\%/b\% your targets.\%nl\%At the next meeting's end, they lose their role and become plain Crewmates. Each use adds cooldown time.</string>
+    <!-- Eraser Wiki -->
+    <string name="SuperSquadRoleEraserWikiDescription">The Eraser is an Impostor Support role that can mark players to be erased. At the end of each meeting's exile phase, all marked players lose their modded role and become plain Crewmates without being informed. Each use of the erase ability adds 10 seconds to the cooldown permanently.</string>
+    <string name="SuperSquadRoleEraserErase">Erase</string>
+    <string name="SuperSquadRoleEraserEraseWikiDescription">Mark a player to lose their role at the next meeting's end.</string>
+    <!-- Eraser Options -->
+    <string name="SuperSquadOptionEraserEraseCooldown">Erase Cooldown</string>
+    <string name="SuperSquadOptionEraserCanEraseAnyone">Eraser Can Erase Non-Crewmates</string>
+    <!-- Vulture - Neutral Scavenger -->
+    <string name="SuperSquadRoleVulture">Vulture</string>
+    <string name="SuperSquadRoleVultureIntroBlurb">Scavenge corpses and win alone.</string>
+    <string name="SuperSquadRoleVultureTabDescription">\%b\%Eat\%/b\% dead bodies to consume them.\%nl\%When you've eaten enough, you win instantly.</string>
+    <!-- Vulture Wiki -->
+    <string name="SuperSquadRoleVultureWikiDescription">The Vulture is a Neutral Scavenger role that can eat dead bodies, permanently removing them from the game. They can see arrows pointing to nearby corpses and win instantly once they have consumed the required number of bodies. They win alone and do not align with any other faction.</string>
+    <string name="SuperSquadRoleVultureEat">Eat</string>
+    <string name="SuperSquadRoleVultureEatWikiDescription">Consume a dead body, removing it from the game and increasing your meal count toward victory.</string>
+    <!-- Vulture Options -->
+    <string name="SuperSquadOptionVultureEatCooldown">Eat Cooldown</string>
+    <string name="SuperSquadOptionVultureBodiesNeededToWin">Bodies Needed to Win</string>
+    <string name="SuperSquadOptionVultureCanVent">Vulture Can Vent</string>
+    <string name="SuperSquadOptionVultureShowBodyArrows">Vulture Sees Body Arrows</string>
 </resources>

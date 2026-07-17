@@ -48,5 +48,9 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 - **Wall vision works.** Can see the whole ship (including other rooms) through walls while aiming. Shadows restore completely after firing, timeout, cancelling due to death/meeting, or any exit from the aim state.
 - **Frozen while aiming.** Cannot move during the aim window. Movement restores on fire, timeout, death, or meeting—all three exit paths.
 - **No projectile or guide appears.** No aim assist line during the window; no bullet travel visual on fire. (The rendering machinery is preserved in `SniperShots` for future roles.)
-- Role icon and the Snipe button sprite have no dedicated art yet — both use Town of Us: Mira's generic Impostor team icon (`Resources/Placeholders/Impostor.png`) as a stand-in; the old AI-generated art was removed. Swap out when real art exists.
+- Role icon and the Snipe button sprite have no dedicated art yet. The role icon uses Town of Us:
+  Mira's generic Impostor team icon (`Resources/Placeholders/Impostor.png`); the Snipe button uses
+  the generic HUD button placeholder (`Resources/Placeholders/GenericButton.png`, the vanilla
+  Shapeshifter's Shift button art - the team icon was too large to read as a HUD button). Swap out
+  when real art exists.
 - Z-depth sorting should be verified if the bullet ever gets a visual again.

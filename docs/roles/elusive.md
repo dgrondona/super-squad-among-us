@@ -60,4 +60,6 @@ defeating the bluff. The Elusive sees the button's effect fill and the "Shielded
   expiry restoring normal kills.
 - Known Veteran-parity race: shield-expiry timer skew between clients can produce edge-of-window
   disagreement on whether an attack landed. Accepted.
-- No dedicated art — role icon and Shield button use the generic Crewmate placeholder.
+- No dedicated art — role icon uses the generic Crewmate placeholder
+  (`Resources/Placeholders/Crewmate.png`); the Shield button uses the generic HUD button placeholder
+  (`Resources/Placeholders/GenericButton.png`).

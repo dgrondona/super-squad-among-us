@@ -89,7 +89,7 @@ writing another point-classification check for this kind of problem.
 
 Design decisions, current architecture, and known follow-ups for individual roles are tracked in
 `docs/roles/<name>.md` — check there before touching an existing role, and add a new file there when you
-build the next one.
+build the next one. Universal game modifiers get the same treatment in `docs/modifiers/<name>.md`.
 
 Keep that file to **current-state information only**, roughly 200-300 lines: what the role does, how it
 works now, confirmed design decisions, known follow-ups. If a role accumulates a long round-by-round

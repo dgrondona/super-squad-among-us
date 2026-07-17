@@ -27,6 +27,11 @@ they don't match their folder name in the TOU-Mira source tree:
 | `TouLocale` | `TownOfUs.Modules.Localization` | — |
 | `MiscUtils` | `TownOfUs.Utilities` | — |
 | `BaseKeybind` | `MiraAPI.Keybinds` | — |
+| `SetOutline(Renderer, Color?)` | `Reactor.Utilities.Extensions` | Reactor, not TOU/Mira |
+
+The `SetOutline` row is an extension-resolution trap, not just a missing type: without the Reactor
+using, `x.SetOutline(colorOrNull)` resolves to TOU-Mira's `SetOutline(this Vent, bool, bool, Color)`
+and fails with a confusing CS7036 about a missing `mainTarget` argument.
 
 When in doubt, `grep` the namespace declaration directly in `reference/TOU-Mira` or `reference/MiraAPI`
 rather than guessing from the folder path — the build (`dotnet build SuperSquadAmongUs.sln`) will

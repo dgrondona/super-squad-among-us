@@ -18,6 +18,8 @@ For build/install instructions, see the [root README](../README.md).
 | | Role | Alignment | Summary |
 |---|---|---|---|
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Apparater.png" width="40"> | [Apparater](roles/Apparater.md) | Power | Teleport to places around the map. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Crewmate.png" width="40"> | [Daddy Hagrid](roles/DaddyHagrid.md) | Protective | Hide players in your cloak to keep them safe. |
+| <img src="../SuperSquadAmongUs/Resources/Placeholders/Crewmate.png" width="40"> | [Elusive](roles/Elusive.md) | Protective | Send your attackers somewhere far, far away. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/InvisibleBoy.png" width="40"> | [Invisible Boy](roles/InvisibleBoy.md) | Support | Turn invisible when no one is watching. |
 
 ### Impostor
@@ -40,6 +42,18 @@ For build/install instructions, see the [root README](../README.md).
 | <img src="../SuperSquadAmongUs/Resources/Placeholders/Neutral.png" width="40"> | [Pelican](roles/Pelican.md) | Killing | You're soooo hungry. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Sentinel.png" width="40"> | [Sentinel](roles/Sentinel.md) | Killing | Eliminate those who stand in your path. |
 | <img src="../SuperSquadAmongUs/Resources/RoleIcons/Vulture.png" width="40"> | [Vulture](roles/Vulture.md) | Evil | Eat corpses to win. |
+
+-----------------------
+
+## Modifiers
+
+Universal modifiers can be assigned to any role on top of it. They ship with their **Amount** option
+at `0` — turn it up in the Modifiers settings tab to enable them.
+
+| Modifier | Summary |
+|---|---|
+| [Invisibility Cloak](modifiers/InvisibilityCloak.md) | Throw on your cloak to turn invisible for a short while. |
+| [Slide Tackle](modifiers/SlideTackle.md) | Slide tackle the nearest player, stunning them briefly. |
 
 -----------------------
 

@@ -2,7 +2,15 @@
 
 Neutral Killing role. Devour nearby players with the primary ability button. Devoured players are hidden from the round and pinned to follow the Pelican's position (their camera spectates the Pelican). At the start of the next meeting, all devoured players die with no bodies. If the Pelican is killed mid-round, everyone in its stomach is released alive at the spot it died. Devoured players don't count as alive for the Pelican's win condition — preventing a soft-lock from a full stomach.
 
-Files: `Roles/Neutral/PelicanRole.cs`, `Buttons/Neutral/PelicanDevourButton.cs`, `Modifiers/DevouredModifier.cs`, `Modifiers/DevouredDisabledModifier.cs`, `Events/PelicanEvents.cs`, `Options/Roles/Neutral/PelicanOptions.cs`.
+Files: `Roles/Neutral/PelicanRole.cs`, `Buttons/Neutral/PelicanDevourButton.cs`, `Modifiers/DevouredModifier.cs`, `Modifiers/CarriedModifier.cs`, `Modifiers/CarriedDisabledModifier.cs`, `Events/PelicanEvents.cs`, `Options/Roles/Neutral/PelicanOptions.cs`.
+
+**2026-07-17: mechanics extracted to `CarriedModifier`.** All the hidden/frozen/pinned/incapacitated
+logic described below was moved verbatim from `DevouredModifier` into the abstract `CarriedModifier`
+base so Daddy Hagrid's cloak (`CloakHiddenModifier`) can share it; `DevouredModifier` is now a thin
+sealed subclass exposing `Pelican` as an alias for `Carrier`, and `DevouredDisabledModifier` was
+renamed `CarriedDisabledModifier`. The two carried states must stay **sealed siblings** — the event
+handlers iterate concrete modifier types and must never catch each other's players. Behavior is
+unchanged; see `docs/roles/daddy-hagrid.md`.
 
 Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/README.md`.
 

@@ -10,6 +10,7 @@ using Reactor.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using TownOfUs.Assets;
+using TownOfUs.Events;
 using TownOfUs.Modifiers;
 using TownOfUs.Networking;
 using TownOfUs.Utilities;
@@ -120,7 +121,25 @@ public static class RcXdCar
 
                 if (deployerDies)
                 {
-                    owner.RpcCustomMurder(owner);
+                    // TOU's death-handler bookkeeping doesn't run for MiraAPI's RpcCustomMurder,
+                    // leaving the deployer's cause of death generic. Set it on every client (the
+                    // Astral does this locally in DieFromFailedReturn; here it must be an RPC
+                    // because only the deployer's client computes the blast).
+                    // killedBy: owner (not null) - TOU suppresses the "killed by" line when
+                    // killedBy == player, and unlike null it can't be dereferenced on the
+                    // locale-miss branch.
+                    DeathHandlerModifier.RpcUpdateLocalDeathHandler(owner, owner, "DiedToSuperSquadRcXd",
+                        DeathEventHandlers.CurrentRound, DeathHandlerOverride.SetTrue, "null",
+                        DeathHandlerOverride.SetTrue);
+
+                    // teleportMurderer MUST be explicit false: MiraAPI's default is true, which
+                    // makes CoPerformCustomKill yield mid-kill to play a blur animation on the
+                    // fresh ghost with the camera locked. The restore-before-detonate flow in
+                    // RcXdDeployButton.OnEffectEnd requires this death to complete synchronously
+                    // (no yields), which only holds with teleportMurderer: false.
+                    // showKillAnim false: vanilla's ShowKillAnimation is broken for killer ==
+                    // victim (see Patches/SelfKillOverlayPatch.cs); skip it at the source too.
+                    owner.RpcCustomMurder(owner, teleportMurderer: false, showKillAnim: false);
                 }
 
                 Info($"RC-XD car detonated: killed {filtered.Count} players (deployer died: {deployerDies})");

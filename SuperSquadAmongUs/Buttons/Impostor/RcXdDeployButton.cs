@@ -29,6 +29,13 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
     // OnEffectEnd().
     private bool detonateRequested;
 
+    // Guards Detonate against the SAME physical press that deployed: one press can dispatch
+    // twice (same-frame double dispatch, or key autorepeat - observed under Proton, where a
+    // single F tap deployed, detonated, and the death then let the held key open the vanilla
+    // ghost Haunt menu). Time-based so it also absorbs autorepeat bursts across frames.
+    private const float DetonateArmDelay = 0.3f;
+    private float deployTime = float.NegativeInfinity;
+
     // Whether the freeze + camera + light drive state is applied, so EndDrive is idempotent
     // (reachable from OnEffectEnd and the FixedUpdate cancel path).
     private bool driveLockActive;
@@ -91,6 +98,11 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
                 return;
             }
 
+            if (Time.time - deployTime < DetonateArmDelay)
+            {
+                return;
+            }
+
             detonateRequested = true;
             ResetCooldownAndOrEffect();
             return;
@@ -103,6 +115,7 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
     {
         var player = PlayerControl.LocalPlayer;
         detonateRequested = false;
+        deployTime = Time.time;
 
         var pos = player.transform.position;
         RcXdCar.RpcDeployCar(player, pos.x, pos.y);

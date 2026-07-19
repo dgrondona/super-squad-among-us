@@ -110,13 +110,15 @@ public sealed class AstralFormModifier : TimedInvisibilityModifier
             showAnim ? DeathHandlerOverride.SetTrue : DeathHandlerOverride.SetFalse,
             lockInfo: DeathHandlerOverride.SetTrue);
 
+        // showKillAnim always false: vanilla's ShowKillAnimation is broken for killer == victim
+        // (see Patches/SelfKillOverlayPatch.cs).
         Player.CustomMurder(
             Player,
             MurderResultFlags.DecisionByHost | MurderResultFlags.Succeeded,
             false,
             showAnim,
             false,
-            showAnim,
+            false,
             false);
     }
 }

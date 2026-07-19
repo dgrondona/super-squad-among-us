@@ -75,9 +75,10 @@ destroy path.
   450 pixels/unit) — tune that pixels-per-unit value if the car reads too big/small in a live playtest.
 - **Observer smoothing quality.** Remote clients `MoveTowards` toward each RPC'd position; playtest
   will show if ~10/s feels jittery.
-- **Deployer's cause of death may not read "Exploded".** The self-kill goes through
-  `RpcCustomMurder`, which (in pinned MiraAPI 0.3.5) has no `causeOfDeath` parameter, so the
-  deployer's death cause falls back to TOU's generic handling. Cosmetic only.
+- ~~Deployer's cause of death may not read "Exploded".~~ Fixed 2026-07-19:
+  `DeathHandlerModifier.RpcUpdateLocalDeathHandler` with the `DiedToSuperSquadRcXd` locale key now
+  runs before the self-kill (MiraAPI's `RpcCustomMurder` has no `causeOfDeath` parameter, so the
+  TOU bookkeeping must be done by hand).
 
 ## Playtest history
 
@@ -124,6 +125,37 @@ destroy path.
   `RpcCustomMurder(owner, owner)` self-kill split from the previous entry was kept (harmless,
   possibly still marginally safer) but is no longer believed necessary on its own. Needs a re-test
   on the version-matched build before any further RC-XD-specific investigation.
+- **2026-07-19: version-matched re-test still crashed — and the crash is not RC-XD's (or any
+  role's) murder logic at all.** Full investigation with Proton/Wine crash capture: the crash is a
+  native page fault (read of null + 0xBD) inside GameAssembly's il2cpp *runtime* region, on a
+  Unity worker thread, consistently right after the LOCAL player dies — the last Player.log line
+  is always Unity's "Unloading N Unused Serialized files" asset-unload scan. A plain TOU Sheriff
+  misfire reproduced it on the version-matched build with zero addon code in the kill path and no
+  addon roles among the dummies, and it is non-deterministic (an RC-XD self-kill succeeded once,
+  then crashed on a later identical attempt). "Roles that can kill themselves" was a proxy: in
+  solo testing a self-kill is the only way the local player ever dies. See the
+  "Local-death native crash" entry in docs/il2cpp-gotchas.md for the evidence trail, what's ruled
+  out, and the capture tooling now in place. One real RC-XD defect found and fixed along the way:
+  the self-kill called `RpcCustomMurder(owner)` with bare defaults, and MiraAPI defaults
+  `teleportMurderer: true` — so the "synchronous, no yields" kill this role's restore-first design
+  depends on actually yielded mid-coroutine to play a blur animation on the fresh ghost with the
+  camera locked. Now passes `teleportMurderer: false` explicitly.
+- **2026-07-19, later: probable poison found — vanilla's kill-stinger overlay is broken for
+  self-kills.** `KillOverlay.ShowKillAnimation` throws an IL2CPP MethodAccessException whenever
+  killer == victim (captured on a TOUM-only Sheriff misfire once instant log flushing was on).
+  Mitigated by `Patches/SelfKillOverlayPatch.cs` (skips the overlay for killer == victim) plus
+  `showKillAnim: false` on the RC-XD and Astral self-kill calls. Details and falsification
+  criteria in docs/il2cpp-gotchas.md ("Local-death native crash" entry). **Confirmed fixed by
+  user testing the same day.** The remaining "UpdateDeathHandlerImmediate - Player had no
+  DeathHandlerModifier" log error is TOU's own self-healing noise - it appears in TOUM-only
+  sessions too (alongside "RpcOfficerMisfire - Invalid officer") and is benign.
+- **2026-07-19: one F press deployed, detonated, and opened the ghost Haunt menu.** The same
+  physical press dispatched to the button more than once (same-frame double dispatch or key
+  autorepeat under Proton); the second dispatch hit the EffectActive branch and detonated with
+  the deployer standing on the car, and the resulting death let the still-held F trigger the
+  vanilla ghost ability (also bound to F). Fixed with a 0.3s `DetonateArmDelay` between Deploy
+  and the first accepted Detonate press - same bug family as the "arming click doubles as action
+  click" entry in docs/il2cpp-gotchas.md, which now covers the keybind variant too.
 
 ## Playtest checklist
 

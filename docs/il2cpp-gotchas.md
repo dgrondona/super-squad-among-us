@@ -79,11 +79,10 @@ non-button trigger path (like the Sniper's world click) needs the same gating ma
 The reverse also bites: `TownOfUsButton.ClickHandler` fully REPLACES MiraAPI's `ClickHandler` and
 does not replicate its cancellable-effect branch (`if (EffectActive && IsEffectCancellable()) {
 ResetCooldownAndOrEffect(); return; }`). A TOU-based button that wants "press again during the
-effect" behavior cannot rely on `IsEffectCancellable()` alone — with the effect active, TOU's
-handler goes straight to `OnClick()` and re-arms the effect (`EffectActive = true; Timer =
-EffectDuration`). The RC-XD's first Detonate press redeployed the car and restarted the countdown
-because of this. Handle the effect-active press in your own `ClickHandler` override (gating included)
-and call `ResetCooldownAndOrEffect()` yourself — see `RcXdDeployButton.ClickHandler`.
+effect" behavior cannot rely on `IsEffectCancellable()` alone — with the effect active, TOU's handler
+goes straight to `OnClick()` and re-arms the effect instead. Handle the effect-active press in your
+own `ClickHandler` override (gating included) and call `ResetCooldownAndOrEffect()` yourself — see
+`RcXdDeployButton.ClickHandler`.
 
 ## MiraAPI vanilla events fire on every client — sync via local state changes, not host gating
 
@@ -190,12 +189,11 @@ kill/ability buttons. Pair with Ambusher's freeze for movement: owner-only `move
 ## Button singletons persist for the whole game process — stale ability state must self-heal
 
 MiraAPI creates ONE instance of each `CustomActionButton` per process; leaving a lobby or freeplay
-session does not reset its private fields. The RC-XD's first playtest (2026-07-17) hit the full
-failure chain: an exception in the ability-end path skipped the restore step, leaving a
-`driveLockActive` flag stuck true — and because the button's `FixedUpdate` re-asserts
-`moveable = false` while that flag is set (self-heal doctrine), every later game where the local
-player took the role had `CanMove == false` from the first tick. That greys out ALL ability buttons
-(`TownOfUsButton.CanUse()` gates on `CanMove`) until the game process is restarted. Two rules:
+session does not reset its private fields. If an ability-end path throws before finishing its restore,
+a stuck state flag (e.g. `driveLockActive`) plus a `FixedUpdate` self-heal that keeps re-asserting
+`moveable = false` while that flag is set will freeze the player from tick one of every later game
+with that role — greying out ALL ability buttons, since `TownOfUsButton.CanUse()` gates on `CanMove`.
+Two rules:
 
 1. In ability-end paths, restore player state (movement, camera, light) BEFORE doing anything that
    can throw — RPC sends, object destruction. An exception after the restore is an inconvenience; an
@@ -204,6 +202,56 @@ player took the role had `CanMove == false` from the first tick. That greys out 
    rather than trusting that every exit path ran. See `RcXdDeployButton.FixedUpdate` for the pattern.
 
 Related: parenting the local player's `lightSource` to a spawned object means destroying that object
-destroys the light — a permanent black screen for the rest of the game. Any code that destroys such
-an object must first reparent the light back (see `RcXdCar.DestroyLocally`), and reparenting keeps
-the WORLD position, so also reset `localPosition` to zero afterward or the light stays where it was.
+destroys the light — a permanent black screen. Reparent the light back before destroying such an
+object (see `RcXdCar.DestroyLocally`), and reset `localPosition` to zero afterward, since reparenting
+keeps the WORLD position.
+
+## Role-gated buttons stop ticking the moment the player dies
+
+MiraAPI drives every button from a `PlayerControl.FixedUpdate` postfix, but only while
+`button.Enabled(role)` is true — and `TownOfUsRoleButton<TRole>.Enabled` requires
+`role is TRole`. Dying swaps `Data.Role` to a ghost role (vanilla `RoleManager.AssignRoleOnDeath`,
+which both MiraAPI and TOU-Mira keep), so a button's `FixedUpdate` override **silently stops running
+on the exact tick the player dies** — no exception, no log. Any cleanup that lives in `FixedUpdate`
+(death-cancel paths, effect countdowns, state restores) never fires if the ability itself is what
+killed the player, or if they die mid-effect. The RC-XD's self-kill stranded the camera on its blast
+anchor this way. Fix: override `Enabled` to also return true while any of the button's own pending
+state flags are set, so the framework keeps driving it until cleanup completes — see
+`RcXdDeployButton.Enabled` / `SniperSnipeButton.Enabled`. The button stays visually hidden for dead
+players regardless (TOU's `SetActive` gates on `!HasDied()`), so this has no HUD side effects.
+
+**Correction (2026-07-18):** an earlier version of this entry claimed `RpcSpecialMultiMurder`
+hard-crashes when the source is one of its own targets, and that splitting the self-kill through
+`RpcCustomMurder(player, player)` fixed it. That diagnosis was wrong — see "Pinned package versions
+silently drifting from the installed mod stack causes native crashes" below for the real cause. A
+plain TOU Sheriff misfire (no addon code involved) crashed identically, which `RpcCustomMurder`
+couldn't have fixed. The `RcXdCar.RpcDetonateCar` split (multi-murder for other victims,
+`RpcCustomMurder` for the deployer) was left in place since it's a reasonable pattern either way —
+but don't treat "self-kill via multi-murder crashes" as a proven rule; it wasn't.
+
+## Pinned package versions silently drifting from the installed mod stack causes native crashes
+
+`AmongUs.props` pins `Reactor`/`AllOfUs.MiraAPI`/`TownOfUsMira` versions the addon compiles against,
+but nothing checks those match what's actually installed in `BepInEx/plugins/` at runtime. They can
+drift a long way apart without a single compile error — mismatched managed assemblies still link
+fine; only *actually-changed* signatures fail to compile, and most of a mod API surface doesn't
+change release to release. The result when they do drift: undefined behavior, not a clean failure.
+Diagnosing the RC-XD self-kill crash (see docs/roles/rc-xd.md) burned three build/fix cycles chasing
+plausible-looking managed-code causes (RPC call shape, ghost-role timing, event ordering) before
+confirming the actual cause was version skew — the addon was compiled against TownOfUsMira
+1.5.0-beta.1 / MiraAPI 0.3.5 / Reactor 2.5.0-ci.371 while the installed plugins were 1.6.3-beta2 /
+0.4.1 / 2.5.1. The tell that should have been checked first: **the crash was role-agnostic (a plain
+TOU Sheriff misfire crashed identically) and disappeared entirely when the addon DLL was removed** —
+any bug that global and that tied to "our DLL present or not" is a linkage/version problem before
+it's a logic problem.
+
+How to check: `strings BepInEx/plugins/TownOfUsMira.dll | grep -E '^[0-9]+\.[0-9]+\.[0-9]+'` (and
+same for `MiraAPI.dll`/`Reactor.dll`) against the versions in `AmongUs.props`. To fix: bump the
+pinned versions to match, `dotnet restore --force-evaluate`, then fix whatever actually fails to
+compile — in practice this was small (2-3 files) even across a multi-minor-version jump, because
+most breakage is a moved/renamed type (e.g. `ModifierFaction` moved from `MiraAPI.Modifiers` to
+`TownOfUs.Modifiers` between these versions) rather than a deep behavioral change. Decompile the new
+pinned DLL (`ilspycmd`, see the entry above) to find where a moved type landed rather than guessing.
+This is also a case where checking for a TOU-Mira update **first**, before deep-diving into RPC
+semantics, would have been the faster diagnostic path — worth doing whenever a crash is this
+inexplicable from the addon's own code alone.

@@ -17,6 +17,7 @@ public static class SuperSquadImpAssets
     public static LoadableAsset<Sprite> SniperSnipeSprite => SuperSquadAssets.ImpostorPlaceholderButton;
     public static LoadableAsset<Sprite> RcXdDeploySprite => SuperSquadAssets.ImpostorPlaceholderButton;
     public static LoadableAsset<Sprite> RcXdDetonateSprite => SuperSquadAssets.ImpostorPlaceholderButton;
+    public static LoadableAsset<Sprite> RcXdCarSprite { get; } = new LoadableResourceAsset($"{ShortPath}.RcXdCar.png", 450);
     public static LoadableAsset<Sprite> SniperGuideSprite { get; } = new LoadableResourceAsset($"{ShortPath}.SniperGuide.png");
     public static LoadableAsset<Sprite> MafiaJanitorCleanSprite { get; } = new LoadableResourceAsset($"{ShortPath}.MafiaJanitorCleanButton.png");
     public static LoadableAsset<Sprite> EraserSprite { get; } = new LoadableResourceAsset($"{ShortPath}.EraserButton.png");

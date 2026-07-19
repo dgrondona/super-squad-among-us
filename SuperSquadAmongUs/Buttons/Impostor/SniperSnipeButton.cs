@@ -43,6 +43,14 @@ public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
     public override float EffectDuration => OptionGroupSingleton<SniperOptions>.Instance.AimWindow;
     public override LoadableAsset<Sprite> Sprite => SuperSquadImpAssets.SniperSnipeSprite;
 
+    // MiraAPI only drives a button's FixedUpdate while Enabled(role) is true, and dying swaps
+    // Data.Role to a ghost role - stay enabled while the aim state is pending so the death-cancel
+    // path can still run EndAim (docs/il2cpp-gotchas.md).
+    public override bool Enabled(RoleBehaviour? role)
+    {
+        return base.Enabled(role) || EffectActive || aimLockActive;
+    }
+
     public override bool CanUse()
     {
         if (HudManager.Instance.Chat.IsOpenOrOpening || MeetingHud.Instance)

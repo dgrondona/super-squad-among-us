@@ -1,6 +1,7 @@
 using System.Collections;
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
+using MiraAPI.Networking;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using Reactor.Networking.Attributes;
@@ -18,27 +19,15 @@ using Object = UnityEngine.Object;
 namespace SuperSquadAmongUs.Modules;
 
 /// <summary>
-/// The RC-XD's car, spawned on every client via RPC. Only the deployer's client simulates physics and
-/// broadcasts throttled position updates; remote clients interpolate toward the latest received position.
+/// The RC-XD's car. Spawned/moved/despawned via RPC on every client; only the deployer's client
+/// simulates physics and computes detonation kills.
 /// </summary>
 public static class RcXdCar
 {
-    /// <summary>
-    /// The active car GameObject, if one is deployed (null otherwise).
-    /// </summary>
     internal static GameObject? ActiveCar { get; private set; }
 
-    /// <summary>
-    /// The active car's behaviour component, if one is deployed (null otherwise).
-    /// </summary>
     internal static RcXdCarBehaviour? ActiveBehaviour { get; private set; }
 
-    /// <summary>
-    /// Spawns the RC-XD car on every client at the deployer's current position.
-    /// </summary>
-    /// <param name="owner">The impostor deploying the car.</param>
-    /// <param name="x">World x position of the car.</param>
-    /// <param name="y">World y position of the car.</param>
     [MethodRpc((uint)SuperSquadRpc.DeployRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDeployCar(PlayerControl owner, float x, float y)
     {
@@ -48,7 +37,7 @@ public static class RcXdCar
         carObject.transform.position = new Vector3(x, y, y / 1000f);
 
         var renderer = carObject.AddComponent<SpriteRenderer>();
-        renderer.sprite = SuperSquadAssets.RcXdCarSprite.LoadAsset();
+        renderer.sprite = SuperSquadImpAssets.RcXdCarSprite.LoadAsset();
 
         var behaviour = carObject.AddComponent<RcXdCarBehaviour>();
         behaviour.Initialize(owner);
@@ -57,13 +46,6 @@ public static class RcXdCar
         ActiveBehaviour = behaviour;
     }
 
-    /// <summary>
-    /// Updates the car's target position on remote clients. The deployer's client ignores this (already
-    /// authoritative via physics simulation).
-    /// </summary>
-    /// <param name="owner">The impostor driving the car.</param>
-    /// <param name="x">The new target x position.</param>
-    /// <param name="y">The new target y position.</param>
     [MethodRpc((uint)SuperSquadRpc.MoveRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcMoveCar(PlayerControl owner, float x, float y)
     {
@@ -80,14 +62,6 @@ public static class RcXdCar
         ActiveBehaviour.SetTargetPosition(new Vector2(x, y));
     }
 
-    /// <summary>
-    /// Detonates the car at the given position, playing explosion feedback on every client. The kills
-    /// are computed and sent on the deployer's client only - RpcSpecialMultiMurder is itself an RPC and
-    /// must go out exactly once.
-    /// </summary>
-    /// <param name="owner">The impostor who deployed the car.</param>
-    /// <param name="x">The explosion center x position.</param>
-    /// <param name="y">The explosion center y position.</param>
     [MethodRpc((uint)SuperSquadRpc.DetonateRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDetonateCar(PlayerControl owner, float x, float y)
     {
@@ -100,6 +74,7 @@ public static class RcXdCar
         sphere.GetComponent<MeshRenderer>().material = AuAvengersAnims.IgniteMaterial.LoadAsset();
         Coroutines.Start(DestroyAfterDelay(sphere, 0.4f));
 
+        // RpcSpecialMultiMurder is itself an RPC, so only the deployer computes and sends it once.
         if (owner.AmOwner)
         {
             var targetPos = new Vector2(x, y);
@@ -130,37 +105,44 @@ public static class RcXdCar
 
             if (filtered.Count > 0)
             {
-                owner.RpcSpecialMultiMurder(filtered, true, teleportMurderer: false, playKillSound: true,
-                    causeOfDeath: "SuperSquadRcXd");
-                Info($"RC-XD car detonated: killed {filtered.Count} players");
+                // TOU's multi-murder pipeline hard-crashes when the source is one of its own
+                // targets, so the deployer's self-kill goes through the single-target
+                // RpcCustomMurder instead - the exact call the Sheriff's misfire uses, defaults
+                // and all (docs/il2cpp-gotchas.md).
+                var others = filtered.Where(p => p.PlayerId != owner.PlayerId).ToList();
+                var deployerDies = others.Count != filtered.Count;
+
+                if (others.Count > 0)
+                {
+                    owner.RpcSpecialMultiMurder(others, true, teleportMurderer: false, playKillSound: true,
+                        causeOfDeath: "SuperSquadRcXd");
+                }
+
+                if (deployerDies)
+                {
+                    owner.RpcCustomMurder(owner);
+                }
+
+                Info($"RC-XD car detonated: killed {filtered.Count} players (deployer died: {deployerDies})");
             }
         }
 
         DestroyLocally();
     }
 
-    /// <summary>
-    /// Despawns the car without detonation (fizzle path when the drive time expires).
-    /// </summary>
-    /// <param name="owner">The impostor who deployed the car.</param>
     [MethodRpc((uint)SuperSquadRpc.DespawnRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDespawnCar(PlayerControl owner)
     {
         DestroyLocally();
     }
 
-    /// <summary>
-    /// Destroys the car GameObject and clears the statics on the calling client only. Shared by all
-    /// RPC handlers to avoid nested RPC broadcasts.
-    /// </summary>
     private static void DestroyLocally()
     {
         if (ActiveCar != null)
         {
-            // The driver's client parents the player's lightSource to the car and points the
-            // follower camera at it; both must be rescued BEFORE the car is destroyed, no matter
-            // which path is destroying it (detonate, fizzle, meeting safety net, stale-deploy
-            // cleanup) - destroying the light blacks out the screen for the rest of the game.
+            // Rescue the local player's light/camera off the car before destroying it, on every
+            // destroy path - destroying a GameObject the light is parented to blacks out the screen
+            // permanently (docs/il2cpp-gotchas.md).
             var local = PlayerControl.LocalPlayer;
             if (local != null && local.lightSource != null &&
                 local.lightSource.transform.parent == ActiveCar.transform)
@@ -184,13 +166,9 @@ public static class RcXdCar
     }
 
     /// <summary>
-    /// Wrapper for DestroyLocally, exposed for safety-net cleanup from the behaviour when a meeting
-    /// starts mid-drive.
+    /// Safety-net cleanup for a meeting starting mid-drive, callable from the car behaviour itself.
     /// </summary>
-    internal static void EnsureDestroyedLocally()
-    {
-        DestroyLocally();
-    }
+    internal static void EnsureDestroyedLocally() => DestroyLocally();
 
     private static IEnumerator DestroyAfterDelay(GameObject sphere, float delay)
     {

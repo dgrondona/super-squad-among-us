@@ -22,8 +22,4 @@ public static class SuperSquadAssets
     public static LoadableAsset<Sprite> ImpostorPlaceholderButton => TouCrewAssets.RewindSprite;
     public static LoadableAsset<Sprite> NeutralPlaceholderButton => TouCrewAssets.RewindSprite;
     public static LoadableAsset<Sprite> CrewmatePlaceholderButton => TouCrewAssets.RewindSprite;
-
-    // In-world sprite for the RC-XD's car. No dedicated art yet - reuses the HUD button placeholder
-    // so the car is at least visible in the world; swap for a real car sprite when it exists.
-    public static LoadableAsset<Sprite> RcXdCarSprite => ImpostorPlaceholderButton;
 }

@@ -8,10 +8,9 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Modules;
 
 /// <summary>
-/// Behaviour component for the RC-XD car. Supports two modes: driver (physics-simulated on the
-/// deployer's client, sends throttled position updates) and remote (interpolates toward the latest
-/// received position on observer clients). Both modes use joystick input (driver) or network updates
-/// (observers) and flip the sprite based on movement direction.
+/// The RC-XD car's behaviour. Driver mode (deployer's client) simulates physics from joystick input
+/// and sends throttled position updates; remote clients run in interpolation-only mode instead,
+/// chasing the latest received position. Both modes flip the sprite based on movement direction.
 /// </summary>
 [RegisterInIl2Cpp]
 public sealed class RcXdCarBehaviour(IntPtr cppPtr) : MonoBehaviour(cppPtr)
@@ -24,16 +23,8 @@ public sealed class RcXdCarBehaviour(IntPtr cppPtr) : MonoBehaviour(cppPtr)
     private Vector2 _lastSentPosition;
     private Vector2 _lastFlipDirection = Vector2.right;
 
-    /// <summary>
-    /// The impostor who deployed and is driving the car.
-    /// </summary>
     public PlayerControl? Owner => _owner;
 
-    /// <summary>
-    /// Initializes the car with a deployer. On the deployer's client, adds physics components and
-    /// sets up collision with the ship. On observer clients, sets up interpolation-only mode.
-    /// </summary>
-    /// <param name="owner">The impostor driving the car.</param>
     public void Initialize(PlayerControl owner)
     {
         _owner = owner;
@@ -71,11 +62,6 @@ public sealed class RcXdCarBehaviour(IntPtr cppPtr) : MonoBehaviour(cppPtr)
         }
     }
 
-    /// <summary>
-    /// Updates the car's target position (used by remote clients to interpolate toward the latest
-    /// network position).
-    /// </summary>
-    /// <param name="pos">The new target position.</param>
     public void SetTargetPosition(Vector2 pos)
     {
         _targetPosition = pos;
@@ -131,6 +117,7 @@ public sealed class RcXdCarBehaviour(IntPtr cppPtr) : MonoBehaviour(cppPtr)
             transform.position = Vector2.MoveTowards(pos, _targetPosition, moveStep);
         }
 
+        // Safety net for remote clients in case the deployer's fizzle/detonate RPC races the meeting.
         if (MeetingHud.Instance != null)
         {
             RcXdCar.EnsureDestroyedLocally();

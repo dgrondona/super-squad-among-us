@@ -5,6 +5,7 @@ using MiraAPI.Modifiers.Types;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Modifiers;
 using TownOfUs.Interfaces;
+using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Game;
 using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;

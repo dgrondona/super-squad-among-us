@@ -6,7 +6,7 @@
 
 > Deploy an explosive RC car.
 
-The RC-XD is an Impostor Killing role that deploys a remote-controlled car. Press the Deploy button to spawn a car at your feet — you freeze in place while driving it with your movement controls (default 2× player speed), and the camera follows the car. Press the button again (now labeled Detonate) to explode the car and kill everyone within the explosion radius. If you don't press Detonate within the Drive Time (default 8 seconds), the car despawns harmlessly and you regain control.
+The RC-XD is an Impostor Killing role that deploys a remote-controlled car. Press the Deploy button to spawn a car at your feet — you freeze in place while driving it with your movement controls (default 2× player speed), and the camera follows the car. Press the button again (now labeled Detonate) to explode the car and kill everyone within the explosion radius — the camera lingers on the explosion for a moment so you see the blast before returning to your body (unless you're caught in the blast yourself, in which case you die right where you stand). If you don't press Detonate within the Drive Time (default 8 seconds), the car despawns harmlessly and you regain control.
 
 ## Abilities
 

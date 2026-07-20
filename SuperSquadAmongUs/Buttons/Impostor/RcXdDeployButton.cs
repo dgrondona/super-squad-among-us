@@ -57,6 +57,23 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
 
     public override bool IsEffectCancellable() => true;
 
+    // RcXdDeploySprite has "DEPLOY" baked into the art (docs/icon-standards.md); the framework's own
+    // buttonLabelText would just duplicate it. RcXdDetonateSprite is still the textless generic
+    // placeholder, so the label stays needed there - toggled alongside every sprite/name swap below.
+    public override void CreateButton(Transform parent)
+    {
+        base.CreateButton(parent);
+        SetLabelTextVisible(false);
+    }
+
+    private void SetLabelTextVisible(bool visible)
+    {
+        if (Button != null)
+        {
+            Button.buttonLabelText.gameObject.SetActive(visible);
+        }
+    }
+
     // MiraAPI only drives a button's FixedUpdate while Enabled(role) is true, and dying swaps
     // Data.Role to a ghost role - so stay enabled while any drive/linger state is pending, or the
     // death-cancel and linger cleanup would stop ticking the moment the blast kills the deployer,
@@ -262,6 +279,7 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
 
         OverrideSprite(SuperSquadImpAssets.RcXdDetonateSprite.LoadAsset());
         OverrideName(TouLocale.GetParsed("SuperSquadRoleRcXdDetonate", "Detonate"));
+        SetLabelTextVisible(true);
 
         driveLockActive = true;
     }
@@ -300,6 +318,7 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
 
         OverrideSprite(SuperSquadImpAssets.RcXdDeploySprite.LoadAsset());
         OverrideName(TouLocale.GetParsed("SuperSquadRoleRcXdDeploy", "Deploy"));
+        SetLabelTextVisible(false);
     }
 
     // Parks the camera and player's light on an inert anchor at the blast site before the detonate

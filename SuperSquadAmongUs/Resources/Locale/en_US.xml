@@ -11,6 +11,8 @@
     <string name="DiedToSuperSquadSniper">Sniped</string>
     <string name="DiedToSuperSquadRcXd">Exploded</string>
     <string name="SuperSquadDiedToAstral">Faded</string>
+    <string name="SuperSquadDiedToKirby">Digested</string>
+    <string name="DiedToSuperSquadDetonator">Detonated</string>
     <!-- Sentinel - Neutral Killing -->
     <string name="SuperSquadRoleSentinel">Sentinel</string>
     <string name="SuperSquadRoleSentinelIntroBlurb">Eliminate those who stand in your path.</string>
@@ -228,4 +230,87 @@
     <string name="SuperSquadOptionSlideTackleChance">Slide Tackle Chance</string>
     <string name="SuperSquadOptionSlideTackleCooldown">Tackle Cooldown</string>
     <string name="SuperSquadOptionSlideTackleStunDuration">Stun Duration</string>
+    <!-- Dumper - Impostor Support -->
+    <string name="SuperSquadRoleDumper">Dumper</string>
+    <string name="SuperSquadRoleDumperIntroBlurb">Carry bodies away before anyone can find them.</string>
+    <string name="SuperSquadRoleDumperTabDescription">\%b\%Carry\%/b\% a nearby body to hide it completely, then \%b\%drop\%/b\% it wherever you please.</string>
+    <!-- Dumper Wiki -->
+    <string name="SuperSquadRoleDumperWikiDescription">The Dumper is an Impostor Support role that can pick up a nearby dead body, hiding it entirely from the round for a limited time. The body can be dropped early at any moment, or it will drop automatically - and become visible again - once the carry duration runs out, a meeting is called, or the Dumper dies.</string>
+    <string name="SuperSquadRoleDumperCarry">Carry</string>
+    <string name="SuperSquadRoleDumperCarryWikiDescription">Pick up the nearest body, hiding it until you drop it or the carry duration runs out.</string>
+    <string name="SuperSquadRoleDumperDrop">Drop</string>
+    <!-- Dumper Options -->
+    <string name="SuperSquadOptionDumperCarryCooldown">Carry Cooldown</string>
+    <string name="SuperSquadOptionDumperCarryDuration">Carry Duration</string>
+    <string name="SuperSquadOptionDumperCanVent">Dumper Can Vent</string>
+    <!-- Detonator - Impostor Killing -->
+    <string name="SuperSquadRoleDetonator">Detonator</string>
+    <string name="SuperSquadRoleDetonatorIntroBlurb">Attach a bomb, then choose your moment.</string>
+    <string name="SuperSquadRoleDetonatorTabDescription">\%b\%Attach\%/b\% a bomb to a nearby player, then \%b\%detonate\%/b\% it whenever you like once it's armed.</string>
+    <!-- Detonator Wiki -->
+    <string name="SuperSquadRoleDetonatorWikiDescription">The Detonator is an Impostor Killing role that can attach a bomb to a nearby player. After a short arming delay, the bomb can be detonated at any time, killing the bombed player and anyone caught in a small radius around their current position. Only one bomb can be active at a time, and it's removed harmlessly if a meeting is called before it goes off.</string>
+    <string name="SuperSquadRoleDetonatorAttach">Attach</string>
+    <string name="SuperSquadRoleDetonatorAttachWikiDescription">Attach a bomb to a nearby player. Once armed, detonate it at any time.</string>
+    <string name="SuperSquadRoleDetonatorDetonate">Detonate</string>
+    <!-- Detonator Options -->
+    <string name="SuperSquadOptionDetonatorAttachCooldown">Attach Cooldown</string>
+    <string name="SuperSquadOptionDetonatorArmDelay">Arm Delay</string>
+    <string name="SuperSquadOptionDetonatorBlastRadius">Blast Radius</string>
+    <string name="SuperSquadOptionDetonatorCanKillImpostors">Detonator Can Kill Impostors</string>
+    <string name="SuperSquadOptionDetonatorCanVent">Detonator Can Vent</string>
+    <!-- Gooper - Neutral Killing -->
+    <string name="SuperSquadRoleGooper">Gooper</string>
+    <string name="SuperSquadRoleGooperIntroBlurb">Goop bodies to grow ever more dangerous.</string>
+    <string name="SuperSquadRoleGooperTabDescription">\%b\%Goop\%/b\% dead bodies to mark them - each goop grants a new power. Outlast everyone else to win.</string>
+    <!-- Gooper Wiki -->
+    <string name="SuperSquadRoleGooperWikiDescription">The Gooper is a Neutral Killing role that can goop dead bodies, marking them (without removing them) so they can't be gooped again. The first goop unlocks a protective vest ability - activate it to become briefly immune to being killed; the second grants a permanent kill button and the ability to vent; the third and every goop after grants one additional random ability, drawn without repeats from a pool that currently includes Snipe and Swoop. An arrow points toward every un-gooped body while alive.</string>
+    <string name="SuperSquadRoleGooperGoop">Goop</string>
+    <string name="SuperSquadRoleGooperGoopWikiDescription">Mark a nearby dead body as gooped, granting your next power.</string>
+    <string name="SuperSquadRoleGooperVest">Vest</string>
+    <string name="SuperSquadRoleGooperVestWikiDescription">Put on a protective vest, becoming briefly immune to being killed.</string>
+    <string name="SuperSquadRoleGooperSwoop">Swoop</string>
+    <string name="SuperSquadRoleGooperUnswoop">Unswoop</string>
+    <!-- Gooper Options -->
+    <string name="SuperSquadOptionGooperGoopCooldown">Goop Cooldown</string>
+    <string name="SuperSquadOptionGooperVestDuration">Vest Duration</string>
+    <string name="SuperSquadOptionGooperVestCooldown">Vest Cooldown</string>
+    <string name="SuperSquadOptionGooperKillCooldown">Kill Cooldown</string>
+    <string name="SuperSquadOptionGooperSnipeCooldown">Snipe Cooldown</string>
+    <string name="SuperSquadOptionGooperAimWindow">Aim Window</string>
+    <string name="SuperSquadOptionGooperSwoopCooldown">Swoop Cooldown</string>
+    <string name="SuperSquadOptionGooperSwoopDuration">Swoop Duration</string>
+    <!-- Kirby - Neutral Killing -->
+    <string name="SuperSquadRoleKirby">Kirby</string>
+    <string name="SuperSquadRoleKirbyIntroBlurb">Swallow your way to a bigger arsenal.</string>
+    <string name="SuperSquadRoleKirbyTabDescription">\%b\%Swallow\%/b\% nearby players to inherit their abilities right away. They're digested at the next meeting.</string>
+    <!-- Kirby Wiki -->
+    <string name="SuperSquadRoleKirbyWikiDescription">Kirby is a Neutral Killing role that can swallow nearby players, hiding and freezing them exactly like the Pelican. The moment a player is swallowed, Kirby permanently inherits a curated set of their abilities - kill, vent, snipe, and swoop. Swallowed players are digested (killed, no body) at the next meeting. If Kirby dies before then, everyone in its stomach is released alive where it died.</string>
+    <string name="SuperSquadRoleKirbySwallow">Swallow</string>
+    <string name="SuperSquadRoleKirbySwallowWikiDescription">Swallow a nearby player, hiding and freezing them until the next meeting.</string>
+    <string name="SuperSquadRoleKirbySwoop">Swoop</string>
+    <string name="SuperSquadRoleKirbyUnswoop">Unswoop</string>
+    <!-- Kirby Options -->
+    <string name="SuperSquadOptionKirbySwallowCooldown">Swallow Cooldown</string>
+    <string name="SuperSquadOptionKirbyCanVent">Kirby Can Vent</string>
+    <string name="SuperSquadOptionKirbyImpostorVision">Kirby Has Impostor Vision</string>
+    <string name="SuperSquadOptionKirbyKillCooldown">Kill Cooldown</string>
+    <string name="SuperSquadOptionKirbySnipeCooldown">Snipe Cooldown</string>
+    <string name="SuperSquadOptionKirbyAimWindow">Aim Window</string>
+    <string name="SuperSquadOptionKirbySwoopCooldown">Swoop Cooldown</string>
+    <string name="SuperSquadOptionKirbySwoopDuration">Swoop Duration</string>
+    <!-- Sui - Crewmate Protective -->
+    <string name="SuperSquadRoleSui">Sui</string>
+    <string name="SuperSquadRoleSuiIntroBlurb">Protect someone, and make anyone who targets them regret it.</string>
+    <string name="SuperSquadRoleSuiTabDescription">\%b\%Protect\%/b\% one player at a time. If someone interacts with them, you gain a one-time \%b\%retaliation\%/b\% kill.</string>
+    <!-- Sui Wiki -->
+    <string name="SuperSquadRoleSuiWikiDescription">The Sui is a Crewmate Protective role that can protect one player at a time. If anyone uses an ability on - or attempts to kill - the protected player, the Sui gains a one-shot retaliation kill locked onto whoever did it, with an arrow pointing them out. Options can widen the retaliation target to anyone, make the Sui die if they retaliate against the wrong person, or narrow the trigger to only an impostor's kill attempts. The retaliation window lasts until it's used or the next meeting starts.</string>
+    <string name="SuperSquadRoleSuiProtect">Protect</string>
+    <string name="SuperSquadRoleSuiProtectWikiDescription">Protect a nearby player. Protecting a new player drops the previous one.</string>
+    <string name="SuperSquadRoleSuiRetaliate">Retaliate</string>
+    <string name="SuperSquadRoleSuiRetaliateWikiDescription">Kill whoever interacted with your protected player. Only available after they do.</string>
+    <!-- Sui Options -->
+    <string name="SuperSquadOptionSuiProtectCooldown">Protect Cooldown</string>
+    <string name="SuperSquadOptionSuiCanTargetAnyone">Sui Can Retaliate Against Anyone</string>
+    <string name="SuperSquadOptionSuiDiesOnWrongTarget">Sui Dies on Wrong Retaliation</string>
+    <string name="SuperSquadOptionSuiOnlyImpostorKillsTrigger">Only Impostor Kill Attempts Trigger Sui</string>
 </resources>

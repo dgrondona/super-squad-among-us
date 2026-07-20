@@ -14,4 +14,6 @@ public enum SuperSquadRpc : uint
     MoveRcXdCar = 6,
     DetonateRcXdCar = 7,
     DespawnRcXdCar = 8,
+    GooperGoop = 9,
+    DetonatorDetonate = 10,
 }

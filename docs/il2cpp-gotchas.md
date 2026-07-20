@@ -97,6 +97,22 @@ goes straight to `OnClick()` and re-arms the effect instead. Handle the effect-a
 own `ClickHandler` override (gating included) and call `ResetCooldownAndOrEffect()` yourself — see
 `RcXdDeployButton.ClickHandler`.
 
+## A two-phase *targeted* button's second phase is blocked by `CanClick()`, not just `CanUse()`
+
+`CustomActionButton<T>.CanClick()` is `base.CanClick() && Target != null`, and `base.CanClick()` is
+`(EffectActive ? IsEffectCancellable() : Timer <= 0) && CanUse()`. So a targeted button
+(`TownOfUsRoleButton<TRole, TTarget>`) can only be clicked when there is a fresh valid `Target` AND the
+cooldown has elapsed — **overriding `CanUse()` is not enough**, because `ClickHandler → CanClick()`
+re-enforces both gates independently. This silently breaks any "pick up / put down" or "attach /
+detonate" toggle where the second press happens while the pickup cooldown is still running and/or with
+no valid target under the cursor (Dumper's early drop, Detonator's detonate — both were dead on arrival
+until fixed). Fix: override `ClickHandler`, detect the second-phase state (a held modifier / a tracked
+`activeBomb`), and run that branch gated on `CanUse()` alone (fold the alive/hacked/`DisabledModifier`
+guards into `CanUse`), bypassing `CanClick()` entirely. See `DumperCarryButton.ClickHandler` /
+`DetonatorAttachButton.ClickHandler`. (The Undertaker sidesteps this differently — it keeps the dragged
+body a valid nearby `Target` and never starts the cooldown until drop — but that only works because the
+body stays visible and in range; a hidden/teleported body can't.)
+
 ## MiraAPI vanilla events fire on every client — sync via local state changes, not host gating
 
 `StartMeetingEvent`, `EjectionEvent`, and `PlayerDeathEvent` are invoked from postfixes on

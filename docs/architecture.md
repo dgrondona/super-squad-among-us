@@ -42,7 +42,7 @@ follows the same shape:
   Us: Mira's own generic team icons (`Resources/Placeholders/{Impostor,Neutral}.png`, copied from
   `reference/TOU-Mira/Images/Icons/`). Role icons and buttons use different `pixelsPerUnit` conventions
   (200 vs. the 100 default), which is why there are separate icon/button properties wrapping the same
-  underlying image.
+  underlying image. See [icon-standards.md](icon-standards.md) for exact target sizes/PPU per asset type.
 - Locale strings live in `Resources/Locale/en_US.xml`, using the key prefixes `SuperSquadRole...` and
   `SuperSquadOption...`. Only `en_US.xml` needs the new keys — the other language files in that folder
   are optional translations and are not expected to have every key (missing keys fall back to the
@@ -111,6 +111,16 @@ writing another point-classification check for this kind of problem.
 Design decisions, current architecture, and known follow-ups for individual roles are tracked in
 `docs/roles/<name>.md` — check there before touching an existing role, and add a new file there when you
 build the next one. Universal game modifiers get the same treatment in `docs/modifiers/<name>.md`.
+
+## Granting a role abilities it wasn't born with
+
+If a role needs to dynamically gain abilities at runtime (Gooper's goop-tier escalation, Kirby's
+digestion-based inheritance — see `docs/roles/gooper.md`'s "Shared ability-grant architecture" section),
+reuse `Modules/AbilityGrants.cs` (`GrantableAbility` flags + `IAbilityGrantHolder`) and the shared button
+bases in `Buttons/GrantedAbilityButtons.cs`, rather than building a bespoke per-role system. The house
+pattern is additive `player.AddModifier<T>()`/`RpcAddModifier<T>()` calls gated by an unlocked-ability
+flag (`Enabled` override), not a full role swap — MiraAPI's only "become another role" primitive is a
+full teardown/reinstantiate (`ChangeRole`), too heavy for "add one ability."
 
 Keep that file to **current-state information only**, roughly 200-300 lines: what the role does, how it
 works now, confirmed design decisions, known follow-ups. If a role accumulates a long round-by-round

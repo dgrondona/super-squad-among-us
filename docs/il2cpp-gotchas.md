@@ -60,11 +60,20 @@ from the fixed tick silently drops most clicks whenever FPS exceeds the tick rat
 bitten twice (Apparater map click, Sniper aim click). The fix both times: a `HudManager.Update`
 postfix (`Patches/ApparaterMapClickPatch.cs`, `Patches/SniperAimPatch.cs`) that calls a self-guarding
 handler on the button. Also record `Time.frameCount` when the ability is armed so the arming click
-can't double as the action click in the same frame. The keybind variant of the same bug: a single
-physical keypress can dispatch to a button's ClickHandler more than once (same-frame double
-dispatch, or key autorepeat - observed under Proton), so a two-phase button (Deploy/Detonate on one
-key) needs a short time-based arming delay, not just a frame check - see
-`RcXdDeployButton.DetonateArmDelay`.
+can't double as the action click in the same frame. Two keybind variants of the same family:
+
+- A single physical keypress can dispatch to a button's ClickHandler more than once (same-frame
+  double dispatch, or key autorepeat - observed under Proton), so a two-phase button
+  (Deploy/Detonate on one key) needs a short time-based arming delay, not just a frame check - see
+  `RcXdDeployButton.DetonateArmDelay`.
+- `Keybinds.SecondaryAction` (the standard role-ability key most `TownOfUsRoleButton`s bind to) IS
+  the vanilla `AbilityButton`, and `AbilityButton.DoClick()` polls that key independently each
+  frame regardless of what else already handled the press. If a custom ability kills the local
+  player synchronously, `Data.Role` flips to a ghost role before that poll runs, so the same
+  still-down key also fires the ghost's ability (Haunt) later the same frame. Fix: a Harmony
+  prefix on `AbilityButton.DoClick` that skips the click for the exact frame the self-kill
+  happened - see `Patches/SuppressHauntAfterSelfDetonatePatch.cs` /
+  `RcXdCar.SelfDetonationFrame`.
 
 ## `EventSystem.IsPointerOverGameObject()` does not see Among Us HUD buttons
 
@@ -224,19 +233,9 @@ state flags are set, so the framework keeps driving it until cleanup completes �
 `RcXdDeployButton.Enabled` / `SniperSnipeButton.Enabled`. The button stays visually hidden for dead
 players regardless (TOU's `SetActive` gates on `!HasDied()`), so this has no HUD side effects.
 
-**Correction (2026-07-18):** an earlier version of this entry claimed `RpcSpecialMultiMurder`
-hard-crashes when the source is one of its own targets, and that splitting the self-kill through
-`RpcCustomMurder(player, player)` fixed it. That diagnosis was wrong — see "Pinned package versions
-silently drifting from the installed mod stack causes native crashes" below for the real cause. A
-plain TOU Sheriff misfire (no addon code involved) crashed identically, which `RpcCustomMurder`
-couldn't have fixed. The `RcXdCar.RpcDetonateCar` split (multi-murder for other victims,
-`RpcCustomMurder` for the deployer) was left in place since it's a reasonable pattern either way —
-but don't treat "self-kill via multi-murder crashes" as a proven rule; it wasn't.
-
-**Second correction (2026-07-19):** the version-skew conclusion below did not hold up either — the
-crash persisted on the fully version-matched build, including on a plain TOU Sheriff misfire with
-the addon merely loaded. See "Local-death native crash in the il2cpp asset-unload path" below for
-the current state of evidence.
+(Two earlier corrections to this entry chased wrong diagnoses — `RpcSpecialMultiMurder` self-target
+crashes, then package version skew — before landing on the real cause below; see git history if the
+detour itself is useful context.)
 
 ## Pinned package versions silently drifting from the installed mod stack causes native crashes
 
@@ -265,68 +264,49 @@ This is also a case where checking for a TOU-Mira update **first**, before deep-
 semantics, would have been the faster diagnostic path — worth doing whenever a crash is this
 inexplicable from the addon's own code alone.
 
-## Local-death native crash in the il2cpp asset-unload path (open, 2026-07-19)
+## Local-death native crash — upstream TOU-Mira/AU 2026.6.5 memory corruption, not addon-fixable (open, tracked upstream)
 
 The recurring "self-kill crashes the game" bug (see docs/roles/rc-xd.md playtest history) is a
-native crash, not a managed one, and it is not caused by any murder/death logic in this addon:
+native page fault inside GameAssembly's il2cpp runtime (`gameassembly+0x2eb256`, a byte read at
+offset 0xBD off a NULL pointer), on a worker thread, always shortly after a LOCAL player's death.
+**As of 2026-07-20, this is confirmed NOT fixable from this addon.**
 
-- Wine records `Unhandled exception: page fault on read access to 0x000000bd` at
-  `gameassembly+0x2eb256` — a byte read at offset 0xBD off a NULL pointer, inside GameAssembly's
-  il2cpp *runtime* region (between the last `il2cpp_*` export and the COM stubs, i.e. runtime
-  internals, not generated game/mod code), called from UnityPlayer on a worker thread
-  (thread-start frames at the stack bottom — likely the async loading/unload thread).
-- It fires right after the LOCAL player dies; the last Player.log line is always Unity's
-  "Unloading N Unused Serialized files" asset-unload scan. Deaths of other players don't trigger
-  it. A local death is also what plays the vanilla KillOverlay stinger and the resulting asset
-  churn/unload, which is why it clusters there.
-- It reproduces with a plain TOU Sheriff misfire (no addon code in the kill path, no addon roles
-  even assigned to dummies) — but per repeated user testing, only when SuperSquadAmongUs.dll is
-  loaded. It is non-deterministic: the same RC-XD self-kill succeeded once and crashed later the
-  same morning. Any "TOUM-only doesn't crash" control therefore needs MANY runs to mean anything.
-- Ruled out: TOU/MiraAPI/Reactor pin skew (informational versions verified matched);
-  BepInEx-core skew (the active install's core is byte-identical in version to the official
-  TOU-Mira 1.6.2 pack: BepInEx 6.0.0-be.752, Il2CppInterop.Runtime 1.5.0-ci.620); managed
-  exceptions in addon event handlers or Harmony patches (MiraAPI catches event-handler
-  exceptions; our hot patches are try/caught or role-gated; nothing is logged at crash time even
-  with instant flushing).
+Two addon-side theories were tried and both falsified by re-testing with the same crash signature
+still occurring:
 
-Diagnostics for the next occurrence:
+1. Vanilla `KillOverlay.ShowKillAnimation` throwing for killer == victim (mitigated by
+   `Patches/SelfKillOverlayPatch.cs` + `showKillAnim: false` at self-kill call sites) - the crash
+   recurred with the exact same fault address even though the log confirmed this exception no
+   longer fires. Kept the patch anyway (it fixes a real, separate, confirmed-broken vanilla method
+   for the self-kill overlay itself), but it is not the crash's cause.
+2. MiraAPI's `DeepDestroy()`/`Resources.UnloadUnusedAssets()` forced-GC path, gated on AU version
+   ≥ 2026.6.5 (`MainMenuManagerPatches.NeedsDeepDestroy`) - ruled out: the "Unloading N Unused
+   Serialized files" log line it produces also fires repeatedly during main-menu/login, well before
+   any players or deaths exist, so it's Unity's own routine periodic asset scan, not something
+   `DeepDestroy` uniquely triggers around death.
 
-- `InstantFlushing = true` is set in the toum install's `BepInEx/config/BepInEx.cfg`
-  (`[Logging.Disk]`) so the BepInEx log tail survives hard crashes. Revert when done (tiny I/O
-  cost).
-- The Steam launch options include `PROTON_LOG=1`, so every crash writes a Wine backtrace to
-  `~/steam-945360.log` — but it is OVERWRITTEN on every launch; copy it out after each crash.
-  Compare the faulting `gameassembly+0x......` offsets across crashes: a stable offset means one
-  deterministic runtime fault site (likely the liveness/unload scan walking some object of ours);
-  scattered offsets would mean heap corruption instead.
-- Related pitfall fixed during this investigation: MiraAPI's `RpcCustomMurder`/`CustomMurder`
-  default `teleportMurderer: true`, which makes the kill coroutine yield (blur animation, camera
-  lock) instead of completing synchronously. Any design that relies on a death completing
-  synchronously (RC-XD's restore-before-detonate) must pass `teleportMurderer: false` explicitly —
-  and when a comment claims "no yields with teleportMurderer false", verify the call site actually
-  passes false.
+**Root cause, per TOU-Mira's own maintainer:** the 1.6.3-beta2 changelog (the release this repo is
+pinned to, and the latest available - `1.6.3` on GitHub is tagged *older* than `1.6.3-beta.1`/
+`-beta2` and marked "Outdated - Do Not Use") lists as a known bug: "Memory corruption breaks kill
+animations, body pop-ups, and a few more things at times." A TOU-Mira maintainer (Nix-main) on
+[AU-Avengers/TOU-Mira#197](https://github.com/AU-Avengers/TOU-Mira/issues/197) confirms: "This is
+likely caused by the various unavoidable stability issues with the latest version of Among Us. We
+are working to address these problems but we will likely have to wait until the next update. It's
+recommended to stay on the previous version for now." This matches every symptom observed here:
+non-deterministic, clusters around kill/death processing, reproduces on a plain TOU Sheriff misfire
+with zero addon code involved, and is *amplified* (not caused) by this addon simply because more
+registered types/objects raise the odds of the corruption being hit during any given scan.
 
-**Update (2026-07-19, later):** with `InstantFlushing` on, the flushed log finally captured the
-poison at the crash moment — on a plain TOU Sheriff misfire, in a TOUM-only session too:
+There is no known addon-side fix for upstream memory corruption. If this needs to stop happening
+now rather than waiting for a TOU-Mira update, the only currently-confirmed mitigation is
+downgrading the installed Among Us version below 2026.6.5 (per the maintainer's own advice) - a
+game/launcher-level change, not something this repo controls. Re-check
+[AU-Avengers/TOU-Mira releases](https://github.com/AU-Avengers/TOU-Mira/releases) periodically for
+a build past 1.6.3-beta2; if the changelog claims this fixed, bump the pin (`AmongUs.props`) *and*
+the installed plugin DLL together, per the version-skew entry above.
 
-```
-Error with kill animation: Il2CppException: System.MethodAccessException: Attempt to access
-method 'IEnumerable<OverlayKillAnimation>.GetEnumerator' on type 'DeadBody[]' failed.
-  at Extensions.Random[T](...)  at KillOverlay.ShowKillAnimation(killer, victim)  at CustomMurder
-```
-
-Vanilla `KillOverlay.ShowKillAnimation` (AU 2026.6.5) is broken when killer == victim: it ends up
-enumerating a `DeadBody[]` where it expects a kill-animation array and throws mid-way through
-il2cpp generic-class initialization. MiraAPI catches the exception (so nothing crashes right
-there, in any configuration), but the aborted native class-init is the prime suspect for the
-half-initialized metadata the post-death unload scan later trips over — which would explain the
-non-determinism and why TOUM-only sessions usually survive (fewer types/objects in the scan)
-while addon sessions usually don't. Mitigation shipped: `Patches/SelfKillOverlayPatch.cs`
-prefix-skips the overlay whenever killer == victim (a pairing vanilla gameplay never produces),
-and the addon's own self-kill call sites (`RcXdCar`, `AstralFormModifier`) additionally pass
-`showKillAnim: false`. If crashes on local self-kill deaths persist with this in place, the
-"Error with kill animation" line should be GONE from the flushed log — if it still appears, some
-other murder path is reaching the vanilla overlay with killer == victim; if it's gone and the
-crash remains, the poison theory is wrong and the next lead is comparing faulting
-`gameassembly+0x…` offsets across Proton crash logs.
+Related pitfall fixed along the way: MiraAPI's `RpcCustomMurder`/`CustomMurder` default
+`teleportMurderer: true`, which makes the kill coroutine yield (blur animation, camera lock) instead
+of completing synchronously - any design that relies on a death completing synchronously (RC-XD's
+restore-before-detonate) must pass `teleportMurderer: false` explicitly. This is unrelated to the
+crash above but was found while investigating it.

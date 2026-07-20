@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using Reactor.Networking.Attributes;
 using Reactor.Networking.Rpc;
+using SuperSquadAmongUs.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Neutral;
 using TownOfUs.Options;
 using TownOfUs.Utilities;
@@ -24,6 +25,12 @@ public static class SuperSquadBodies
     [MethodRpc((uint)SuperSquadRpc.MafiaCleanBody, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcMafiaCleanBody(PlayerControl source, byte parentId)
     {
+        if (source.Data.Role is not MafiaJanitorRole)
+        {
+            Error("RpcMafiaCleanBody - Invalid mafia janitor");
+            return;
+        }
+
         DestroyBodies(parentId);
     }
 
@@ -37,12 +44,14 @@ public static class SuperSquadBodies
     [MethodRpc((uint)SuperSquadRpc.VultureEatBody, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcVultureEat(PlayerControl source, byte parentId)
     {
-        DestroyBodies(parentId);
-
-        if (source != null && source.Data?.Role is VultureRole vulture)
+        if (source.Data.Role is not VultureRole vulture)
         {
-            vulture.EatenBodies++;
+            Error("RpcVultureEat - Invalid vulture");
+            return;
         }
+
+        DestroyBodies(parentId);
+        vulture.EatenBodies++;
     }
 
     private static void DestroyBodies(byte parentId)

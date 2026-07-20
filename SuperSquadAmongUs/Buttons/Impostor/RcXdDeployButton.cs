@@ -136,10 +136,10 @@ public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
         {
             // The murder coroutine has no yields with teleportMurderer false, so a blast that
             // catches the deployer kills them SYNCHRONOUSLY inside RpcDetonateCar below - the whole
-            // death (ghost role swap included) completes before it returns. Restoring drive state
-            // on a ghost mid-death teardown hard-crashed the game, so when the deployer is in the
-            // blast, restore fully while still alive and skip the linger: the explosion is on top
-            // of them anyway (docs/il2cpp-gotchas.md, docs/roles/rc-xd.md).
+            // death (ghost role swap included) completes before it returns. So when the deployer is
+            // in the blast, restore fully while still alive and skip the linger instead of restoring
+            // onto a ghost mid-death-teardown: the explosion is on top of them anyway, and it avoids
+            // touching camera/light state during death teardown (docs/roles/rc-xd.md).
             var options = OptionGroupSingleton<RcXdOptions>.Instance;
             var radius = options.ExplosionRadius.Value * ShipStatus.Instance.MaxLightRadius;
             var deployerInBlast = options.CanKillImpostors &&

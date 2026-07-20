@@ -57,6 +57,27 @@ splash logo to `SuperSquadAssets.Banner`). `Modifiers/` holds MiraAPI modifier c
 by reflection the same way roles/buttons/options are — see "Registration is automatic" above); first
 example is `Modifiers/InvisibleBoyModifier.cs`.
 
+## RPC sender validation
+
+Every `[MethodRpc]` handler that exercises a role's ability (not passive lifecycle/cleanup RPCs -
+see below) should validate the sender actually holds that role before acting, matching TOU-Mira's
+own convention (its Sheriff/Bomber/Cleric/etc. RPCs all do this):
+
+```csharp
+if (source.Data.Role is not YourRole)
+{
+    Error("RpcYourMethodName - Invalid <role display name>");
+    return;
+}
+```
+
+This catches desync/invalid-state bugs with a clear log line instead of a confusing downstream
+failure (or silently doing the wrong thing, like `SuperSquadBodies.RpcVultureEat` used to - it ran
+`DestroyBodies` for any sender, only skipping the win-count increment for a non-Vulture). Skip the
+guard for RPCs that legitimately fire outside the role's alive/assigned state - e.g.
+`RcXdCar.RpcDespawnCar` is called from a death-cancel path after the owner's role has already
+swapped to a ghost; see the comments at those call sites for why.
+
 ## Colors
 
 Shared role/button colors go in root-level `SuperSquadColors.cs` (and player colors in

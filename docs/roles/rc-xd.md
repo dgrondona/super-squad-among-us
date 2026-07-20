@@ -75,97 +75,65 @@ destroy path.
   450 pixels/unit) — tune that pixels-per-unit value if the car reads too big/small in a live playtest.
 - **Observer smoothing quality.** Remote clients `MoveTowards` toward each RPC'd position; playtest
   will show if ~10/s feels jittery.
-- ~~Deployer's cause of death may not read "Exploded".~~ Fixed 2026-07-19:
-  `DeathHandlerModifier.RpcUpdateLocalDeathHandler` with the `DiedToSuperSquadRcXd` locale key now
-  runs before the self-kill (MiraAPI's `RpcCustomMurder` has no `causeOfDeath` parameter, so the
-  TOU bookkeeping must be done by hand).
 
 ## Playtest history
 
-- **2026-07-17, freeplay: black screen after a fizzle, then all buttons greyed in every later game.**
-  Root cause: despawn ran before restore (destroyed the car's light) and an exception skipped
-  `EndDrive()`, sticking `driveLockActive` true on the process-lifetime button singleton. Fixed via
-  restore-first ordering, FixedUpdate self-heals, and light/camera rescue in `RcXdCar.DestroyLocally`.
-  Needs a re-test.
-- **2026-07-17: pressing Detonate redeployed the car instead of exploding it.** Root cause:
-  `TownOfUsButton.ClickHandler` has no cancellable-effect branch, so the second press fell through to
-  `OnClick()`. Fixed by handling the effect-active press entirely inside the `ClickHandler` override.
-  Needs a re-test.
-- **2026-07-17: self-kill from the blast left the camera stuck at the explosion site as a ghost.**
-  First fix attempt (reordering `EndDrive()` to restore camera/light before movement) didn't help,
-  because `EndDrive` was never reached at all: dying swaps `Data.Role` to a ghost role, MiraAPI stops
-  driving the button's `FixedUpdate` once `Enabled(role)` is false, and the linger countdown /
-  death-cancel logic lived in that `FixedUpdate`. Real fix: override `Enabled` to stay true while
-  `EffectActive`/`driveLockActive`/`cameraLingerActive` is pending (see the "buttons stop ticking on
-  death" entry in docs/il2cpp-gotchas.md). The reorder was kept as defense-in-depth, and `EndDrive`
-  always undoes the `SetKinematic`/`SetPaused` state even for a ghost (a kinematic body can't fly).
-- **2026-07-17/18: with that fix, self-kill hard-crashed the game (native crash, BepInEx log tail
-  lost; Player-prev.log truncates during the multi-murder death processing).** The kills are fully
-  synchronous inside `RpcDetonateCar` (no yields with `teleportMurderer: false`), so the deployer is
-  already a ghost mid-death-teardown when the linger's ghost-tick restore ran — restoring drive
-  state at that point is what crashed. Fix: pre-check whether the deployer is inside the blast
-  (same `Helpers.GetClosestPlayers` query the kill uses, gated on `CanKillImpostors`) and if so run
-  the normal alive-path `EndDrive()` BEFORE sending the detonate RPC, skipping the linger entirely.
-  If a mid-drive or mid-linger death by an external killer still crashes on re-test, the culprit is
-  specifically `EndDrive`-on-a-ghost and needs the same restore-before-death treatment.
-- **2026-07-18: still crashed with the restore-first fix — and this time the BepInEx log caught it:
-  `RC-XD car detonated: killed 1 players` → TOU's `UpdateDeathHandlerImmediate` error → hard crash
-  with all RC-XD state already restored and cleared.** Suspected `RpcSpecialMultiMurder` crashing
-  when the source is among its own targets; split the kill (other victims via multi-murder, the
-  deployer via `RpcCustomMurder(owner, owner)`, the Sheriff-misfire call). Still crashed after this
-  fix — see the next entry, this diagnosis was wrong.
-- **2026-07-18: root cause found — the addon was compiled against stale package versions.** A
-  control test (plain TOU Sheriff misfire self-kill, zero RC-XD code involved) crashed identically,
-  and stopped crashing with the addon DLL removed entirely — proving the bug was version skew, not
-  RC-XD logic. `AmongUs.props` was pinned to TownOfUsMira 1.5.0-beta.1 / MiraAPI 0.3.5 / Reactor
-  2.5.0-ci.371 while the installed runtime was 1.6.3-beta2 / 0.4.1 / 2.5.1. Fixed by bumping the
-  pinned versions to match and fixing the resulting compile breaks (`ModifierFaction` moved
-  namespace; `VanillaTweakOptions.PetVisibilityUponDeath` finally landed for real, replacing
-  `SuperSquadBodies`' manual reimplementation — see docs/il2cpp-gotchas.md). The
-  `RpcCustomMurder(owner, owner)` self-kill split from the previous entry was kept (harmless,
-  possibly still marginally safer) but is no longer believed necessary on its own. Needs a re-test
-  on the version-matched build before any further RC-XD-specific investigation.
-- **2026-07-19: version-matched re-test still crashed — and the crash is not RC-XD's (or any
-  role's) murder logic at all.** Full investigation with Proton/Wine crash capture: the crash is a
-  native page fault (read of null + 0xBD) inside GameAssembly's il2cpp *runtime* region, on a
-  Unity worker thread, consistently right after the LOCAL player dies — the last Player.log line
-  is always Unity's "Unloading N Unused Serialized files" asset-unload scan. A plain TOU Sheriff
-  misfire reproduced it on the version-matched build with zero addon code in the kill path and no
-  addon roles among the dummies, and it is non-deterministic (an RC-XD self-kill succeeded once,
-  then crashed on a later identical attempt). "Roles that can kill themselves" was a proxy: in
-  solo testing a self-kill is the only way the local player ever dies. See the
-  "Local-death native crash" entry in docs/il2cpp-gotchas.md for the evidence trail, what's ruled
-  out, and the capture tooling now in place. One real RC-XD defect found and fixed along the way:
-  the self-kill called `RpcCustomMurder(owner)` with bare defaults, and MiraAPI defaults
-  `teleportMurderer: true` — so the "synchronous, no yields" kill this role's restore-first design
-  depends on actually yielded mid-coroutine to play a blur animation on the fresh ghost with the
-  camera locked. Now passes `teleportMurderer: false` explicitly.
-- **2026-07-19, later: probable poison found — vanilla's kill-stinger overlay is broken for
-  self-kills.** `KillOverlay.ShowKillAnimation` throws an IL2CPP MethodAccessException whenever
-  killer == victim (captured on a TOUM-only Sheriff misfire once instant log flushing was on).
-  Mitigated by `Patches/SelfKillOverlayPatch.cs` (skips the overlay for killer == victim) plus
-  `showKillAnim: false` on the RC-XD and Astral self-kill calls. Details and falsification
-  criteria in docs/il2cpp-gotchas.md ("Local-death native crash" entry). **Confirmed fixed by
-  user testing the same day.** The remaining "UpdateDeathHandlerImmediate - Player had no
-  DeathHandlerModifier" log error is TOU's own self-healing noise - it appears in TOUM-only
-  sessions too (alongside "RpcOfficerMisfire - Invalid officer") and is benign.
-- **2026-07-19: one F press deployed, detonated, and opened the ghost Haunt menu.** The same
-  physical press dispatched to the button more than once (same-frame double dispatch or key
-  autorepeat under Proton); the second dispatch hit the EffectActive branch and detonated with
-  the deployer standing on the car, and the resulting death let the still-held F trigger the
-  vanilla ghost ability (also bound to F). Fixed with a 0.3s `DetonateArmDelay` between Deploy
-  and the first accepted Detonate press - same bug family as the "arming click doubles as action
-  click" entry in docs/il2cpp-gotchas.md, which now covers the keybind variant too.
+Full play-by-play (including a few wrong-turn diagnoses along the way) is in git history; this is
+the lessons that stuck.
+
+- **2026-07-17: post-fizzle black screen, then every button greyed in later games.** Restore must
+  happen before any RPC/destroy call that can throw, and `FixedUpdate` must self-heal stale state —
+  see the "button singletons persist" entry in docs/il2cpp-gotchas.md. Fixed via restore-first
+  ordering, `FixedUpdate` self-heals, and the light/camera rescue in `RcXdCar.DestroyLocally`.
+- **2026-07-17: Detonate press redeployed the car instead of exploding it.** `TownOfUsButton
+  .ClickHandler` has no cancellable-effect branch, so the second press fell through to `OnClick()`.
+  Fixed by handling the effect-active press entirely inside the `ClickHandler` override.
+- **2026-07-17: self-kill left the camera stuck at the blast site.** Dying swaps `Data.Role` to a
+  ghost role, so MiraAPI stops driving the button's `FixedUpdate` (see "buttons stop ticking on
+  death" in docs/il2cpp-gotchas.md) before the linger/restore logic in it could run. Fixed by
+  overriding `Enabled` to stay true while any drive/linger state is pending.
+- **2026-07-17 to present: self-kill repeatedly hard-crashes the game — NOT fixable from this
+  addon.** Several addon-side theories (vanilla `KillOverlay.ShowKillAnimation` throwing for
+  killer == victim; MiraAPI's version-gated `DeepDestroy`/asset-unload GC pass) were tried and each
+  falsified by re-testing - same crash signature persisted regardless. Actual cause, confirmed by a
+  TOU-Mira maintainer: known, currently-unfixed memory corruption in TOU-Mira 1.6.3-beta2 (the
+  latest available release) tied to AU 2026.6.5 itself - "unavoidable stability issues... we will
+  likely have to wait until the next update" ([AU-Avengers/TOU-Mira#197](https://github.com/AU-Avengers/TOU-Mira/issues/197)).
+  This explains why it's role-agnostic and reproduces on a plain TOU Sheriff misfire with zero
+  addon code involved; this addon only raises the odds of hitting it by adding more live
+  objects/types. See "Local-death native crash" in docs/il2cpp-gotchas.md for the full trail and
+  what to check when a TOU-Mira update lands. `Patches/SelfKillOverlayPatch.cs` was kept since it
+  fixes a real, separate, confirmed-broken vanilla method, but it does not fix this crash. One real
+  RC-XD bug found along the way (unrelated to the crash): the self-kill call had relied on MiraAPI's
+  `teleportMurderer` default (`true`, which yields mid-kill for a blur animation) instead of the
+  explicit `false` this role's restore-before-detonate design requires.
+- **2026-07-19: deployer's cause of death didn't read "Exploded".** MiraAPI's `RpcCustomMurder` has
+  no `causeOfDeath` parameter and skips TOU's death-handler bookkeeping entirely. Fixed by calling
+  `DeathHandlerModifier.RpcUpdateLocalDeathHandler` with the `DiedToSuperSquadRcXd` locale key
+  before the self-kill.
+- **2026-07-19: one F press deployed, detonated, AND opened the ghost Haunt menu — two separate
+  bugs.** (1) The same press double-dispatched to this button's own `ClickHandler` (same-frame
+  double dispatch or key autorepeat under Proton). Fixed with a 0.3s `DetonateArmDelay` between
+  Deploy and the first accepted Detonate press. (2) Deploy/Detonate share the vanilla Ability
+  keybind with the ghost's Haunt menu (`Keybinds.SecondaryAction` *is* `AbilityButton`); that
+  button polls the key independently each frame, so once the self-kill flips the player to a ghost
+  role, the same still-down key opens Haunt later the same frame. Fixed with
+  `Patches/SuppressHauntAfterSelfDetonatePatch.cs`, which skips that click for the exact frame
+  `RcXdCar.SelfDetonationFrame` marks. Needs a re-test.
 
 ## Playtest checklist
 
 - Deploy freezes the player and the camera follows the car; car drives at 2× and stops at walls.
 - Detonate kills everyone in radius with cause "Exploded"; toggling off "Can Kill Impostors" spares
   impostors; the deployer dies if caught in their own blast.
+- A single F press deploys OR detonates, never both, and a self-kill via hotkey does not open the
+  ghost Haunt menu.
 - Camera lingers on the blast for ~1.5s (frozen the whole time) before snapping back; a meeting cuts
   it short cleanly.
 - Self-kill skips the linger: detonating inside the blast radius restores control instantly, then
-  the normal death plays out at your position — no crash, camera follows the ghost, ghost can fly.
+  the normal death plays out at your position, camera follows the ghost, ghost can fly. A crash here
+  is a known open upstream TOU-Mira issue (see Playtest history), not something to keep re-diagnosing
+  as an RC-XD bug.
 - 8s expiry despawns harmlessly and restores control/camera/light; same for a meeting or the
   deployer's death mid-drive.
 - Second client sees the car spawn, move smoothly, and vanish on every exit path.

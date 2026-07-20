@@ -9,6 +9,7 @@ using Reactor.Networking.Rpc;
 using Reactor.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
+using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs.Assets;
 using TownOfUs.Events;
 using TownOfUs.Modifiers;
@@ -29,9 +30,18 @@ public static class RcXdCar
 
     internal static RcXdCarBehaviour? ActiveBehaviour { get; private set; }
 
+    // Set the frame a self-detonate kills the deployer; read by SuppressHauntAfterSelfDetonatePatch.
+    internal static int SelfDetonationFrame { get; private set; } = -1;
+
     [MethodRpc((uint)SuperSquadRpc.DeployRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDeployCar(PlayerControl owner, float x, float y)
     {
+        if (owner.Data.Role is not RcXdRole)
+        {
+            Error("RpcDeployCar - Invalid RC-XD");
+            return;
+        }
+
         DestroyLocally();
 
         var carObject = new GameObject("SuperSquadRcXdCar");
@@ -47,6 +57,8 @@ public static class RcXdCar
         ActiveBehaviour = behaviour;
     }
 
+    // No RcXdRole guard here either (see RpcDespawnCar) - the car's own FixedUpdate can still be
+    // mid-flight the same tick the owner dies, before the despawn cleanup below has run.
     [MethodRpc((uint)SuperSquadRpc.MoveRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcMoveCar(PlayerControl owner, float x, float y)
     {
@@ -66,6 +78,12 @@ public static class RcXdCar
     [MethodRpc((uint)SuperSquadRpc.DetonateRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDetonateCar(PlayerControl owner, float x, float y)
     {
+        if (owner.Data.Role is not RcXdRole)
+        {
+            Error("RpcDetonateCar - Invalid RC-XD");
+            return;
+        }
+
         var options = OptionGroupSingleton<RcXdOptions>.Instance;
         var explosionPos = new Vector3(x, y, y / 1000f);
 
@@ -106,10 +124,9 @@ public static class RcXdCar
 
             if (filtered.Count > 0)
             {
-                // TOU's multi-murder pipeline hard-crashes when the source is one of its own
-                // targets, so the deployer's self-kill goes through the single-target
-                // RpcCustomMurder instead - the exact call the Sheriff's misfire uses, defaults
-                // and all (docs/il2cpp-gotchas.md).
+                // The deployer's own death needs handling RpcSpecialMultiMurder doesn't give its
+                // source (death-handler bookkeeping, a synchronous kill, no kill-stinger overlay -
+                // see below), so it's split out through single-target RpcCustomMurder instead.
                 var others = filtered.Where(p => p.PlayerId != owner.PlayerId).ToList();
                 var deployerDies = others.Count != filtered.Count;
 
@@ -121,24 +138,25 @@ public static class RcXdCar
 
                 if (deployerDies)
                 {
-                    // TOU's death-handler bookkeeping doesn't run for MiraAPI's RpcCustomMurder,
-                    // leaving the deployer's cause of death generic. Set it on every client (the
-                    // Astral does this locally in DieFromFailedReturn; here it must be an RPC
-                    // because only the deployer's client computes the blast).
-                    // killedBy: owner (not null) - TOU suppresses the "killed by" line when
-                    // killedBy == player, and unlike null it can't be dereferenced on the
-                    // locale-miss branch.
+                    // Deploy/Detonate share the vanilla Ability keybind (Keybinds.SecondaryAction),
+                    // which AbilityButton.DoClick() polls independently each frame. Once this kill
+                    // flips Data.Role to a ghost, that same still-down key resolves to the ghost's
+                    // Haunt ability later this same frame - see SuppressHauntAfterSelfDetonatePatch.
+                    SelfDetonationFrame = Time.frameCount;
+
+                    // TOU's death-handler bookkeeping doesn't run for MiraAPI's RpcCustomMurder, so
+                    // the deployer's cause of death is set by hand here (an RPC, since only the
+                    // deployer's client computes the blast). killedBy: owner, not null - TOU
+                    // suppresses the "killed by" text when killedBy == player, and unlike null it's
+                    // safe to dereference on the locale-miss branch.
                     DeathHandlerModifier.RpcUpdateLocalDeathHandler(owner, owner, "DiedToSuperSquadRcXd",
                         DeathEventHandlers.CurrentRound, DeathHandlerOverride.SetTrue, "null",
                         DeathHandlerOverride.SetTrue);
 
-                    // teleportMurderer MUST be explicit false: MiraAPI's default is true, which
-                    // makes CoPerformCustomKill yield mid-kill to play a blur animation on the
-                    // fresh ghost with the camera locked. The restore-before-detonate flow in
-                    // RcXdDeployButton.OnEffectEnd requires this death to complete synchronously
-                    // (no yields), which only holds with teleportMurderer: false.
-                    // showKillAnim false: vanilla's ShowKillAnimation is broken for killer ==
-                    // victim (see Patches/SelfKillOverlayPatch.cs); skip it at the source too.
+                    // teleportMurderer: false keeps the kill synchronous (MiraAPI defaults to true,
+                    // which yields for a blur animation) - required by OnEffectEnd's restore-before-
+                    // detonate flow. showKillAnim: false avoids vanilla's broken self-kill overlay
+                    // (Patches/SelfKillOverlayPatch.cs).
                     owner.RpcCustomMurder(owner, teleportMurderer: false, showKillAnim: false);
                 }
 
@@ -150,6 +168,8 @@ public static class RcXdCar
     }
 
     [MethodRpc((uint)SuperSquadRpc.DespawnRcXdCar, LocalHandling = RpcLocalHandling.Before)]
+    // Unlike Deploy/Detonate, deliberately no RcXdRole guard here: RcXdDeployButton.FixedUpdate's
+    // death-cancel path calls this AFTER the owner's role has already swapped to a ghost.
     public static void RpcDespawnCar(PlayerControl owner)
     {
         DestroyLocally();

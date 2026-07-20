@@ -6,6 +6,7 @@ using Reactor.Networking.Rpc;
 using Reactor.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
+using SuperSquadAmongUs.Roles.Impostor;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Modules;
@@ -30,6 +31,12 @@ public static class NinjaTraces
     [MethodRpc((uint)SuperSquadRpc.PlaceNinjaTrace, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcPlaceNinjaTrace(PlayerControl source, float x, float y)
     {
+        if (source.Data.Role is not NinjaRole)
+        {
+            Error("RpcPlaceNinjaTrace - Invalid ninja");
+            return;
+        }
+
         var options = OptionGroupSingleton<NinjaOptions>.Instance;
         var traceObject = new GameObject("SuperSquadNinjaTrace");
         traceObject.transform.position = new Vector3(x, y, y / 1000f + 0.01f);

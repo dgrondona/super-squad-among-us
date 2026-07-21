@@ -25,7 +25,7 @@ public sealed class GooperGoopButton : TownOfUsRoleButton<GooperRole, DeadBody>
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleGooperGoop", "Goop");
 
-    // SecondaryAction, not Primary: the granted Kill (GooperKillButton) claims PrimaryAction, and Goop
+    // SecondaryAction, not Primary: the granted Kill (GrantedKillButton) claims PrimaryAction, and Goop
     // coexists with it once the Gooper has gooped twice (see docs/roles/gooper.md keybind allocation).
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Gooper;

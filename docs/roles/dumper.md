@@ -45,11 +45,18 @@ assumes a fixed window, awkward for "may end early on demand"). **The drop needs
 override, not just a `CanUse()` special-case** — this is a targeted button (`<DumperRole, DeadBody>`),
 and `CustomActionButton<T>.CanClick()` (which the base `ClickHandler` gates on) hard-requires a fresh
 nearby `Target` *and* `Timer <= 0`. While carrying, the body is hidden and teleported out from under the
-player (no valid target) and the pickup cooldown is still running — so the earlier `CanUse()`-only
-approach never actually let the drop click through (this was the "premature drop doesn't work" bug). The
-override routes the drop straight through `CanUse()` (which owns the carry-state/alive/hacked/disabled
-guards) and starts a fresh cooldown after. The same fix pattern is used by `DetonatorAttachButton`'s
-Detonate phase.
+player (no valid target) — so the earlier `CanUse()`-only approach never actually let the drop click
+through (this was the "premature drop doesn't work" bug). The override routes the drop straight through
+`CanUse()` (which owns the carry-state/alive/hacked/disabled guards). The same fix pattern is used by
+`DetonatorAttachButton`'s Detonate phase. A `0.3s` debounce guards against one physical press dispatching
+twice (keybind + click, or Proton key autorepeat) and instantly picking-up-then-dropping.
+
+**The carry cooldown is a *drop* cooldown, independent of the carry duration.** Neither pickup nor
+carrying starts it; it begins the moment the carry actually *ends* — by early drop, duration expiry,
+meeting, or death alike. Since auto-drops never route through the button, the button detects the
+carry→not-carrying transition each `FixedUpdate` and sets `Timer = Cooldown` there, so every drop path
+starts the cooldown identically. (Previously the cooldown ran from pickup, which conflated it with the
+carry duration.)
 
 **Button label self-heals every tick.** `Name` is a fixed "Carry" expression (only read once at button
 creation, like every other button in this codebase); `FixedUpdate` re-asserts the correct "Carry"/"Drop"

@@ -25,7 +25,7 @@ public static class SuperSquadDetonator
 {
     /// <summary>
     /// Detonates the bomb on <paramref name="target"/>. Only the Detonator's own client computes and
-    /// sends the kill (<see cref="RpcSpecialMultiMurder"/> is itself an RPC).
+    /// sends the kill (<c>RpcSpecialMultiMurder</c> is itself an RPC).
     /// </summary>
     /// <param name="source">The Detonator.</param>
     /// <param name="target">The bombed player.</param>

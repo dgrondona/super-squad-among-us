@@ -1,5 +1,4 @@
 using MiraAPI.Roles;
-using UnityEngine;
 
 namespace SuperSquadAmongUs.Modules;
 
@@ -18,6 +17,7 @@ public enum GrantableAbility : uint
     Snipe = 4,
     Swoop = 8,
     Vest = 16,
+    Hide = 32,
 }
 
 /// <summary>
@@ -44,7 +44,8 @@ public static class AbilityGrants
     /// (plus a <see cref="GrantableAbility"/> flag and a matching button/modifier pair) once that cost
     /// is separately scoped - see the "Puppet Master scope" decision in docs/roles/gooper.md.
     /// </summary>
-    public static readonly GrantableAbility[] Pool = [GrantableAbility.Snipe, GrantableAbility.Swoop];
+    public static readonly GrantableAbility[] Pool =
+        [GrantableAbility.Snipe, GrantableAbility.Swoop, GrantableAbility.Hide];
 
     /// <summary>
     /// Picks one ability from <see cref="Pool"/> that <paramref name="alreadyUnlocked"/> doesn't have
@@ -60,6 +61,28 @@ public static class AbilityGrants
     {
         var remaining = Pool.Where(a => !alreadyUnlocked.HasFlag(a)).ToList();
         return remaining.Count == 0 ? GrantableAbility.None : remaining[UnityEngine.Random.Range(0, remaining.Count)];
+    }
+
+    /// <summary>
+    /// Turns on venting for a role that just unlocked <see cref="GrantableAbility.Vent"/> mid-game.
+    /// </summary>
+    /// <remarks>
+    /// Two things must happen. (1) <c>Configuration.CanUseVent</c> already reads the Vent flag live (it
+    /// drives <c>Vent.CanUse</c>), but the vanilla <c>RoleBehaviour.CanVent</c> bool is baked once at
+    /// role setup by MiraAPI's <c>CustomRoleManager</c> - set it so every cached-bool vent path agrees.
+    /// (2) The on-screen <c>ImpostorVentButton</c>'s visibility is only applied inside
+    /// <c>HudManager.SetHudActive</c> (a MiraAPI postfix), which is NOT re-run per frame - so re-run it
+    /// on the owner's own client to surface the vent button the instant venting is unlocked.
+    /// </remarks>
+    /// <param name="role">The role that just gained the Vent flag.</param>
+    public static void EnableVenting(RoleBehaviour role)
+    {
+        role.CanVent = true;
+
+        if (role.Player != null && role.Player.AmOwner && HudManager.InstanceExists)
+        {
+            HudManager.Instance.SetHudActive(PlayerControl.LocalPlayer, role, true);
+        }
     }
 
     /// <summary>
@@ -105,6 +128,11 @@ public static class AbilityGrants
         if (victimRole is TownOfUs.Roles.Impostor.SwooperRole)
         {
             abilities |= GrantableAbility.Swoop;
+        }
+
+        if (victimRole is SuperSquadAmongUs.Roles.Crewmate.DaddyHagridRole)
+        {
+            abilities |= GrantableAbility.Hide;
         }
 
         return abilities;

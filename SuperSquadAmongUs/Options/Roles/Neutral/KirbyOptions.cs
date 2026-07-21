@@ -19,18 +19,6 @@ public sealed class KirbyOptions : AbstractOptionGroup<KirbyRole>
     [ModdedToggleOption("SuperSquadOptionKirbyImpostorVision")]
     public bool ImpostorVision { get; set; } = true;
 
-    [ModdedNumberOption("SuperSquadOptionKirbyKillCooldown", 5f, 120f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float KillCooldown { get; set; } = 25f;
-
-    [ModdedNumberOption("SuperSquadOptionKirbySnipeCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float SnipeCooldown { get; set; } = 25f;
-
-    [ModdedNumberOption("SuperSquadOptionKirbyAimWindow", 5f, 30f, 1f, MiraNumberSuffixes.Seconds)]
-    public float AimWindow { get; set; } = 10f;
-
-    [ModdedNumberOption("SuperSquadOptionKirbySwoopCooldown", 5f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float SwoopCooldown { get; set; } = 25f;
-
-    [ModdedNumberOption("SuperSquadOptionKirbySwoopDuration", 3f, 30f, 1f, MiraNumberSuffixes.Seconds)]
-    public float SwoopDuration { get; set; } = 10f;
+    // Cooldowns/durations for inherited kill/snipe/swoop abilities live in the shared
+    // GrantedAbilityOptions group, not here.
 }

@@ -8,7 +8,7 @@ using SuperSquadAmongUs.Modifiers;
 namespace SuperSquadAmongUs.Events;
 
 /// <summary>
-/// The Gooper vest's universal kill-block: while <see cref="GooperVestModifier"/> is active, any kill
+/// The granted vest's universal kill-block: while <see cref="GrantedVestModifier"/> is active, any kill
 /// attempt or targeted ability aimed at the Gooper is cancelled. Copied from
 /// <c>SuperSquadAmongUs.Events.ElusiveEvents</c>'s interception pattern but cancel-only (no teleport) -
 /// a plain <c>BaseShieldModifier</c> on its own is not universally respected, only the handful of
@@ -50,7 +50,7 @@ public static class GooperEvents
             return;
         }
 
-        if (source == target || !target.HasModifier<GooperVestModifier>())
+        if (source == target || !target.HasModifier<GrantedVestModifier>())
         {
             return;
         }

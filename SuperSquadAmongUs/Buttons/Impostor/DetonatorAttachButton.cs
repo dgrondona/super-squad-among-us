@@ -10,6 +10,7 @@ using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
+using TownOfUs.Modifiers.Neutral;
 using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -46,9 +47,9 @@ public sealed class DetonatorAttachButton : TownOfUsRoleButton<DetonatorRole, Pl
             x => !x.HasModifier<DetonatorBombModifier>());
     }
 
-    // Attaching uses the normal cooldown-gated base flow; detonating (while a bomb is armed) must not
-    // be gated by that cooldown - same "bypass base while a special state is active" pattern
-    // RcXdDeployButton/SniperSnipeButton use, plus the arm-delay gate itself.
+    // Lights/enables the button. Attach phase: normal proximity+cooldown check (the cooldown only ever
+    // runs after a detonation). Detonate phase (a bomb is out): lit only once the arm delay has elapsed,
+    // with no cooldown involved - the Detonator can then detonate at any time.
     public override bool CanUse()
     {
         if (HudManager.Instance.Chat.IsOpenOrOpening || MeetingHud.Instance)
@@ -77,27 +78,45 @@ public sealed class DetonatorAttachButton : TownOfUsRoleButton<DetonatorRole, Pl
         return base.CanUse() && Target != null;
     }
 
-    // The targeted-button ClickHandler routes through CustomActionButton<T>.CanClick(), which hard-requires
-    // a fresh nearby Target AND Timer<=0. After attaching, the attach cooldown is running and there may be
-    // no valid target nearby, so the Detonate press would never register. Handle detonation directly here,
-    // gated only by CanUse()'s arm-delay/can-act checks (its activeBomb branch).
+    // Timing (per design): Attach plants a bomb with NO cooldown; after the arm delay the Detonator can
+    // detonate at any time; the re-attach cooldown starts only AFTER detonating. That's why neither the
+    // attach nor the "waiting to detonate" window runs a cooldown.
+    //
+    // This also has to sidestep the targeted-button ClickHandler, which routes through
+    // CustomActionButton<T>.CanClick() - that hard-requires a fresh nearby Target AND Timer<=0, so a
+    // Detonate press (no valid target under the cursor) would never register. Detonation is handled
+    // directly here, gated only by CanUse()'s arm-delay/can-act checks (its activeBomb branch).
     public override void ClickHandler()
     {
         if (activeBomb != null && activeBomb.HasModifier<DetonatorBombModifier>())
         {
             if (!CanUse())
             {
+                Info("Detonator: detonate press ignored - bomb not armed yet, or a meeting/chat/disabled " +
+                     "state blocks it");
                 return;
             }
 
+            Info("Detonator: detonating");
             SuperSquadDetonator.RpcDetonate(PlayerControl.LocalPlayer, activeBomb);
             activeBomb = null;
             OverrideName(AttachLabel);
+
+            // Re-attach cooldown begins here, after the detonation - the attach itself never started one.
             SetTimer(Cooldown);
             return;
         }
 
-        base.ClickHandler();
+        // Attach phase: same gating as the base targeted ClickHandler (CanClick + hacked/disabled), but
+        // deliberately WITHOUT the Timer = Cooldown it would set - attaching is free; only detonating
+        // starts the cooldown.
+        if (!CanClick() || PlayerControl.LocalPlayer.HasModifier<GlitchHackedModifier>() ||
+            PlayerControl.LocalPlayer.GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities))
+        {
+            return;
+        }
+
+        OnClick();
     }
 
     protected override void OnClick()

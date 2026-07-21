@@ -115,12 +115,28 @@ build the next one. Universal game modifiers get the same treatment in `docs/mod
 ## Granting a role abilities it wasn't born with
 
 If a role needs to dynamically gain abilities at runtime (Gooper's goop-tier escalation, Kirby's
-digestion-based inheritance — see `docs/roles/gooper.md`'s "Shared ability-grant architecture" section),
-reuse `Modules/AbilityGrants.cs` (`GrantableAbility` flags + `IAbilityGrantHolder`) and the shared button
-bases in `Buttons/GrantedAbilityButtons.cs`, rather than building a bespoke per-role system. The house
-pattern is additive `player.AddModifier<T>()`/`RpcAddModifier<T>()` calls gated by an unlocked-ability
-flag (`Enabled` override), not a full role swap — MiraAPI's only "become another role" primitive is a
-full teardown/reinstantiate (`ChangeRole`), too heavy for "add one ability."
+swallow-based inheritance — see `docs/roles/gooper.md`'s "Shared ability-grant architecture" section),
+reuse the **role-agnostic** granted-ability system, don't build a per-role one:
+
+- `Modules/AbilityGrants.cs` — the `GrantableAbility` `[Flags]` enum + `IAbilityGrantHolder` (a plain
+  mutable `UnlockedAbilities` set on the role, mutated inside an already-deterministic RPC/event handler
+  on every client) + `GetPortableAbilities` (which role hands over which flags when swallowed).
+- `Buttons/GrantedAbilityButtons.cs` — **one** button per ability (`GrantedKillButton`, etc.), each
+  extending `TownOfUsButton`/`TownOfUsTargetButton<PlayerControl>` **directly** and gating `Enabled` on
+  `role is IAbilityGrantHolder h && h.UnlockedAbilities.HasFlag(X)` — the modifier-gated-button pattern
+  (`ScientistButton`), NOT a role-typed `TownOfUsRoleButton<TRole>`. A single client is one role, so the
+  one singleton serves whichever granting role the local player is. Cooldowns/durations live in the
+  standalone `Options/GrantedAbilityOptions.cs`.
+
+**Adding a new grantable ability is a one-file-ish job that every current and future granting role gets
+for free:** a flag, one `Granted*Button` (+ a modifier if the effect needs one), one
+`GetPortableAbilities` entry, and — if it's Gooper-pool-worthy — one `AbilityGrants.Pool` entry. Reuse
+the source role's own modifier verbatim where it isn't hard-wired to that role's button singleton (Hide
+reuses `CloakHiddenModifier`); copy the shape into a role-agnostic sibling where it is (Swoop). This is
+also the path to add Puppeteer's control as a portable ability. Do **not** reach for `ChangeRole`
+(`TownOfUs/Utilities/Extensions.cs`) — MiraAPI's only "become another role" primitive is a full
+teardown/reinstantiate, far too heavy for "add one ability," and it can't hold several borrowed
+abilities at once.
 
 Keep that file to **current-state information only**, roughly 200-300 lines: what the role does, how it
 works now, confirmed design decisions, known follow-ups. If a role accumulates a long round-by-round

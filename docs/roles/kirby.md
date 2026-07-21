@@ -8,12 +8,12 @@ their portable abilities (kill, vent, snipe, swoop) — see `docs/roles/gooper.m
 architecture" section, which this role builds on rather than duplicating. Wins by outlasting the
 opposition, the same "last one standing" shape as `GooperRole`/`SentinelRole`.
 
-Files: `Roles/Neutral/KirbyRole.cs`, `Buttons/Neutral/KirbySwallowButton.cs`,
-`Buttons/Neutral/KirbyKillButton.cs`, `Buttons/Neutral/KirbySnipeButton.cs`,
-`Buttons/Neutral/KirbySwoopButton.cs`, `Modifiers/KirbySwallowedModifier.cs`,
-`Modifiers/KirbySwoopModifier.cs`, `Events/KirbyEvents.cs`, `Options/Roles/Neutral/KirbyOptions.cs`.
-Shared foundation: `Modules/AbilityGrants.cs`, `Buttons/GrantedAbilityButtons.cs`,
-`Modifiers/GrantedSwoopModifierBase.cs` (see `docs/roles/gooper.md` for the full design).
+Kirby-specific files: `Roles/Neutral/KirbyRole.cs`, `Buttons/Neutral/KirbySwallowButton.cs`,
+`Modifiers/KirbySwallowedModifier.cs`, `Events/KirbyEvents.cs`, `Options/Roles/Neutral/KirbyOptions.cs`.
+Kirby has **no per-ability button classes of its own** — the inherited Kill/Snipe/Swoop/Vest/Hide buttons
+are the shared, role-agnostic `Granted*Button` singletons in `Buttons/GrantedAbilityButtons.cs`, shown
+for Kirby the moment it unlocks the matching flag. See `docs/roles/gooper.md`'s "Shared ability-grant
+architecture" for the full design.
 
 ## How it works
 
@@ -44,13 +44,15 @@ now only kills the swallowed players, no longer granting anything.
 
 ## Design decisions
 
-- **The curated portable-ability set is exactly Gooper's vocabulary: Kill, Vent, Snipe, Swoop.** Per the
-  user's own framing, "any abilities the players they swallowed had" taken 100% literally would mean
-  cloning behavior from every existing and future role in the whole roster — there's no lighter-weight
-  primitive for that than MiraAPI/TOU-Mira's full role-swap (`ChangeRole`), which tears down and
-  reinstantiates the entire role rather than copying specific behavior. A curated, extensible table
-  (`AbilityGrants.GetPortableAbilities`) is the only approach consistent with what actually exists to
-  build on — see `docs/roles/gooper.md` for the table itself and how to grow it.
+- **The curated portable-ability set is the shared granted-ability vocabulary: Kill, Vent, Snipe, Swoop,
+  Hide** (Daddy Hagrid's cloak) — and grows one entry at a time as more abilities are built as
+  `Granted*Button`s. Per the user's own framing, "any abilities the players they swallowed had" taken
+  100% literally would mean cloning behavior from every existing and future role — there's no
+  lighter-weight primitive for that than MiraAPI/TOU-Mira's full role-swap (`ChangeRole`), which tears
+  down and reinstantiates the entire role. So each transferable ability is implemented once as a
+  role-agnostic granted button, and `AbilityGrants.GetPortableAbilities` maps swallowed roles to the
+  flags they hand over. See `docs/roles/gooper.md` for the table and how to grow it (each new ability is
+  a one-file add that every granting role gets for free).
 - **Win condition: last one standing**, matching Gooper's confirmed decision — not separately asked, but
   the same archetype (a Neutral Killing role that eventually accumulates real killing power).
 - **`CanUseVent` combines the base option with the inherited flag**: `KirbyOptions.CanVent || UnlockedAbilities.HasFlag(Vent)` —
@@ -62,8 +64,8 @@ now only kills the swallowed players, no longer granting anything.
   different abilities). Highest-value checks: swallowing hides/freezes exactly like the Pelican; Kirby
   gains the inherited ability *immediately on swallow* (e.g. swallow a Sniper → Snipe button appears at
   once); dying before the meeting releases the swallowed player alive; meeting digestion kills swallowed
-  players with no body. Note the inherited ability keybinds (Kill → Secondary, Snipe → Tertiary, Swoop →
-  Modifier) so they don't collide with Swallow on Primary.
+  players with no body; a swallowed Daddy Hagrid grants a working Hide. Keybinds: Kill → Primary,
+  Swallow → Secondary, Snipe → Tertiary, Swoop → Modifier, Hide → click-only.
 - Role icon and every ability button sprite are placeholder art
   (`SuperSquadAssets.NeutralPlaceholderIcon`/`NeutralPlaceholderButton`).
 - Same accepted gap as Gooper: `AbilityGrants.GetPortableAbilities`'s kill-capability check only covers

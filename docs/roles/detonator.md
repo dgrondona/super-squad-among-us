@@ -36,18 +36,23 @@ checks `Time.time - modifier.PlantedAt >= ArmDelay` before allowing the Detonate
 technique `RcXdDeployButton.DetonateArmDelay` uses to guard double-dispatch. No RPC-side re-validation
 is needed since only the Detonator's own client can click their own button.
 
+**Timing: Attach → 5s arm → Detonate at any time → *then* the re-attach cooldown starts.** Attaching
+plants the bomb with **no** cooldown, and the "waiting to detonate" window runs no cooldown either — the
+cooldown only starts once the bomb is actually detonated. This is the same "cooldown measured from the
+terminal action, not the initial one" shape as the Dumper's drop cooldown.
+
 **Button toggles Attach/Detonate** by tracking the currently-bombed target in a private field
 (`activeBomb`) — `UndertakerDragDropButton`'s toggle shape, not RC-XD's `EffectActive`/`EffectDuration`
-machinery (which assumes a finite auto-expiring effect; Detonator explicitly has no auto-expiry other
-than the meeting clear). **Detonate needs a `ClickHandler` override**: this is a targeted button
+machinery. **Detonate needs a `ClickHandler` override**: this is a targeted button
 (`<DetonatorRole, PlayerControl>`), and `CustomActionButton<T>.CanClick()` (which the base `ClickHandler`
-gates on) hard-requires a fresh nearby `Target` *and* `Timer <= 0`. After attaching, the attach cooldown
-is running and there's usually no valid target under the cursor, so the Detonate press never registered
-(this was the "doesn't get the detonate ability after attaching" bug). The override detonates directly
-when `activeBomb` still carries the modifier, gated only by `CanUse()`'s arm-delay/can-act checks, then
-starts a fresh cooldown — the same fix pattern as `DumperCarryButton`'s early drop. The label self-heals
-every `FixedUpdate` tick based on whether `activeBomb` still actually carries the modifier, in case it
-resolved itself (meeting, target's death) without a click here.
+gates on) hard-requires a fresh nearby `Target` *and* `Timer <= 0` — after attaching there's usually no
+valid target under the cursor, so the Detonate press never registered (this was the "doesn't get the
+detonate ability after attaching" bug). The override attaches without setting `Timer`, and detonates
+directly when `activeBomb` still carries the modifier (gated only by `CanUse()`'s arm-delay/can-act
+checks), setting `Timer = Cooldown` only on that detonation. Both branches log to BepInEx so a "detonate
+did nothing" report is diagnosable. The label self-heals every `FixedUpdate` tick based on whether
+`activeBomb` still carries the modifier, in case it resolved itself (meeting, target's death) without a
+click here — a bomb cleared that way starts no cooldown (no detonation happened).
 
 **Detonate — `SuperSquadDetonator.RpcDetonate`** — adapts Bomber's AoE-and-meeting-noop pattern
 (`Bomb.CoDetonate`) to a live target position: computes `Helpers.GetClosestPlayers(target.GetTruePosition(), radius)`,

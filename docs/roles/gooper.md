@@ -10,13 +10,12 @@ pool (currently Sniper's snipe and Swooper's concealment — see "Shared ability
 below). Wins by outlasting the opposition once fully powered up, the same "last one standing" shape as
 `SentinelRole`.
 
-Files: `Roles/Neutral/GooperRole.cs`, `Buttons/Neutral/GooperGoopButton.cs`,
-`Buttons/Neutral/GooperVestButton.cs`, `Buttons/Neutral/GooperKillButton.cs`,
-`Buttons/Neutral/GooperSnipeButton.cs`, `Buttons/Neutral/GooperSwoopButton.cs`,
-`Modifiers/GooperVestModifier.cs`, `Modifiers/GooperSwoopModifier.cs`, `Events/GooperEvents.cs`,
-`Options/Roles/Neutral/GooperOptions.cs`, `Modules/SuperSquadGooper.cs`. Shared foundation (also used by
-Kirby, `docs/roles/kirby.md`): `Modules/AbilityGrants.cs`, `Buttons/GrantedAbilityButtons.cs`,
-`Modifiers/GrantedSwoopModifierBase.cs`.
+Gooper-specific files: `Roles/Neutral/GooperRole.cs`, `Buttons/Neutral/GooperGoopButton.cs`,
+`Events/GooperEvents.cs`, `Options/Roles/Neutral/GooperOptions.cs`, `Modules/SuperSquadGooper.cs`.
+Shared, **role-agnostic** granted-ability foundation (also used by Kirby, `docs/roles/kirby.md`):
+`Modules/AbilityGrants.cs`, `Buttons/GrantedAbilityButtons.cs` (the single `Granted*Button` per ability),
+`Modifiers/GrantedSwoopModifier.cs`, `Modifiers/GrantedVestModifier.cs`, `Modifiers/CloakHiddenModifier.cs`
+(Hide, shared with Daddy Hagrid), `Options/GrantedAbilityOptions.cs`.
 
 ## How it works
 
@@ -37,10 +36,10 @@ draw (same split `ElusiveEvents` uses for its teleport destination) — passed a
 `GrantableAbility` flag, since Reactor RPC parameters need to be simple serializable types.
 
 **1st goop — the Vest is an unlockable *ability*, not an auto-applied shield.** The goop only sets the
-`Vest` flag; `GooperVestButton` (gated on that flag, click-only — see keybinds below) is what the Gooper
-presses to actually pop the vest, adding `GooperVestModifier` (a timed `BaseShieldModifier` copying
-`GuardianAngelProtectModifier`'s shape that self-expires after `VestDuration`, then the button's
-`VestCooldown` gates the next use; `CanUse` blocks re-popping while one is already active).
+`Vest` flag; the shared `GrantedVestButton` (gated on that flag, click-only — see keybinds below) is what
+the Gooper presses to actually pop the vest, adding `GrantedVestModifier` (a timed `BaseShieldModifier`
+copying `GuardianAngelProtectModifier`'s shape that self-expires after `GrantedAbilityOptions.VestDuration`,
+then the button's `VestCooldown` gates the next use; `CanUse` blocks re-popping while one is already active).
 `BaseShieldModifier` alone is not universally respected — only the handful of TOU-Mira kill sources that
 explicitly check `HasModifier<BaseShieldModifier>()` honor it, and a plain vanilla Impostor kill wouldn't
 — so `GooperEvents` hooks `MiraButtonClickEvent`/`BeforeMurderEvent` (copied from `ElusiveEvents`'s
@@ -52,75 +51,88 @@ interception pattern, but cancel-only, no teleport) to make the vest block every
 role setup — so `RpcGoop` also sets `gooper.CanVent = true` when granting, keeping every cached-bool vent
 path in step. (Kirby does the same when it inherits `Vent`.)
 
-**Keybind allocation.** A fully-powered Gooper holds up to five simultaneous ability buttons, more than
+**Keybind allocation.** A fully-powered Gooper holds up to six simultaneous ability buttons, more than
 there are distinct action keybinds — and MiraAPI fires *every* enabled button bound to a pressed key, so
 non-mutually-exclusive abilities must not share one. Allocation: Kill → `PrimaryAction` (it's the kill
-keybind), Goop → `SecondaryAction`, Snipe → `TertiaryAction`, Swoop → `ModifierAction`, Vest → no keybind
-(click-only, the overflow slot). Kirby uses the same scheme shifted by one (Swallow owns `PrimaryAction`,
-so its Kill moves to `SecondaryAction`).
+keybind), Goop → `SecondaryAction`, Snipe → `TertiaryAction`, Swoop → `ModifierAction`, Vest and Hide →
+no keybind (click-only, the overflow slots). Kirby uses the same scheme (Swallow takes `SecondaryAction`
+too, since the granted Kill owns `PrimaryAction`).
 
 ## Shared ability-grant architecture (Gooper + Kirby)
 
-Both roles need to "grow their kit at runtime" — Gooper via goop tiers, Kirby via digesting other roles
-(`docs/roles/kirby.md`). One shared module, not two bespoke systems:
+Both roles need to "grow their kit at runtime" — Gooper via goop tiers, Kirby via swallowing other roles
+(`docs/roles/kirby.md`). One shared, **role-agnostic** system — not per-role reimplementations:
 
 - **`GrantableAbility`** (`Modules/AbilityGrants.cs`) — a `[Flags] enum` (`Kill`, `Vent`, `Snipe`,
-  `Swoop`) naming everything a role can dynamically gain. **`IAbilityGrantHolder`** exposes a plain
-  mutable `UnlockedAbilities` property, mutated directly inside an already-deterministic RPC/event
-  handler on every client (same pattern `VultureRole.EatenBodies++` uses) — no extra sync RPC for the
-  flags themselves.
-- **`CanUseVent`** reads the `Vent` flag live in `Configuration` — MiraAPI/TOU-Mira read
-  `Configuration.CanUseVent` fresh on every access, so venting turns on the instant the flag is set, no
-  role-swap needed.
-- **Button gating**: one shared generic abstract base per ability
-  (`GrantedKillButtonBase<TRole>`/`GrantedSnipeButtonBase<TRole>`/`GrantedSwoopButtonBase<TRole,TModifier>`,
-  all in `Buttons/GrantedAbilityButtons.cs`) holds all real targeting/click logic, with `Enabled`
-  overridden to also require the relevant flag (`RcXdDeployButton.Enabled`'s stay-registered-but-hidden
-  technique — MiraAPI's `TownOfUsButton.SetActive` already hides/disables on a false `Enabled`, no patch
-  needed). Each role then gets a ~15-line sealed subclass per ability overriding only
-  `Name`/`Sprite`/`Cooldown`/`TextOutlineColor` (`GooperKillButton`, `GooperSnipeButton`,
-  `GooperSwoopButton`). Growing the pool later costs one shared base once, then one thin subclass per
-  (role, ability) pair — not a full reimplementation each time.
-- **Snipe** reuses `Modules/SniperShots.cs` directly (already documented there as reusable,
-  role-agnostic machinery). One easy-to-forget extra step per role: `Patches/SniperAimPatch.cs`'s
-  `HudManager.Update` postfix needs an added line calling that role's snipe button singleton's
-  `HandleAimFrame()` — per-rendered-frame click polling can't be button-instance-driven (see
-  "mouse clicks must be polled per rendered frame" in `docs/il2cpp-gotchas.md`). Already wired for
-  `GooperSnipeButton`/`KirbySnipeButton`; a third role would need the same line added.
-- **Swoop needs its own modifier pair, not TOU-Mira's `SwoopModifier` reused directly** — that class
-  hard-codes `CustomButtonSingleton<SwooperSwoopButton>` calls in `OnActivate`/`OnDeactivate` to flip the
-  *Swooper's own* button sprite; reusing it as-is would cross-wire into the actual Swooper role. Same
-  doctrine `CarriedModifier`'s siblings already follow: shared *shape*, not shared *class*.
-  `GrantedSwoopModifierBase` (`Modifiers/GrantedSwoopModifierBase.cs`) holds the shared
-  appearance/self-heal logic with a `protected abstract void UpdateButtonVisual(bool swooped);` hook;
-  `GooperSwoopModifier`/`KirbySwoopModifier` are sealed one-method siblings implementing it against
-  their own button singleton. **The base is `AutoStart => false`, deliberately**: `ConcealedModifier`
-  defaults `Duration => 1f`, so an auto-started timer would silently drop the concealment after one
-  second (this was a real bug). The granting button owns the timing via its `EffectDuration` and removes
-  the modifier in `OnEffectEnd`, exactly how TOU-Mira's `SwoopModifier` is driven by `SwooperSwoopButton`.
+  `Swoop`, `Vest`, `Hide`) naming everything a role can dynamically gain. **`IAbilityGrantHolder`**
+  exposes a plain mutable `UnlockedAbilities` property, mutated directly inside an already-deterministic
+  RPC/event handler on every client (same local-mutation pattern the Vulture's eat count uses) — no extra
+  sync RPC for the flags themselves.
+- **One button per ability, shown for ANY role that unlocked its flag — no per-(role, ability)
+  subclass.** This is the key change from the first cut. `Buttons/GrantedAbilityButtons.cs` holds a
+  single concrete button per ability (`GrantedKillButton`, `GrantedSnipeButton`, `GrantedSwoopButton`,
+  `GrantedVestButton`, `GrantedHideButton`), each extending `TownOfUsButton`/`TownOfUsTargetButton<PlayerControl>`
+  **directly** (not `TownOfUsRoleButton<TRole>`) and gating `Enabled` on
+  `role is IAbilityGrantHolder h && h.UnlockedAbilities.HasFlag(X)` instead of a role type — the same
+  modifier-gated-button pattern TOU-Mira's own `ScientistButton` uses. A single client is only ever one
+  role, so the one button singleton serves whichever granting role the local player is. Adding a new
+  ability now costs exactly **one** button here (+ a flag, a modifier if needed, and one
+  `GetPortableAbilities` entry) — never N per-role copies. Targeted buttons share
+  `GrantedTargetButtonBase`, which re-supplies the player-outline / target-validity bits
+  `TownOfUsRoleButton<TRole, TTarget>` would otherwise provide.
+- **Shared options.** Because the buttons have no single owning role, their cooldowns/durations live in a
+  standalone `Options/GrantedAbilityOptions.cs` (`AbstractOptionGroup`, like TOU-Mira's own
+  `VanillaTweakOptions`), read as `OptionGroupSingleton<GrantedAbilityOptions>.Instance.X.Value` — a
+  granted Snipe is the same Snipe no matter who unlocked it.
+- **Venting** turns on via `AbilityGrants.EnableVenting(role)`: `Configuration.CanUseVent` reads the
+  `Vent` flag live (drives `Vent.CanUse`), but MiraAPI bakes the vanilla `RoleBehaviour.CanVent` bool
+  once at role setup, and the on-screen `ImpostorVentButton`'s visibility is only applied inside
+  `HudManager.SetHudActive` (not per frame) — so `EnableVenting` sets `CanVent = true` AND re-runs
+  `SetHudActive` on the owner's client to surface the button the instant it's unlocked.
+- **Snipe** reuses `Modules/SniperShots.cs` directly (role-agnostic hit math). The single
+  `GrantedSnipeButton` needs exactly one line in `Patches/SniperAimPatch.cs`'s `HudManager.Update`
+  postfix (per-rendered-frame click polling can't be button-instance-driven — see "mouse clicks must be
+  polled per rendered frame" in `docs/il2cpp-gotchas.md`); because the button is role-agnostic, growing
+  the roster never needs another line.
+- **Swoop reuses a sibling of TOU-Mira's `SwoopModifier`, not that class directly** — it hard-codes
+  `CustomButtonSingleton<SwooperSwoopButton>` in `OnActivate`/`OnDeactivate` and would cross-wire the
+  real Swooper. `Modifiers/GrantedSwoopModifier.cs` is one role-agnostic sibling (paired with the single
+  `GrantedSwoopButton`). **It's `AutoStart => false`, deliberately**: `ConcealedModifier` defaults
+  `Duration => 1f`, so an auto-started timer silently drops the concealment after one second (this was a
+  real bug); the button owns the timing via its `EffectDuration` and removes the modifier in
+  `OnEffectEnd`, exactly how `SwooperSwoopButton` drives `SwoopModifier`.
+- **Hide reuses Daddy Hagrid's ability verbatim.** `GrantedHideButton` adds this repo's own
+  `CloakHiddenModifier` (a `CarriedModifier`) to the target — literally the Daddy Hagrid ability, not a
+  copy. Its release-on-caster-death/disconnect lives in `Events/DaddyHagridEvents.cs`, which was
+  generalized to key on the modifier's own `Carrier` (not the carrier being a DaddyHagrid) so a granted
+  Hide releases correctly too. Duration comes from `DaddyHagridOptions.HideDuration` (it *is* Hagrid's
+  ability); only its cooldown is a `GrantedAbilityOptions` value.
 - **`AbilityGrants.GetPortableAbilities(RoleBehaviour victimRole)`** — Kirby's curated "what can I
-  inherit from this victim" lookup (see `docs/roles/kirby.md` for the full reasoning): a digested
-  Gooper/Kirby hands over its `UnlockedAbilities` wholesale; otherwise a small hand-maintained table
-  (`CanVent` → `Vent`, `ICustomRole.Configuration.UseVanillaKillButton` → `Kill`, `SniperRole`/`SwooperRole`
-  type checks → `Snipe`/`Swoop`). Deliberately **not** a generic reflection-based role clone — the only
-  "become like another role" primitive anywhere in MiraAPI/TOU-Mira is `ChangeRole`
-  (`TownOfUs/Utilities/Extensions.cs`), a full teardown/reinstantiate of the whole role, not a
-  "copy some behavior" primitive.
+  inherit from this victim" lookup (see `docs/roles/kirby.md`): a swallowed Gooper/Kirby hands over its
+  `UnlockedAbilities` wholesale; otherwise a small hand-maintained table (`CanVent` → `Vent`,
+  `ICustomRole.Configuration.UseVanillaKillButton` → `Kill`, `SniperRole`/`SwooperRole`/`DaddyHagridRole`
+  type checks → `Snipe`/`Swoop`/`Hide`). **This table is the one place to grow** when a new ability is
+  added. Deliberately **not** a generic reflection-based role clone — the only "become like another role"
+  primitive anywhere in MiraAPI/TOU-Mira is `ChangeRole` (`TownOfUs/Utilities/Extensions.cs`), a full
+  teardown/reinstantiate, not a "copy one ability" primitive. Every transferable ability must therefore
+  be implemented once as a granted button here; the framework just makes that once-per-ability, not
+  once-per-(role, ability), and makes it work for every current and future granting role for free.
 
 ## Design decisions
 
 - **Win condition: last one standing** (confirmed with the user), not a Vulture-style instant threshold
   win on goop count — Gooper eventually gains a permanent kill button, so an instant-win-on-count design
   sits oddly alongside actual combat power.
-- **Puppeteer's control ability is deliberately deferred**, not in the v1 pool (confirmed with the
-  user). TOU-Mira's Puppeteer control is a full remote-control subsystem (per-client control-state
-  dictionaries, a movement-hijacking Harmony patch, camera/light sync, disconnect handling) — bigger
-  than the rest of this whole feature combined. The pool is `[GrantableAbility.Snipe, GrantableAbility.Swoop]`
-  for now; add Control later as a separately-scoped follow-up (new flag + pool entry + a portable control
-  subsystem).
+- **Adding a new pool ability is a one-file job** thanks to the role-agnostic framework above: one flag,
+  one `Granted*Button` (+ modifier if the effect needs one), one `GetPortableAbilities` entry, one pool
+  entry. The current pool is `[Snipe, Swoop, Hide]`. **Puppeteer's control is still deferred** — not
+  because the framework can't hold it, but because the *ability itself* is a whole remote-control
+  subsystem in TOU-Mira (per-client control-state dictionaries, a movement-hijacking Harmony patch,
+  camera/light sync, disconnect handling). Building `GrantedControlButton` + a portable control subsystem
+  is the separately-scoped follow-up; once it exists, dropping it in the pool is trivial.
 - **Pool draws are without replacement** (confirmed with the user) — each goop from the 3rd onward
-  grants a *new* ability until the pool is exhausted; once both pool abilities are unlocked, further
-  goops still mark the body (can't be re-gooped) but grant nothing further.
+  grants a *new* ability until the pool is exhausted; once every pool ability is unlocked, further goops
+  still mark the body (can't be re-gooped) but grant nothing further.
 - **Vest only blocks player-attributed murders** (`BeforeMurderEvent` scope), not sabotage or other
   death causes — matching Elusive/Medic's own scope.
 - **No cap on total goops.** Escalation continues as long as un-gooped bodies exist; the pool simply

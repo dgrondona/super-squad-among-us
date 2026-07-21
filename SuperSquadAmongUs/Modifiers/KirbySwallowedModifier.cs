@@ -29,17 +29,17 @@ public sealed class KirbySwallowedModifier(PlayerControl kirby) : CarriedModifie
         base.OnActivate();
 
         // Kirby inherits the victim's portable abilities the instant they're swallowed (per the user's
-        // request), not at digestion. Runs on every client (this modifier is the synced add), so the
-        // grant stays deterministic - same reasoning as VultureRole.EatenBodies++.
+        // request), not at digestion. Runs on every client because the modifier add is the synced call,
+        // so the grant stays deterministic - the same local-mutation pattern the Vulture eat count uses.
         if (Kirby?.Data?.Role is KirbyRole kirbyRole && Player?.Data != null)
         {
             kirbyRole.UnlockedAbilities |= AbilityGrants.GetPortableAbilities(Player.Data.Role);
 
-            // Keep the vanilla cached CanVent bool in step with the inherited Vent flag (see the same
-            // note in SuperSquadGooper.RpcGoop).
+            // Surface venting (cached bool + vent button) if this swallow just granted it - see
+            // AbilityGrants.EnableVenting.
             if (kirbyRole.UnlockedAbilities.HasFlag(GrantableAbility.Vent))
             {
-                kirbyRole.CanVent = true;
+                AbilityGrants.EnableVenting(kirbyRole);
             }
         }
     }

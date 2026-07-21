@@ -42,16 +42,12 @@ public static class SuperSquadGooper
         {
             case 1:
                 // 1st goop unlocks the Vest *ability* (a button the Gooper triggers when they want the
-                // shield), not an auto-applied modifier - see GooperVestButton.
+                // shield), not an auto-applied modifier - see GrantedVestButton.
                 gooper.UnlockedAbilities |= GrantableAbility.Vest;
                 break;
             case 2:
                 gooper.UnlockedAbilities |= GrantableAbility.Kill | GrantableAbility.Vent;
-
-                // Configuration.CanUseVent (button visibility + Vent.CanUse) already reads the Vent flag
-                // live, but the vanilla RoleBehaviour.CanVent bool is baked once at role setup
-                // (MiraAPI CustomRoleManager) - set it here so every cached-bool vent path agrees.
-                gooper.CanVent = true;
+                AbilityGrants.EnableVenting(gooper);
                 break;
             default:
                 gooper.UnlockedAbilities |= (GrantableAbility)chosenPoolAbility;

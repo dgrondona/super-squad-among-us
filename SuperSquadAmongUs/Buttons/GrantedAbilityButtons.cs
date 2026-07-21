@@ -3,7 +3,11 @@ using MiraAPI.Modifiers;
 using MiraAPI.Networking;
 using MiraAPI.PluginLoading;
 using MiraAPI.Utilities.Assets;
+using Reactor.Utilities.Extensions;
+using SuperSquadAmongUs.Assets;
+using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Modules;
+using SuperSquadAmongUs.Options;
 using TownOfUs.Assets;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
@@ -13,34 +17,85 @@ using TownOfUs.Networking;
 using TownOfUs.Utilities;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using MiraAPI.GameOptions;
 
 namespace SuperSquadAmongUs.Buttons;
 
 /// <summary>
-/// Shared bases for abilities Gooper/Kirby unlock at runtime via <see cref="GrantableAbility"/> flags
-/// (see docs/roles/gooper.md / docs/roles/kirby.md). Growing the pool costs one shared base here plus
-/// one thin sealed subclass per (role, ability) pair supplying only art/color/cooldown - not a full
-/// reimplementation each time. All real logic (targeting, click handling, RPC calls) lives here,
-/// mirrored from the role this ability was ported from (Sentinel's kill button, the Sniper, the
-/// Swooper) but gated by the holder role's unlocked-ability flag instead of a fixed role type.
+/// The role-agnostic granted-ability buttons: ONE button per ability, shown for ANY role that has
+/// unlocked that ability's <see cref="GrantableAbility"/> flag (Gooper via goop tiers, Kirby via
+/// swallow inheritance - see docs/roles/gooper.md's "Shared ability-grant architecture"). Unlike a
+/// role-typed <c>TownOfUsRoleButton&lt;TRole&gt;</c>, these gate <c>Enabled</c>
+/// on the unlocked flag instead of a role type (the modifier-gated-button pattern TOU-Mira's own
+/// <c>ScientistButton</c> uses), so a new ability costs exactly one button here - no per-(role, ability)
+/// subclass, and no need to touch the roles at all. Adding, say, Puppeteer's control is: one flag, one
+/// button here, one modifier, and one <see cref="AbilityGrants.GetPortableAbilities"/> entry.
+/// </summary>
+internal static class GrantedAbility
+{
+    /// <summary>True if the local player's role has unlocked <paramref name="ability"/>.</summary>
+    public static bool Unlocked(GrantableAbility ability)
+    {
+        return PlayerControl.LocalPlayer?.Data?.Role is IAbilityGrantHolder holder &&
+               holder.UnlockedAbilities.HasFlag(ability);
+    }
+
+    /// <summary>The local role's colour, used for button/target outlines regardless of which role it is.</summary>
+    public static Color OutlineColor =>
+        PlayerControl.LocalPlayer && PlayerControl.LocalPlayer.Data?.Role != null
+            ? PlayerControl.LocalPlayer.Data.Role.TeamColor
+            : Color.clear;
+}
+
+/// <summary>
+/// Shared plumbing for granted abilities that target a player (Kill, Hide). Reimplements the
+/// player-outline and target-validity bits that <c>TownOfUsRoleButton&lt;TRole, TTarget&gt;</c> would
+/// normally provide, since these deliberately don't inherit from it (no owning role type).
 /// </summary>
 [MiraIgnore]
-public abstract class GrantedKillButtonBase<TRole> : TownOfUsKillRoleButton<TRole, PlayerControl>, IKillButton
-    where TRole : RoleBehaviour, IAbilityGrantHolder
+public abstract class GrantedTargetButtonBase : TownOfUsTargetButton<PlayerControl>
 {
-    public override string Name => TranslationController.Instance.GetStringWithDefault(StringNames.KillLabel, "Kill");
-    public override BaseKeybind Keybind => Keybinds.PrimaryAction;
+    protected abstract GrantableAbility RequiredAbility { get; }
 
-    // Standard kill-button art so a granted kill reads as a kill, not a placeholder ability. A subclass
-    // whose role already claims PrimaryAction for its base ability (Kirby's Swallow) overrides Keybind.
-    public override LoadableAsset<Sprite> Sprite => TouAssets.KillSprite;
+    public override Color TextOutlineColor => GrantedAbility.OutlineColor;
 
     /// <inheritdoc />
-    /// <remarks>Hidden/disabled until the holder role has unlocked <see cref="GrantableAbility.Kill"/>.</remarks>
+    /// <remarks>Shown for any <see cref="IAbilityGrantHolder"/> role that has unlocked the flag.</remarks>
     public override bool Enabled(RoleBehaviour? role)
     {
-        return base.Enabled(role) && Role.UnlockedAbilities.HasFlag(GrantableAbility.Kill);
+        return !Disabled && role is IAbilityGrantHolder holder &&
+               holder.UnlockedAbilities.HasFlag(RequiredAbility);
     }
+
+    public override void SetOutline(bool active)
+    {
+        if (Target != null && !PlayerControl.LocalPlayer.HasDied())
+        {
+            Target.cosmetics.currentBodySprite.BodySprite.SetOutline(active ? GrantedAbility.OutlineColor : null);
+        }
+    }
+
+    public override bool IsTargetValid(PlayerControl? target)
+    {
+        return base.IsTargetValid(target) && target != null && !target.inVent &&
+               !target.GetModifiers<DisabledModifier>().Any(mod => !mod.CanBeInteractedWith);
+    }
+}
+
+/// <summary>
+/// Granted Kill: a standard kill on the nearest living player. Unlocked by Gooper's 2nd goop or by
+/// swallowing a kill-capable victim (Kirby).
+/// </summary>
+public sealed class GrantedKillButton : GrantedTargetButtonBase, IKillButton
+{
+    protected override GrantableAbility RequiredAbility => GrantableAbility.Kill;
+
+    public override string Name => TranslationController.Instance.GetStringWithDefault(StringNames.KillLabel, "Kill");
+    public override BaseKeybind Keybind => Keybinds.PrimaryAction;
+    public override LoadableAsset<Sprite> Sprite => TouAssets.KillSprite;
+
+    public override float Cooldown => Math.Clamp(
+        OptionGroupSingleton<GrantedAbilityOptions>.Instance.KillCooldown.Value + MapCooldown, 5f, 120f);
 
     public override PlayerControl? GetTarget()
     {
@@ -49,38 +104,95 @@ public abstract class GrantedKillButtonBase<TRole> : TownOfUsKillRoleButton<TRol
 
     protected override void OnClick()
     {
-        if (Target == null)
+        if (Target != null)
         {
-            Error($"{GetType().Name}: Target is null");
-            return;
+            PlayerControl.LocalPlayer.RpcCustomMurder(Target);
         }
-
-        PlayerControl.LocalPlayer.RpcCustomMurder(Target);
     }
 }
 
 /// <summary>
-/// Toggles a self-only concealment modifier, gated by <see cref="GrantableAbility.Swoop"/>. The
-/// concrete modifier type is supplied by <typeparamref name="TModifier"/> rather than reusing
-/// TOU-Mira's own <c>SwoopModifier</c> directly, since that class hard-codes calls into the Swooper's
-/// own button singleton (see <see cref="Modifiers.GrantedSwoopModifierBase"/> for why).
+/// Granted Hide: cloak a living player exactly like Daddy Hagrid (reuses <see cref="CloakHiddenModifier"/>
+/// verbatim, so it IS Hagrid's ability, not a copy). Click-only - the distinct keybind slots are taken
+/// (see docs/roles/gooper.md keybind allocation).
 /// </summary>
-[MiraIgnore]
-public abstract class GrantedSwoopButtonBase<TRole, TModifier> : TownOfUsRoleButton<TRole>
-    where TRole : RoleBehaviour, IAbilityGrantHolder
-    where TModifier : BaseModifier
+public sealed class GrantedHideButton : GrantedTargetButtonBase
 {
-    public override bool ZeroIsInfinite { get; set; } = true;
+    protected override GrantableAbility RequiredAbility => GrantableAbility.Hide;
 
-    // ModifierAction keybind: the last free distinct slot for a role that may hold Kill/base + Snipe +
-    // Swoop at once (Primary/Secondary/Tertiary are taken - see docs/roles/gooper.md keybind allocation).
-    public override BaseKeybind Keybind => Keybinds.ModifierAction;
+    public override string Name => TouLocale.GetParsed("SuperSquadRoleGrantedHide", "Hide");
+    public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.NeutralPlaceholderButton;
 
-    /// <inheritdoc />
-    /// <remarks>Hidden/disabled until the holder role has unlocked <see cref="GrantableAbility.Swoop"/>.</remarks>
+    public override float Cooldown => Math.Clamp(
+        OptionGroupSingleton<GrantedAbilityOptions>.Instance.HideCooldown.Value + MapCooldown, 5f, 120f);
+
+    public override PlayerControl? GetTarget()
+    {
+        return PlayerControl.LocalPlayer.GetClosestLivingPlayer(true, Distance, false,
+            x => !x.HasModifier<CarriedModifier>());
+    }
+
+    protected override void OnClick()
+    {
+        if (Target != null)
+        {
+            Target.RpcAddModifier<CloakHiddenModifier>(PlayerControl.LocalPlayer);
+        }
+    }
+}
+
+/// <summary>
+/// Granted Vest: pop a temporary protective vest on yourself. Unlocked by Gooper's 1st goop.
+/// Click-only. Self-expires (<see cref="GrantedVestModifier"/>), then the cooldown gates the next use.
+/// </summary>
+public sealed class GrantedVestButton : TownOfUsButton
+{
+    public override string Name => TouLocale.GetParsed("SuperSquadRoleGrantedVest", "Vest");
+    public override Color TextOutlineColor => GrantedAbility.OutlineColor;
+
+    public override float Cooldown => Math.Clamp(
+        OptionGroupSingleton<GrantedAbilityOptions>.Instance.VestCooldown.Value + MapCooldown, 5f, 120f);
+
+    public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.NeutralPlaceholderButton;
+
     public override bool Enabled(RoleBehaviour? role)
     {
-        return base.Enabled(role) && Role.UnlockedAbilities.HasFlag(GrantableAbility.Swoop);
+        return !Disabled && role is IAbilityGrantHolder holder &&
+               holder.UnlockedAbilities.HasFlag(GrantableAbility.Vest);
+    }
+
+    public override bool CanUse()
+    {
+        return base.CanUse() && !PlayerControl.LocalPlayer.HasModifier<GrantedVestModifier>();
+    }
+
+    protected override void OnClick()
+    {
+        PlayerControl.LocalPlayer.RpcAddModifier<GrantedVestModifier>();
+    }
+}
+
+/// <summary>
+/// Granted Swoop: toggle a self-only concealment (<see cref="GrantedSwoopModifier"/>), the Swooper's
+/// ability. Toggle machinery mirrors TOU-Mira's <c>SwooperSwoopButton</c>.
+/// </summary>
+public sealed class GrantedSwoopButton : TownOfUsButton
+{
+    public override string Name => TouLocale.GetParsed("SuperSquadRoleGrantedSwoop", "Swoop");
+    public override BaseKeybind Keybind => Keybinds.ModifierAction;
+    public override Color TextOutlineColor => GrantedAbility.OutlineColor;
+    public override bool ZeroIsInfinite { get; set; } = true;
+
+    public override float Cooldown => Math.Clamp(
+        OptionGroupSingleton<GrantedAbilityOptions>.Instance.SwoopCooldown.Value + MapCooldown, 5f, 120f);
+
+    public override float EffectDuration => OptionGroupSingleton<GrantedAbilityOptions>.Instance.SwoopDuration.Value;
+    public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.NeutralPlaceholderButton;
+
+    public override bool Enabled(RoleBehaviour? role)
+    {
+        return !Disabled && role is IAbilityGrantHolder holder &&
+               holder.UnlockedAbilities.HasFlag(GrantableAbility.Swoop);
     }
 
     public override bool CanUse()
@@ -129,12 +241,7 @@ public abstract class GrantedSwoopButtonBase<TRole, TModifier> : TownOfUsRoleBut
     {
         if (!EffectActive)
         {
-            PlayerControl.LocalPlayer.RpcAddModifier<TModifier>();
-            if (LimitedUses)
-            {
-                UsesLeft--;
-                Button?.SetUsesRemaining(UsesLeft);
-            }
+            PlayerControl.LocalPlayer.RpcAddModifier<GrantedSwoopModifier>();
         }
         else
         {
@@ -144,48 +251,39 @@ public abstract class GrantedSwoopButtonBase<TRole, TModifier> : TownOfUsRoleBut
 
     public override void OnEffectEnd()
     {
-        if (!PlayerControl.LocalPlayer.HasModifier<TModifier>())
+        if (PlayerControl.LocalPlayer.HasModifier<GrantedSwoopModifier>())
         {
-            return;
+            PlayerControl.LocalPlayer.RpcRemoveModifier<GrantedSwoopModifier>();
         }
-
-        PlayerControl.LocalPlayer.RpcRemoveModifier<TModifier>();
     }
 }
 
 /// <summary>
-/// Aim-and-fire piercing shot, gated by <see cref="GrantableAbility.Snipe"/>. All hit math is reused
-/// unchanged from <see cref="SniperShots"/> (already role-agnostic machinery); only the freeze/aim-lock
-/// bookkeeping is duplicated per role, since it's local per-button state. A concrete subclass must be
-/// wired into <see cref="Patches.SniperAimPatch"/>'s per-rendered-frame postfix by calling its own
-/// <see cref="HandleAimFrame"/> - MiraAPI button FixedUpdate can't see individual mouse clicks (see
-/// docs/il2cpp-gotchas.md's "mouse clicks must be polled per rendered frame" entry). Easy to forget when
-/// wiring up a new pool ability; both docs/roles/gooper.md and docs/roles/kirby.md call this out.
+/// Granted Snipe: the Sniper's aim-and-fire piercing shot, reusing <see cref="SniperShots"/> unchanged
+/// (already role-agnostic hit math). Per-frame click polling is driven from
+/// <see cref="Patches.SniperAimPatch"/> via <see cref="HandleAimFrame"/> (fixed-tick FixedUpdate drops
+/// clicks - see docs/il2cpp-gotchas.md).
 /// </summary>
-[MiraIgnore]
-public abstract class GrantedSnipeButtonBase<TRole> : TownOfUsRoleButton<TRole>
-    where TRole : RoleBehaviour, IAbilityGrantHolder
+public sealed class GrantedSnipeButton : TownOfUsButton
 {
     private int armedFrame;
     private bool aimLockActive;
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleSniperSnipe", "Snipe");
-
-    // Tertiary, not Secondary: Gooper's Goop and Kirby's Kill already sit on Secondary, and a Snipe can
-    // coexist with those, so it needs its own keybind (see the keybind allocation in docs/roles/gooper.md).
     public override BaseKeybind Keybind => Keybinds.TertiaryAction;
+    public override Color TextOutlineColor => GrantedAbility.OutlineColor;
 
-    /// <inheritdoc />
-    /// <remarks>
-    /// Hidden/disabled until the holder role has unlocked <see cref="GrantableAbility.Snipe"/>; stays
-    /// enabled while an aim window is pending so a death mid-aim can still clean up (short-circuits
-    /// before touching <see cref="TownOfUsRoleButton{TRole}.Role"/> once <c>role is TRole</c> is
-    /// false, so this never dereferences a null role post-death - RcXdDeployButton.Enabled pattern).
-    /// </remarks>
+    public override float Cooldown => Math.Clamp(
+        OptionGroupSingleton<GrantedAbilityOptions>.Instance.SnipeCooldown.Value + MapCooldown, 5f, 120f);
+
+    public override float EffectDuration => OptionGroupSingleton<GrantedAbilityOptions>.Instance.AimWindow.Value;
+    public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.NeutralPlaceholderButton;
+
     public override bool Enabled(RoleBehaviour? role)
     {
-        return (base.Enabled(role) && Role.UnlockedAbilities.HasFlag(GrantableAbility.Snipe)) ||
-               EffectActive || aimLockActive;
+        // Stay enabled while an aim window/lock is pending so a death mid-aim can still clean up.
+        return (!Disabled && role is IAbilityGrantHolder holder &&
+                holder.UnlockedAbilities.HasFlag(GrantableAbility.Snipe)) || EffectActive || aimLockActive;
     }
 
     public override bool CanUse()
@@ -195,7 +293,7 @@ public abstract class GrantedSnipeButtonBase<TRole> : TownOfUsRoleButton<TRole>
             return false;
         }
 
-        return base.CanUse() && !EffectActive && Role.UnlockedAbilities.HasFlag(GrantableAbility.Snipe);
+        return base.CanUse() && !EffectActive && GrantedAbility.Unlocked(GrantableAbility.Snipe);
     }
 
     protected override void OnClick()
@@ -221,9 +319,7 @@ public abstract class GrantedSnipeButtonBase<TRole> : TownOfUsRoleButton<TRole>
         EndAim();
     }
 
-    /// <summary>
-    /// Called every rendered frame (see class remarks) while this button's aim window is active.
-    /// </summary>
+    /// <summary>Called every rendered frame (see class remarks) while this button's aim window is active.</summary>
     public void HandleAimFrame()
     {
         var sniper = PlayerControl.LocalPlayer;
@@ -241,37 +337,18 @@ public abstract class GrantedSnipeButtonBase<TRole> : TownOfUsRoleButton<TRole>
             }
         }
 
-        if (!Input.GetMouseButtonDown(0))
+        if (!Input.GetMouseButtonDown(0) || Time.frameCount == armedFrame)
         {
             return;
         }
 
-        if (Time.frameCount == armedFrame)
+        if (HudManager.Instance.Chat.IsOpenOrOpening ||
+            (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen) || IsClickOnHud())
         {
             return;
         }
 
-        if (HudManager.Instance.Chat.IsOpenOrOpening)
-        {
-            return;
-        }
-
-        if (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen)
-        {
-            return;
-        }
-
-        if (IsClickOnHud())
-        {
-            return;
-        }
-
-        if (sniper.HasModifier<GlitchHackedModifier>() || sniper.HasModifier<DisabledModifier>())
-        {
-            return;
-        }
-
-        if (Camera.main == null)
+        if (sniper.HasModifier<GlitchHackedModifier>() || sniper.HasModifier<DisabledModifier>() || Camera.main == null)
         {
             return;
         }

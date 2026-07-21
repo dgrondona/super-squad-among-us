@@ -21,7 +21,10 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 public sealed class KirbySwallowButton : TownOfUsRoleButton<KirbyRole, PlayerControl>, IKillButton
 {
     public override string Name => TouLocale.GetParsed("SuperSquadRoleKirbySwallow", "Swallow");
-    public override BaseKeybind Keybind => Keybinds.PrimaryAction;
+
+    // SecondaryAction, not Primary: Kirby's granted Kill (GrantedKillButton) claims PrimaryAction, and
+    // Swallow coexists with it once Kirby has inherited a kill (see docs/roles/gooper.md keybinds).
+    public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Kirby;
 
     public override float Cooldown => Math.Clamp(

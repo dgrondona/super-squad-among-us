@@ -1,5 +1,8 @@
+using MiraAPI.Hud;
 using MiraAPI.Modifiers;
+using SuperSquadAmongUs.Buttons;
 using TownOfUs.Modifiers;
+using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using TownOfUs.Utilities.Appearances;
 using UnityEngine;
@@ -7,14 +10,13 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Modifiers;
 
 /// <summary>
-/// Shared shape for the Swoop pool ability's self-concealment modifier (Gooper/Kirby). Copies
-/// TOU-Mira's <c>SwoopModifier</c> shape rather than subclassing it directly: that class hard-codes
-/// <c>CustomButtonSingleton&lt;SwooperSwoopButton&gt;</c> calls in <c>OnActivate</c>/<c>OnDeactivate</c>
-/// to flip the Swooper's own button sprite, and reusing it as-is would cross-wire into the actual
-/// Swooper role. <see cref="UpdateButtonVisual"/> is the per-role hook a sealed sibling implements
-/// instead, against its own button singleton. See <see cref="Buttons.GrantedSwoopButtonBase{TRole,TModifier}"/>.
+/// The Swoop pool ability's self-concealment - the Swooper's own effect, but a sealed sibling of
+/// TOU-Mira's <c>SwoopModifier</c> rather than that class directly, since it hard-codes
+/// <c>CustomButtonSingleton&lt;SwooperSwoopButton&gt;</c> in <c>OnActivate</c>/<c>OnDeactivate</c> and
+/// reusing it would cross-wire the actual Swooper role. A single role-agnostic modifier (paired with the
+/// single <see cref="GrantedSwoopButton"/>) - no per-granting-role variants.
 /// </summary>
-public abstract class GrantedSwoopModifierBase : ConcealedModifier, IVisualAppearance
+public sealed class GrantedSwoopModifier : ConcealedModifier, IVisualAppearance
 {
     /// <inheritdoc />
     public override string ModifierName => "Swooped";
@@ -23,9 +25,8 @@ public abstract class GrantedSwoopModifierBase : ConcealedModifier, IVisualAppea
     public override bool HideOnUi => true;
 
     // Deliberately NOT AutoStart: ConcealedModifier.Duration defaults to 1f, so an auto-started timer
-    // would silently drop the concealment after one second. The granting button owns the timing via its
-    // EffectDuration and removes this modifier in OnEffectEnd (see GrantedSwoopButtonBase), the same way
-    // TOU-Mira's SwoopModifier is driven by SwooperSwoopButton's effect window.
+    // would drop the concealment after one second. GrantedSwoopButton owns the timing via its
+    // EffectDuration and removes this in OnEffectEnd, the way SwooperSwoopButton drives SwoopModifier.
     /// <inheritdoc />
     public override bool AutoStart => false;
 
@@ -35,18 +36,11 @@ public abstract class GrantedSwoopModifierBase : ConcealedModifier, IVisualAppea
     /// <inheritdoc />
     public bool VisualPriority => true;
 
-    /// <summary>
-    /// Flips the granting button's sprite/name to reflect swoop state. Implemented per role since each
-    /// grants this ability through its own button singleton, not the Swooper's.
-    /// </summary>
-    /// <param name="swooped">True when the modifier just activated, false when it just deactivated.</param>
-    protected abstract void UpdateButtonVisual(bool swooped);
-
     /// <inheritdoc />
     public VisualAppearance GetVisualAppearance()
     {
-        // Owner sees themself faintly (so a neutral swooper isn't fully invisible to their own camera);
-        // impostor-aligned viewers likewise; everyone else sees nothing.
+        // The owner sees themself faintly, so a neutral swooper isn't fully invisible to their own
+        // camera. Impostor-aligned viewers see the same faint outline, and everyone else sees nothing.
         var seesOutline = Player.AmOwner || PlayerControl.LocalPlayer.IsImpostorAligned();
         var playerColor = seesOutline ? new Color(0f, 0f, 0f, 0.1f) : Color.clear;
 
@@ -105,5 +99,12 @@ public abstract class GrantedSwoopModifierBase : ConcealedModifier, IVisualAppea
     public override void OnMeetingStart()
     {
         Player.RemoveModifier(this);
+    }
+
+    private static void UpdateButtonVisual(bool swooped)
+    {
+        CustomButtonSingleton<GrantedSwoopButton>.Instance.OverrideName(swooped
+            ? TouLocale.GetParsed("SuperSquadRoleGrantedUnswoop", "Unswoop")
+            : TouLocale.GetParsed("SuperSquadRoleGrantedSwoop", "Swoop"));
     }
 }

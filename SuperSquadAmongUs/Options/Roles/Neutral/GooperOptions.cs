@@ -13,24 +13,6 @@ public sealed class GooperOptions : AbstractOptionGroup<GooperRole>
     [ModdedNumberOption("SuperSquadOptionGooperGoopCooldown", 5f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float GoopCooldown { get; set; } = 20f;
 
-    [ModdedNumberOption("SuperSquadOptionGooperVestDuration", 5f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float VestDuration { get; set; } = 15f;
-
-    [ModdedNumberOption("SuperSquadOptionGooperVestCooldown", 15f, 90f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float VestCooldown { get; set; } = 30f;
-
-    [ModdedNumberOption("SuperSquadOptionGooperKillCooldown", 5f, 120f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float KillCooldown { get; set; } = 25f;
-
-    [ModdedNumberOption("SuperSquadOptionGooperSnipeCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float SnipeCooldown { get; set; } = 25f;
-
-    [ModdedNumberOption("SuperSquadOptionGooperAimWindow", 5f, 30f, 1f, MiraNumberSuffixes.Seconds)]
-    public float AimWindow { get; set; } = 10f;
-
-    [ModdedNumberOption("SuperSquadOptionGooperSwoopCooldown", 5f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
-    public float SwoopCooldown { get; set; } = 25f;
-
-    [ModdedNumberOption("SuperSquadOptionGooperSwoopDuration", 3f, 30f, 1f, MiraNumberSuffixes.Seconds)]
-    public float SwoopDuration { get; set; } = 10f;
+    // The vest/kill/snipe/swoop cooldowns and durations live in the shared GrantedAbilityOptions group
+    // (a granted ability is the same ability whoever unlocked it), not here.
 }

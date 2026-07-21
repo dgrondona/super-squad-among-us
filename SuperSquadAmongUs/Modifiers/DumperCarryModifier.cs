@@ -89,22 +89,6 @@ public sealed class DumperCarryModifier(byte bodyId) : TimedModifier
         Player.RemoveModifier(this);
     }
 
-    /// <inheritdoc />
-    public override void FixedUpdate()
-    {
-        // Advances the TimedModifier's auto-drop timer - must run.
-        base.FixedUpdate();
-
-        // The dead player's pet is a separate object the game can re-show on its own; keep it hidden
-        // every tick while the body is carried so nothing is left visible on the ground.
-        var owner = MiscUtils.PlayerById(BodyId);
-        if (owner != null && owner.cosmetics != null && owner.cosmetics.currentPet != null &&
-            owner.cosmetics.currentPet.gameObject.activeSelf)
-        {
-            owner.cosmetics.TogglePet(false);
-        }
-    }
-
     private static void SetBodyVisible(DeadBody body, bool visible)
     {
         var alpha = visible ? 1f : 0f;
@@ -123,11 +107,15 @@ public sealed class DumperCarryModifier(byte bodyId) : TimedModifier
         // body-hide technique (Janitor's clean fade, TownOfUs/Utilities/Extensions.cs CoCleanCustom).
         body.myCollider.enabled = visible;
 
-        // The dead player's pet lingers at the death spot as its own object - hide/show it with the body
-        // so a carried body leaves nothing behind (MiscUtils.RemovePet's TogglePet toggle).
+        // The dead player's pet lingers at the death spot as its own object - hide/show it with the body.
+        // petHiddenByViper is the key: a bare TogglePet(false) gets undone when the CARRIER exits a vent
+        // (vanilla re-shows pets on vent exit), which is why a body dropped from a vent used to leave the
+        // pet visible. Setting the flag (MiscUtils.RemovePet's PetHidden.DuringRound mechanism) suppresses
+        // that automatic re-show; clear it again when revealing on drop.
         var owner = MiscUtils.PlayerById(body.ParentId);
         if (owner != null && owner.cosmetics != null)
         {
+            owner.cosmetics.petHiddenByViper = !visible;
             owner.cosmetics.TogglePet(visible);
         }
     }

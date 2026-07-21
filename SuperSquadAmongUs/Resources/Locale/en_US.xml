@@ -266,19 +266,8 @@
     <string name="SuperSquadRoleGooperWikiDescription">The Gooper is a Neutral Killing role that can goop dead bodies, marking them (without removing them) so they can't be gooped again. The first goop unlocks a protective vest ability - activate it to become briefly immune to being killed; the second grants a permanent kill button and the ability to vent; the third and every goop after grants one additional random ability, drawn without repeats from a pool that currently includes Snipe and Swoop. An arrow points toward every un-gooped body while alive.</string>
     <string name="SuperSquadRoleGooperGoop">Goop</string>
     <string name="SuperSquadRoleGooperGoopWikiDescription">Mark a nearby dead body as gooped, granting your next power.</string>
-    <string name="SuperSquadRoleGooperVest">Vest</string>
-    <string name="SuperSquadRoleGooperVestWikiDescription">Put on a protective vest, becoming briefly immune to being killed.</string>
-    <string name="SuperSquadRoleGooperSwoop">Swoop</string>
-    <string name="SuperSquadRoleGooperUnswoop">Unswoop</string>
-    <!-- Gooper Options -->
+    <!-- Gooper Options (granted-ability cooldowns/durations live in the shared Granted Abilities group) -->
     <string name="SuperSquadOptionGooperGoopCooldown">Goop Cooldown</string>
-    <string name="SuperSquadOptionGooperVestDuration">Vest Duration</string>
-    <string name="SuperSquadOptionGooperVestCooldown">Vest Cooldown</string>
-    <string name="SuperSquadOptionGooperKillCooldown">Kill Cooldown</string>
-    <string name="SuperSquadOptionGooperSnipeCooldown">Snipe Cooldown</string>
-    <string name="SuperSquadOptionGooperAimWindow">Aim Window</string>
-    <string name="SuperSquadOptionGooperSwoopCooldown">Swoop Cooldown</string>
-    <string name="SuperSquadOptionGooperSwoopDuration">Swoop Duration</string>
     <!-- Kirby - Neutral Killing -->
     <string name="SuperSquadRoleKirby">Kirby</string>
     <string name="SuperSquadRoleKirbyIntroBlurb">Swallow your way to a bigger arsenal.</string>
@@ -287,17 +276,24 @@
     <string name="SuperSquadRoleKirbyWikiDescription">Kirby is a Neutral Killing role that can swallow nearby players, hiding and freezing them exactly like the Pelican. The moment a player is swallowed, Kirby permanently inherits a curated set of their abilities - kill, vent, snipe, and swoop. Swallowed players are digested (killed, no body) at the next meeting. If Kirby dies before then, everyone in its stomach is released alive where it died.</string>
     <string name="SuperSquadRoleKirbySwallow">Swallow</string>
     <string name="SuperSquadRoleKirbySwallowWikiDescription">Swallow a nearby player, hiding and freezing them until the next meeting.</string>
-    <string name="SuperSquadRoleKirbySwoop">Swoop</string>
-    <string name="SuperSquadRoleKirbyUnswoop">Unswoop</string>
-    <!-- Kirby Options -->
+    <!-- Kirby Options (inherited-ability cooldowns/durations live in the shared Granted Abilities group) -->
     <string name="SuperSquadOptionKirbySwallowCooldown">Swallow Cooldown</string>
     <string name="SuperSquadOptionKirbyCanVent">Kirby Can Vent</string>
     <string name="SuperSquadOptionKirbyImpostorVision">Kirby Has Impostor Vision</string>
-    <string name="SuperSquadOptionKirbyKillCooldown">Kill Cooldown</string>
-    <string name="SuperSquadOptionKirbySnipeCooldown">Snipe Cooldown</string>
-    <string name="SuperSquadOptionKirbyAimWindow">Aim Window</string>
-    <string name="SuperSquadOptionKirbySwoopCooldown">Swoop Cooldown</string>
-    <string name="SuperSquadOptionKirbySwoopDuration">Swoop Duration</string>
+    <!-- Granted Abilities: shared tuning for abilities a role gains at runtime (Gooper, Kirby) -->
+    <string name="SuperSquadGrantedAbilities">Granted Abilities</string>
+    <string name="SuperSquadRoleGrantedVest">Vest</string>
+    <string name="SuperSquadRoleGrantedSwoop">Swoop</string>
+    <string name="SuperSquadRoleGrantedUnswoop">Unswoop</string>
+    <string name="SuperSquadRoleGrantedHide">Hide</string>
+    <string name="SuperSquadOptionGrantedKillCooldown">Granted Kill Cooldown</string>
+    <string name="SuperSquadOptionGrantedSnipeCooldown">Granted Snipe Cooldown</string>
+    <string name="SuperSquadOptionGrantedAimWindow">Granted Aim Window</string>
+    <string name="SuperSquadOptionGrantedSwoopCooldown">Granted Swoop Cooldown</string>
+    <string name="SuperSquadOptionGrantedSwoopDuration">Granted Swoop Duration</string>
+    <string name="SuperSquadOptionGrantedVestCooldown">Granted Vest Cooldown</string>
+    <string name="SuperSquadOptionGrantedVestDuration">Granted Vest Duration</string>
+    <string name="SuperSquadOptionGrantedHideCooldown">Granted Hide Cooldown</string>
     <!-- Sui - Crewmate Protective -->
     <string name="SuperSquadRoleSui">Sui</string>
     <string name="SuperSquadRoleSuiIntroBlurb">Protect someone, and make anyone who targets them regret it.</string>

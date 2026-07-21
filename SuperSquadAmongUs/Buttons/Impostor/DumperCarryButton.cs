@@ -42,6 +42,16 @@ public sealed class DumperCarryButton : TownOfUsRoleButton<DumperRole, DeadBody>
     private static string CarryLabel => TouLocale.GetParsed("SuperSquadRoleDumperCarry", "Carry");
     private static string DropLabel => TouLocale.GetParsed("SuperSquadRoleDumperDrop", "Drop");
 
+    // The carry cooldown is a *drop* cooldown - it starts when the body is dropped, not when it's picked
+    // up (so carry duration and cooldown are independent). Tracked here to detect the pickup -> drop
+    // transition each tick, including auto-drops the button never sees a click for.
+    private bool wasCarrying;
+
+    // Guards against one physical press dispatching twice (keybind + click, or key autorepeat under
+    // Proton - see RcXdDeployButton) picking up and instantly dropping the same body.
+    private const float ToggleDebounce = 0.3f;
+    private float lastToggleTime = float.NegativeInfinity;
+
     public override DeadBody? GetTarget()
     {
         return PlayerControl.LocalPlayer.GetNearestDeadBody(Distance);
@@ -74,10 +84,17 @@ public sealed class DumperCarryButton : TownOfUsRoleButton<DumperRole, DeadBody>
 
     // The targeted-button ClickHandler routes through CustomActionButton<T>.CanClick(), which hard-requires
     // a fresh nearby Target AND Timer<=0. Neither holds while carrying: the body is hidden and teleported
-    // out from under the player, and the pickup cooldown is still running - so an early drop would never
-    // register. Route the drop straight through CanUse() (which owns the carry-state guards) instead.
+    // out from under the player - so an early drop would never register. Route the drop straight through
+    // CanUse() (which owns the carry-state guards) instead. Neither phase starts the cooldown here: the
+    // pickup mustn't (carrying is free until the duration/drop), and the drop's cooldown is started by the
+    // FixedUpdate transition below so early drops and auto-drops behave identically.
     public override void ClickHandler()
     {
+        if (Time.time - lastToggleTime < ToggleDebounce)
+        {
+            return;
+        }
+
         if (PlayerControl.LocalPlayer.HasModifier<DumperCarryModifier>())
         {
             if (!CanUse())
@@ -86,11 +103,20 @@ public sealed class DumperCarryButton : TownOfUsRoleButton<DumperRole, DeadBody>
             }
 
             OnClick();
-            SetTimer(Cooldown);
+            lastToggleTime = Time.time;
             return;
         }
 
-        base.ClickHandler();
+        // Pickup: same gating as the base targeted ClickHandler (CanClick + hacked/disabled), minus the
+        // Timer = Cooldown it would set - picking up must not put the button on cooldown.
+        if (!CanClick() || PlayerControl.LocalPlayer.HasModifier<GlitchHackedModifier>() ||
+            PlayerControl.LocalPlayer.GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities))
+        {
+            return;
+        }
+
+        OnClick();
+        lastToggleTime = Time.time;
     }
 
     protected override void OnClick()
@@ -115,11 +141,20 @@ public sealed class DumperCarryButton : TownOfUsRoleButton<DumperRole, DeadBody>
     {
         base.FixedUpdate(playerControl);
 
+        var carrying = playerControl.HasModifier<DumperCarryModifier>();
+
+        // Start the drop cooldown the moment the carry ends by ANY path - early drop, duration expiry,
+        // meeting, or death - so the cooldown is always measured from the drop, never the pickup.
+        if (wasCarrying && !carrying)
+        {
+            SetTimer(Cooldown);
+        }
+
+        wasCarrying = carrying;
+
         // Name is a fixed expression body (like every other button's), so it can't reflect what
-        // OverrideName last set - re-assert the correct label every tick instead of trying to detect
-        // a change. Cheap, and self-heals the label if the carry ended without a click here (the
-        // duration ran out, a meeting started, or the Dumper died - those clear the modifier from its
-        // own lifecycle, not this button).
-        OverrideName(playerControl.HasModifier<DumperCarryModifier>() ? DropLabel : CarryLabel);
+        // OverrideName last set - re-assert the correct label every tick. Cheap, and self-heals the
+        // label if the carry ended without a click here.
+        OverrideName(carrying ? DropLabel : CarryLabel);
     }
 }

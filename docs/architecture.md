@@ -24,10 +24,13 @@ follows the same shape:
   also `IWikiDiscoverable` and `IDoomable`, on top of the vanilla base game role class (`CrewmateRole`,
   `NeutralRole`, etc. — these live in Il2Cpp Assembly-CSharp, not this repo). See
   [il2cpp-gotchas.md](il2cpp-gotchas.md) for the constructor/override quirks this requires.
-- `Buttons/<Team>/<X>Button.cs` — abilities extend `TownOfUs.Buttons.TownOfUsRoleButton<TRole>` (or
-  `TownOfUsRoleButton<TRole, TTarget>` for targeted abilities), not MiraAPI's raw `CustomActionButton`
-  directly. This base class wires up TOU-Mira's cooldown/map-based-cooldown, keybind icon, and uses
-  conventions for you.
+- `Buttons/<Team>/<X>Button.cs` — abilities extend this addon's `SuperSquadRoleButton<TRole>` (or
+  `SuperSquadRoleButton<TRole, TTarget>` for targeted abilities, `SuperSquadKillRoleButton<...>` for
+  kill buttons — all in `Buttons/SuperSquadRoleButton.cs`), never TOU-Mira's `TownOfUsRoleButton<TRole>`
+  or MiraAPI's raw `CustomActionButton` directly. The bases inherit all of TOU-Mira's
+  cooldown/map-based-cooldown/keybind wiring AND make the button borrowable by grant-holding roles
+  (Kirby/Gooper) — see "Granting a role abilities it wasn't born with" below for the rules this
+  imposes.
 - `Options/Roles/<Team>/<X>Options.cs` — `AbstractOptionGroup<TRole>` subclass using
   `[ModdedNumberOption]` / `[ModdedToggleOption]` attributes; read at runtime via
   `OptionGroupSingleton<TOptions>.Instance`.
@@ -60,11 +63,12 @@ example is `Modifiers/InvisibleBoyModifier.cs`.
 ## RPC sender validation
 
 Every `[MethodRpc]` handler that exercises a role's ability (not passive lifecycle/cleanup RPCs -
-see below) should validate the sender actually holds that role before acting, matching TOU-Mira's
-own convention (its Sheriff/Bomber/Cleric/etc. RPCs all do this):
+see below) should validate the sender before acting, matching TOU-Mira's own convention (its
+Sheriff/Bomber/Cleric/etc. RPCs all do this) — but use the grant-aware helper, not a raw role-type
+check, so a role that borrowed the ability kit (see the granting section below) isn't rejected:
 
 ```csharp
-if (source.Data.Role is not YourRole)
+if (!AbilityGrants.SenderIsOrHolds<YourRole>(source))
 {
     Error("RpcYourMethodName - Invalid <role display name>");
     return;
@@ -115,28 +119,29 @@ build the next one. Universal game modifiers get the same treatment in `docs/mod
 ## Granting a role abilities it wasn't born with
 
 If a role needs to dynamically gain abilities at runtime (Gooper's goop-tier escalation, Kirby's
-swallow-based inheritance — see `docs/roles/gooper.md`'s "Shared ability-grant architecture" section),
-reuse the **role-agnostic** granted-ability system, don't build a per-role one:
+swallow-based inheritance), reuse the granted-ability system — full design in `docs/roles/gooper.md`'s
+"Shared ability-grant architecture" section. Two layers:
 
-- `Modules/AbilityGrants.cs` — the `GrantableAbility` `[Flags]` enum + `IAbilityGrantHolder` (a plain
-  mutable `UnlockedAbilities` set on the role, mutated inside an already-deterministic RPC/event handler
-  on every client) + `GetPortableAbilities` (which role hands over which flags when swallowed).
-- `Buttons/GrantedAbilityButtons.cs` — **one** button per ability (`GrantedKillButton`, etc.), each
-  extending `TownOfUsButton`/`TownOfUsTargetButton<PlayerControl>` **directly** and gating `Enabled` on
-  `role is IAbilityGrantHolder h && h.UnlockedAbilities.HasFlag(X)` — the modifier-gated-button pattern
-  (`ScientistButton`), NOT a role-typed `TownOfUsRoleButton<TRole>`. A single client is one role, so the
-  one singleton serves whichever granting role the local player is. Cooldowns/durations live in the
-  standalone `Options/GrantedAbilityOptions.cs`.
+- **Kits (roles from THIS addon — zero per-ability code).** Every role button here extends the
+  grant-aware bases in `Buttons/SuperSquadRoleButton.cs` instead of `TownOfUsRoleButton<TRole>`; their
+  `Enabled` passes for the native holder OR any `IAbilityGrantHolder` whose `GrantedKits` contains the
+  role type, so the borrower gets the source role's *real* buttons. **This imposes three rules on every
+  new role:** (1) buttons extend `SuperSquadRoleButton<TRole>` / `<TRole, TTarget>` /
+  `SuperSquadKillRoleButton<TRole, TTarget>`; (2) per-ability mutable state lives on the button
+  singleton, never on the role class; (3) ability RPC validators use
+  `AbilityGrants.SenderIsOrHolds<TRole>(source)`, and effect-resolving event handlers key on the
+  modifier's caster/carrier, not the caster's role type.
+- **Flag primitives (`GrantableAbility`) for abilities with no borrowable source button** — vanilla
+  Kill/Vent, TOU-Mira-sourced abilities (Swoop), Vest. One `Granted*Button` each in
+  `Buttons/GrantedAbilityButtons.cs`, tuned by `Options/GrantedAbilityOptions.cs`.
 
-**Adding a new grantable ability is a one-file-ish job that every current and future granting role gets
-for free:** a flag, one `Granted*Button` (+ a modifier if the effect needs one), one
-`GetPortableAbilities` entry, and — if it's Gooper-pool-worthy — one `AbilityGrants.Pool` entry. Reuse
-the source role's own modifier verbatim where it isn't hard-wired to that role's button singleton (Hide
-reuses `CloakHiddenModifier`); copy the shape into a role-agnostic sibling where it is (Swoop). This is
-also the path to add Puppeteer's control as a portable ability. Do **not** reach for `ChangeRole`
-(`TownOfUs/Utilities/Extensions.cs`) — MiraAPI's only "become another role" primitive is a full
-teardown/reinstantiate, far too heavy for "add one ability," and it can't hold several borrowed
-abilities at once.
+`AbilityGrants.ApplyPortableGrant` is the single transfer entry point (flags + kit + vent sync,
+optional overwrite). **TOU-Mira roles cannot be kit-borrowed** — all 49 of their ability RPC handlers
+validate the sender's exact role on every client, 21 of their buttons dereference role state that's
+null for a non-holder, and upstream's own Imitator resorts to a full `RpcChangeRole` swap — so a
+TOU-Mira ability joins the system by being recreated once as a flag primitive. Do **not** reach for
+`ChangeRole` (`TownOfUs/Utilities/Extensions.cs`) — a full teardown/reinstantiate that can't hold
+several borrowed abilities at once.
 
 Keep that file to **current-state information only**, roughly 200-300 lines: what the role does, how it
 works now, confirmed design decisions, known follow-ups. If a role accumulates a long round-by-round

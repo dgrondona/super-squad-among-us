@@ -23,7 +23,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// short 5s arming delay; second press assassinates the marked target from anywhere on the map
 /// (teleport kill), leaves traces at both ends, and turns the Ninja invisible.
 /// </summary>
-public sealed class NinjaMarkButton : TownOfUsKillRoleButton<NinjaRole, PlayerControl>, IKillButton
+public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, PlayerControl>, IKillButton
 {
     // Fixed arming delay between marking and being able to assassinate, from TOR (Buttons.cs sets
     // ninjaButton.Timer = 5f on mark).

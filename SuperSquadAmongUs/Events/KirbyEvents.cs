@@ -15,7 +15,7 @@ namespace SuperSquadAmongUs.Events;
 /// Resolves Kirby's swallowed players - a near-literal copy of <see cref="PelicanEvents"/>. A meeting
 /// digests everyone currently swallowed (they die, no bodies) and, right before the kill, Kirby
 /// permanently inherits a curated set of portable abilities from each digested victim's role (see
-/// <c>AbilityGrants.GetPortableAbilities</c>). A Kirby killed mid-round releases everyone alive
+/// <c>AbilityGrants.ApplyPortableGrant</c>). A Kirby killed mid-round releases everyone alive
 /// from its stomach at the spot it died - digestion never ran, so nothing was inherited from them.
 /// </summary>
 public static class KirbyEvents

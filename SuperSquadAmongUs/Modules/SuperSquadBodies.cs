@@ -25,7 +25,7 @@ public static class SuperSquadBodies
     [MethodRpc((uint)SuperSquadRpc.MafiaCleanBody, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcMafiaCleanBody(PlayerControl source, byte parentId)
     {
-        if (source.Data.Role is not MafiaJanitorRole)
+        if (!AbilityGrants.SenderIsOrHolds<MafiaJanitorRole>(source))
         {
             Error("RpcMafiaCleanBody - Invalid mafia janitor");
             return;
@@ -44,14 +44,20 @@ public static class SuperSquadBodies
     [MethodRpc((uint)SuperSquadRpc.VultureEatBody, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcVultureEat(PlayerControl source, byte parentId)
     {
-        if (source.Data.Role is not VultureRole vulture)
+        if (!AbilityGrants.SenderIsOrHolds<VultureRole>(source))
         {
             Error("RpcVultureEat - Invalid vulture");
             return;
         }
 
         DestroyBodies(parentId);
-        vulture.EatenBodies++;
+
+        // Only a real Vulture advances its win counter - a role that borrowed the eat kit
+        // (AbilityGrants.GrantedKits) gets the body-removal utility but no Vulture win progress.
+        if (source.Data.Role is VultureRole vulture)
+        {
+            vulture.EatenBodies++;
+        }
     }
 
     private static void DestroyBodies(byte parentId)

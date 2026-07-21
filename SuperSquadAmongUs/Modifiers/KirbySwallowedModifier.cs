@@ -1,4 +1,6 @@
+using MiraAPI.GameOptions;
 using SuperSquadAmongUs.Modules;
+using SuperSquadAmongUs.Options.Roles.Neutral;
 using SuperSquadAmongUs.Roles.Neutral;
 
 namespace SuperSquadAmongUs.Modifiers;
@@ -30,17 +32,14 @@ public sealed class KirbySwallowedModifier(PlayerControl kirby) : CarriedModifie
 
         // Kirby inherits the victim's portable abilities the instant they're swallowed (per the user's
         // request), not at digestion. Runs on every client because the modifier add is the synced call,
-        // so the grant stays deterministic - the same local-mutation pattern the Vulture eat count uses.
+        // so the grant stays deterministic - the same local-mutation pattern the Vulture eat count uses
+        // (the accumulate option is host-synced, so the overwrite branch is deterministic too).
         if (Kirby?.Data?.Role is KirbyRole kirbyRole && Player?.Data != null)
         {
-            kirbyRole.UnlockedAbilities |= AbilityGrants.GetPortableAbilities(Player.Data.Role);
-
-            // Surface venting (cached bool + vent button) if this swallow just granted it - see
-            // AbilityGrants.EnableVenting.
-            if (kirbyRole.UnlockedAbilities.HasFlag(GrantableAbility.Vent))
-            {
-                AbilityGrants.EnableVenting(kirbyRole);
-            }
+            AbilityGrants.ApplyPortableGrant(
+                kirbyRole,
+                Player.Data.Role,
+                overwrite: !OptionGroupSingleton<KirbyOptions>.Instance.AccumulateAbilities);
         }
     }
 

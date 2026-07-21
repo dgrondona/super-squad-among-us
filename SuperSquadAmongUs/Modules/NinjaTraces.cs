@@ -31,7 +31,7 @@ public static class NinjaTraces
     [MethodRpc((uint)SuperSquadRpc.PlaceNinjaTrace, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcPlaceNinjaTrace(PlayerControl source, float x, float y)
     {
-        if (source.Data.Role is not NinjaRole)
+        if (!AbilityGrants.SenderIsOrHolds<NinjaRole>(source))
         {
             Error("RpcPlaceNinjaTrace - Invalid ninja");
             return;

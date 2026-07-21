@@ -50,14 +50,16 @@ public static class PelicanEvents
     }
 
     /// <summary>
-    /// Pelican disconnected: release its stomach in place. Without this, devoured players would stay
-    /// pinned and hidden forever - the death handler below never fires for a disconnect.
+    /// Devourer disconnected: release its stomach in place. Without this, devoured players would stay
+    /// pinned and hidden forever - the death handler below never fires for a disconnect. Keyed on the
+    /// modifier's carrier, NOT on the leaver being a Pelican, so a role that BORROWED the devour kit
+    /// (see AbilityGrants.GrantedKits) releases its stomach the same way.
     /// </summary>
     [RegisterEvent]
     public static void PlayerLeaveEventHandler(PlayerLeaveEvent @event)
     {
         var player = @event.ClientData.Character;
-        if (player == null || player.Data?.Role is not PelicanRole)
+        if (player == null)
         {
             return;
         }
@@ -72,14 +74,15 @@ public static class PelicanEvents
     }
 
     /// <summary>
-    /// Pelican killed mid-round: everyone in its stomach is released alive where it died. Each client
+    /// Devourer killed mid-round: everyone in its stomach is released alive where it died. Each client
     /// removes the modifier locally (state is already synced); only the released player's own client
-    /// performs the position snap, since movement is client-authoritative.
+    /// performs the position snap, since movement is client-authoritative. Carrier-keyed, not
+    /// role-keyed - see the disconnect handler above.
     /// </summary>
     [RegisterEvent]
     public static void PlayerDeathEventHandler(PlayerDeathEvent @event)
     {
-        if (@event.Player == null || @event.Player.Data?.Role is not PelicanRole)
+        if (@event.Player == null)
         {
             return;
         }

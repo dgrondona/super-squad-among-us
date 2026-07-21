@@ -19,7 +19,7 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 /// unless "kill anyone" is on; an arrow points at the locked interactor either way. Clears on use or
 /// at the next meeting (confirmed design decision - no separate countdown timer).
 /// </summary>
-public sealed class SuiRetaliateButton : TownOfUsRoleButton<SuiRole, PlayerControl>, IKillButton
+public sealed class SuiRetaliateButton : SuperSquadRoleButton<SuiRole, PlayerControl>, IKillButton
 {
     private PlayerControl? lockedTarget;
     private ArrowBehaviour? arrow;

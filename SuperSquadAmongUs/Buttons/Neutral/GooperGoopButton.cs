@@ -19,15 +19,16 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 /// escalating power - see <see cref="SuperSquadGooper.RpcGoop"/>. An arrow points at every un-gooped
 /// body while alive, mirroring the Vulture's eat button.
 /// </summary>
-public sealed class GooperGoopButton : TownOfUsRoleButton<GooperRole, DeadBody>
+public sealed class GooperGoopButton : SuperSquadRoleButton<GooperRole, DeadBody>
 {
     private readonly Dictionary<byte, ArrowBehaviour> bodyArrows = new();
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleGooperGoop", "Goop");
 
-    // SecondaryAction, not Primary: the granted Kill (GrantedKillButton) claims PrimaryAction, and Goop
-    // coexists with it once the Gooper has gooped twice (see docs/roles/gooper.md keybind allocation).
-    public override BaseKeybind Keybind => Keybinds.SecondaryAction;
+    // TertiaryAction: PrimaryAction belongs to the granted Kill, and borrowed kit buttons keep their
+    // source keybinds - which is almost always SecondaryAction - so the Gooper's own core ability
+    // lives on the one slot borrowed kits rarely use (see docs/roles/gooper.md keybind allocation).
+    public override BaseKeybind Keybind => Keybinds.TertiaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Gooper;
 
     public override float Cooldown => Math.Clamp(
@@ -52,14 +53,14 @@ public sealed class GooperGoopButton : TownOfUsRoleButton<GooperRole, DeadBody>
             return;
         }
 
-        // The 3rd goop and beyond each draw one pool ability, without replacement (confirmed design
+        // The 3rd goop and beyond each draw one pool entry, without replacement (confirmed design
         // decision) - picked here, on the Gooper's own client, so every client applies the same draw
         // once the RPC arrives (same split ElusiveEvents uses for its teleport destination).
-        var poolAbility = Role.GoopedBodyIds.Count >= 2
-            ? AbilityGrants.PickRandomPoolAbility(Role.UnlockedAbilities)
-            : GrantableAbility.None;
+        var poolIndex = Role.GoopedBodyIds.Count >= 2
+            ? AbilityGrants.PickRandomPoolIndex(Role)
+            : AbilityGrants.NoPoolChoice;
 
-        SuperSquadGooper.RpcGoop(PlayerControl.LocalPlayer, Target.ParentId, (byte)poolAbility);
+        SuperSquadGooper.RpcGoop(PlayerControl.LocalPlayer, Target.ParentId, poolIndex);
     }
 
     protected override void FixedUpdate(PlayerControl playerControl)

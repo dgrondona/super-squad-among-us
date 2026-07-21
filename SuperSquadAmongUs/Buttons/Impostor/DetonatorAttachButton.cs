@@ -22,7 +22,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// delay elapses - detonate it at will (no auto-expiry otherwise). Only one bomb is tracked at a time
 /// per Detonator. See <see cref="DetonatorBombModifier"/> and <see cref="SuperSquadDetonator.RpcDetonate"/>.
 /// </summary>
-public sealed class DetonatorAttachButton : TownOfUsRoleButton<DetonatorRole, PlayerControl>
+public sealed class DetonatorAttachButton : SuperSquadRoleButton<DetonatorRole, PlayerControl>
 {
     private static string AttachLabel => TouLocale.GetParsed("SuperSquadRoleDetonatorAttach", "Attach");
     private static string DetonateLabel => TouLocale.GetParsed("SuperSquadRoleDetonatorDetonate", "Detonate");

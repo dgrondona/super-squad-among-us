@@ -28,6 +28,13 @@ public sealed class GooperRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRo
     /// <inheritdoc />
     public GrantableAbility UnlockedAbilities { get; set; }
 
+    /// <inheritdoc />
+    [HideFromIl2Cpp]
+    public HashSet<Type> GrantedKits { get; } = [];
+
+    /// <inheritdoc />
+    public bool BaseCanVent => false;
+
     public DoomableType DoomHintType => DoomableType.Relentless;
     public string LocaleKey => "Gooper";
     public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");

@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Crewmate;
 
-public sealed class ApparaterMapButton : TownOfUsRoleButton<ApparaterRole>
+public sealed class ApparaterMapButton : SuperSquadRoleButton<ApparaterRole>
 {
     // Used only if the local player's collider is somehow unavailable when checking.
     // Fallback-only snap cap, used when the minimap texture can't be sampled (see HandleMapClick):

@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Neutral;
 
-public sealed class SentinelExplodeButton : TownOfUsRoleButton<SentinelRole>
+public sealed class SentinelExplodeButton : SuperSquadRoleButton<SentinelRole>
 {
     public override string Name => TouLocale.GetParsed("SuperSquadRoleSentinelExplode", "Explode");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;

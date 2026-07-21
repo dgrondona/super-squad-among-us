@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Neutral;
 
-public sealed class SentinelKillButton : TownOfUsKillRoleButton<SentinelRole, PlayerControl>, IDiseaseableButton,
+public sealed class SentinelKillButton : SuperSquadKillRoleButton<SentinelRole, PlayerControl>, IDiseaseableButton,
     IKillButton
 {
     public override string Name => TranslationController.Instance.GetStringWithDefault(StringNames.KillLabel, "Kill");

@@ -22,7 +22,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// <c>MaxTimer += 10</c>) - the penalty persists across meetings and only resets at game start (see
 /// EraserEvents). Limited to <see cref="EraserOptions.MaxUses"/> uses.
 /// </summary>
-public sealed class EraserEraseButton : TownOfUsRoleButton<EraserRole, PlayerControl>
+public sealed class EraserEraseButton : SuperSquadRoleButton<EraserRole, PlayerControl>
 {
     // TOR's fixed cooldown escalation per successful erase (Buttons.cs:1103).
     private const float CooldownEscalation = 10f;

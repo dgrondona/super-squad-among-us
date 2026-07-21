@@ -25,6 +25,13 @@ public sealed class KirbyRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRol
     /// <inheritdoc />
     public GrantableAbility UnlockedAbilities { get; set; }
 
+    /// <inheritdoc />
+    [HideFromIl2Cpp]
+    public HashSet<Type> GrantedKits { get; } = [];
+
+    /// <inheritdoc />
+    public bool BaseCanVent => OptionGroupSingleton<KirbyOptions>.Instance.CanVent;
+
     public DoomableType DoomHintType => DoomableType.Relentless;
     public string LocaleKey => "Kirby";
     public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");

@@ -16,27 +16,9 @@ namespace SuperSquadAmongUs.Roles.Crewmate;
 
 public sealed class SuiRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITownOfUsRole, IWikiDiscoverable, IDoomable
 {
-    /// <summary>
-    /// Gets or sets the player currently protected, mirrored on this client for
-    /// <see cref="Buttons.Crewmate.SuiProtectButton"/>'s targeting; the synced state of record is
-    /// <see cref="SuiProtectedModifier"/> on the target.
-    /// </summary>
-    [HideFromIl2Cpp]
-    public PlayerControl? Protected { get; set; }
-
-    public void FixedUpdate()
-    {
-        if (!Player || Player.Data.Role is not SuiRole)
-        {
-            return;
-        }
-
-        if (Protected != null && (Protected.HasDied() || !Protected.HasModifier<SuiProtectedModifier>()))
-        {
-            Protected = null;
-        }
-    }
-
+    // The "currently protected player" mirror lives on SuiProtectButton, not here: buttons are
+    // per-client singletons, so keeping the state there lets a role that borrowed the Sui kit
+    // (AbilityGrants.GrantedKits) share it. The synced state of record is SuiProtectedModifier.
     public DoomableType DoomHintType => DoomableType.Protective;
     public string LocaleKey => "Sui";
     public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");

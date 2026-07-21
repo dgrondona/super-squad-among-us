@@ -23,7 +23,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// current position. Also auto-drops on its own after the configured duration, a meeting, or the
 /// Dumper's death - all handled by the modifier's own lifecycle, not this button.
 /// </summary>
-public sealed class DumperCarryButton : TownOfUsRoleButton<DumperRole, DeadBody>
+public sealed class DumperCarryButton : SuperSquadRoleButton<DumperRole, DeadBody>
 {
     // SecondaryAction, not Primary: Dumper keeps the vanilla Impostor kill button (on PrimaryAction), so
     // Carry lives on Secondary like RC-XD's Deploy and the Undertaker's Drag.

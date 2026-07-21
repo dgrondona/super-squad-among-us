@@ -26,7 +26,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// <see cref="Patches.SniperAimPatch"/>, not this button's FixedUpdate (fixed tick drops clicks - see
 /// docs/il2cpp-gotchas.md).
 /// </summary>
-public sealed class SniperSnipeButton : TownOfUsRoleButton<SniperRole>
+public sealed class SniperSnipeButton : SuperSquadRoleButton<SniperRole>
 {
     // The frame the aim window was armed, so the button-press click can't also fire the shot
     // (HUD buttons are collider-based PassiveButtons, invisible to EventSystem UI checks).

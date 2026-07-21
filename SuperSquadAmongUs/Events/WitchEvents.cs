@@ -6,6 +6,7 @@ using MiraAPI.Hud;
 using MiraAPI.Modifiers;
 using SuperSquadAmongUs.Buttons.Impostor;
 using SuperSquadAmongUs.Modifiers;
+using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs.Events;
@@ -55,8 +56,10 @@ public static class WitchEvents
             // merely *killed* does NOT save the targets - her hexes still fire (a dead player's
             // Data.Role is their ghost role, so the WitchRole check must only apply to the living).
             // TOR also saves the targets when the witch is a lover dying alongside her exiled partner.
+            // IsOrHolds, not `is WitchRole`: a living caster who BORROWED the hex kit (Kirby/Gooper,
+            // see AbilityGrants.GrantedKits) keeps their hexes valid too.
             var witchInvalid = witch == null || witch.Data == null || witch.Data.Disconnected ||
-                               (!witch.HasDied() && witch.Data.Role is not WitchRole);
+                               (!witch.HasDied() && !AbilityGrants.IsOrHolds(witch.Data.Role, typeof(WitchRole)));
             var savedByVote = !witchInvalid && voteSaves && exiled != null &&
                               (witch == exiled || WitchDiesWithExiledLover(witch!, exiled));
 
@@ -70,7 +73,7 @@ public static class WitchEvents
                 TouLocale.Get("SuperSquadDiedToWitchHex", "Hexed"),
                 DeathEventHandlers.CurrentRound,
                 DeathHandlerOverride.SetFalse,
-                TouLocale.GetParsed("DiedByStringBasic").Replace("<player>", witch!.Data.PlayerName),
+                TouLocale.GetParsed("DiedByStringBasic").Replace("<player>", witch!.Data!.PlayerName),
                 lockInfo: DeathHandlerOverride.SetTrue);
 
             target.Exiled();

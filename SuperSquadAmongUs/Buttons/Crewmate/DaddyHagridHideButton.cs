@@ -19,7 +19,7 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 /// is not an attack (though TOU-global rules still apply: clicking an alerted Veteran retaliates).
 /// The button effect mirrors the hide duration, then the cooldown starts.
 /// </summary>
-public sealed class DaddyHagridHideButton : TownOfUsRoleButton<DaddyHagridRole, PlayerControl>
+public sealed class DaddyHagridHideButton : SuperSquadRoleButton<DaddyHagridRole, PlayerControl>
 {
     /// <inheritdoc />
     public override string Name => TouLocale.GetParsed("SuperSquadRoleDaddyHagridHide", "Hide");

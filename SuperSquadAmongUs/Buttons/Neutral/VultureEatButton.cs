@@ -20,7 +20,7 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 /// toward the win threshold. While alive, blue arrows point at every dead body on the map (TOR's
 /// hardcoded blue, local to the Vulture only), toggleable via options.
 /// </summary>
-public sealed class VultureEatButton : TownOfUsRoleButton<VultureRole, DeadBody>
+public sealed class VultureEatButton : SuperSquadRoleButton<VultureRole, DeadBody>
 {
     private readonly Dictionary<byte, ArrowBehaviour> bodyArrows = new();
 

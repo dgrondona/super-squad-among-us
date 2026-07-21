@@ -32,7 +32,7 @@ public static class SuperSquadDetonator
     [MethodRpc((uint)SuperSquadRpc.DetonatorDetonate, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDetonate(PlayerControl source, PlayerControl target)
     {
-        if (source.Data.Role is not DetonatorRole)
+        if (!AbilityGrants.SenderIsOrHolds<DetonatorRole>(source))
         {
             Error("RpcDetonate - Invalid Detonator");
             return;

@@ -23,7 +23,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// camera control to the car for a limited window; a second press detonates it, killing players in a
 /// radius. If the window expires, the car despawns harmlessly.
 /// </summary>
-public sealed class RcXdDeployButton : TownOfUsRoleButton<RcXdRole>
+public sealed class RcXdDeployButton : SuperSquadRoleButton<RcXdRole>
 {
     // Distinguishes "player pressed Detonate" from "drive time expired" - both funnel through
     // OnEffectEnd().

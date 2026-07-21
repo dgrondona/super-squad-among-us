@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Neutral;
 
-public sealed class PelicanDevourButton : TownOfUsRoleButton<PelicanRole, PlayerControl>, IKillButton
+public sealed class PelicanDevourButton : SuperSquadRoleButton<PelicanRole, PlayerControl>, IKillButton
 {
     public override string Name => TouLocale.GetParsed("SuperSquadRolePelicanDevour", "Devour");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;

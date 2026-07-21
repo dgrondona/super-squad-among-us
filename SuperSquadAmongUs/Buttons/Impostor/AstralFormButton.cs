@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Impostor;
 
-public sealed class AstralFormButton : TownOfUsRoleButton<AstralRole>
+public sealed class AstralFormButton : SuperSquadRoleButton<AstralRole>
 {
     public override string Name => TouLocale.GetParsed("SuperSquadRoleAstralForm", "Phase");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;

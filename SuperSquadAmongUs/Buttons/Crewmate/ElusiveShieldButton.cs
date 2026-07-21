@@ -17,7 +17,7 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 /// for the configured duration; the button's effect fill mirrors the shield and the cooldown starts
 /// when it drops.
 /// </summary>
-public sealed class ElusiveShieldButton : TownOfUsRoleButton<ElusiveRole>
+public sealed class ElusiveShieldButton : SuperSquadRoleButton<ElusiveRole>
 {
     /// <inheritdoc />
     public override string Name => TouLocale.GetParsed("SuperSquadRoleElusiveShield", "Shield");

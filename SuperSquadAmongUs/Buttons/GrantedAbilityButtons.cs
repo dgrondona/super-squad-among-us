@@ -13,23 +13,21 @@ using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
 using TownOfUs.Modules.Localization;
-using TownOfUs.Networking;
 using TownOfUs.Utilities;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using MiraAPI.GameOptions;
 
 namespace SuperSquadAmongUs.Buttons;
 
 /// <summary>
-/// The role-agnostic granted-ability buttons: ONE button per ability, shown for ANY role that has
-/// unlocked that ability's <see cref="GrantableAbility"/> flag (Gooper via goop tiers, Kirby via
-/// swallow inheritance - see docs/roles/gooper.md's "Shared ability-grant architecture"). Unlike a
-/// role-typed <c>TownOfUsRoleButton&lt;TRole&gt;</c>, these gate <c>Enabled</c>
-/// on the unlocked flag instead of a role type (the modifier-gated-button pattern TOU-Mira's own
-/// <c>ScientistButton</c> uses), so a new ability costs exactly one button here - no per-(role, ability)
-/// subclass, and no need to touch the roles at all. Adding, say, Puppeteer's control is: one flag, one
-/// button here, one modifier, and one <see cref="AbilityGrants.GetPortableAbilities"/> entry.
+/// The granted-ability PRIMITIVE buttons: one button per <see cref="GrantableAbility"/> flag, shown for
+/// ANY role that has unlocked it (the modifier-gated-button pattern TOU-Mira's own
+/// <c>ScientistButton</c> uses). These exist only for abilities with no borrowable source button in
+/// this addon: vanilla Kill, the TOU-Mira Swooper's Swoop, and Gooper's Vest. Abilities sourced from
+/// this addon's own roles are NOT recreated here - they transfer as whole button kits via
+/// <see cref="IAbilityGrantHolder.GrantedKits"/> and <c>SuperSquadRoleButton</c>'s grant-aware
+/// <c>Enabled</c>, so the borrower gets the source role's real button (see docs/architecture.md's
+/// granting section).
 /// </summary>
 internal static class GrantedAbility
 {
@@ -48,7 +46,7 @@ internal static class GrantedAbility
 }
 
 /// <summary>
-/// Shared plumbing for granted abilities that target a player (Kill, Hide). Reimplements the
+/// Shared plumbing for granted primitives that target a player (currently just Kill). Reimplements the
 /// player-outline and target-validity bits that <c>TownOfUsRoleButton&lt;TRole, TTarget&gt;</c> would
 /// normally provide, since these deliberately don't inherit from it (no owning role type).
 /// </summary>
@@ -107,36 +105,6 @@ public sealed class GrantedKillButton : GrantedTargetButtonBase, IKillButton
         if (Target != null)
         {
             PlayerControl.LocalPlayer.RpcCustomMurder(Target);
-        }
-    }
-}
-
-/// <summary>
-/// Granted Hide: cloak a living player exactly like Daddy Hagrid (reuses <see cref="CloakHiddenModifier"/>
-/// verbatim, so it IS Hagrid's ability, not a copy). Click-only - the distinct keybind slots are taken
-/// (see docs/roles/gooper.md keybind allocation).
-/// </summary>
-public sealed class GrantedHideButton : GrantedTargetButtonBase
-{
-    protected override GrantableAbility RequiredAbility => GrantableAbility.Hide;
-
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleGrantedHide", "Hide");
-    public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.NeutralPlaceholderButton;
-
-    public override float Cooldown => Math.Clamp(
-        OptionGroupSingleton<GrantedAbilityOptions>.Instance.HideCooldown.Value + MapCooldown, 5f, 120f);
-
-    public override PlayerControl? GetTarget()
-    {
-        return PlayerControl.LocalPlayer.GetClosestLivingPlayer(true, Distance, false,
-            x => !x.HasModifier<CarriedModifier>());
-    }
-
-    protected override void OnClick()
-    {
-        if (Target != null)
-        {
-            Target.RpcAddModifier<CloakHiddenModifier>(PlayerControl.LocalPlayer);
         }
     }
 }
@@ -258,166 +226,3 @@ public sealed class GrantedSwoopButton : TownOfUsButton
     }
 }
 
-/// <summary>
-/// Granted Snipe: the Sniper's aim-and-fire piercing shot, reusing <see cref="SniperShots"/> unchanged
-/// (already role-agnostic hit math). Per-frame click polling is driven from
-/// <see cref="Patches.SniperAimPatch"/> via <see cref="HandleAimFrame"/> (fixed-tick FixedUpdate drops
-/// clicks - see docs/il2cpp-gotchas.md).
-/// </summary>
-public sealed class GrantedSnipeButton : TownOfUsButton
-{
-    private int armedFrame;
-    private bool aimLockActive;
-
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleSniperSnipe", "Snipe");
-    public override BaseKeybind Keybind => Keybinds.TertiaryAction;
-    public override Color TextOutlineColor => GrantedAbility.OutlineColor;
-
-    public override float Cooldown => Math.Clamp(
-        OptionGroupSingleton<GrantedAbilityOptions>.Instance.SnipeCooldown.Value + MapCooldown, 5f, 120f);
-
-    public override float EffectDuration => OptionGroupSingleton<GrantedAbilityOptions>.Instance.AimWindow.Value;
-    public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.NeutralPlaceholderButton;
-
-    public override bool Enabled(RoleBehaviour? role)
-    {
-        // Stay enabled while an aim window/lock is pending so a death mid-aim can still clean up.
-        return (!Disabled && role is IAbilityGrantHolder holder &&
-                holder.UnlockedAbilities.HasFlag(GrantableAbility.Snipe)) || EffectActive || aimLockActive;
-    }
-
-    public override bool CanUse()
-    {
-        if (HudManager.Instance.Chat.IsOpenOrOpening || MeetingHud.Instance)
-        {
-            return false;
-        }
-
-        return base.CanUse() && !EffectActive && GrantedAbility.Unlocked(GrantableAbility.Snipe);
-    }
-
-    protected override void OnClick()
-    {
-        armedFrame = Time.frameCount;
-        BeginAim();
-    }
-
-    protected override void FixedUpdate(PlayerControl playerControl)
-    {
-        base.FixedUpdate(playerControl);
-
-        if (EffectActive && (playerControl.HasDied() || MeetingHud.Instance))
-        {
-            EffectActive = false;
-            SetTimer(Cooldown);
-            EndAim();
-        }
-    }
-
-    public override void OnEffectEnd()
-    {
-        EndAim();
-    }
-
-    /// <summary>Called every rendered frame (see class remarks) while this button's aim window is active.</summary>
-    public void HandleAimFrame()
-    {
-        var sniper = PlayerControl.LocalPlayer;
-        if (!EffectActive || sniper == null || sniper.HasDied() || MeetingHud.Instance)
-        {
-            return;
-        }
-
-        if (aimLockActive)
-        {
-            sniper.moveable = false;
-            if (HudManager.Instance.ShadowQuad.gameObject.activeSelf)
-            {
-                HudManager.Instance.ShadowQuad.gameObject.SetActive(false);
-            }
-        }
-
-        if (!Input.GetMouseButtonDown(0) || Time.frameCount == armedFrame)
-        {
-            return;
-        }
-
-        if (HudManager.Instance.Chat.IsOpenOrOpening ||
-            (MapBehaviour.Instance && MapBehaviour.Instance.IsOpen) || IsClickOnHud())
-        {
-            return;
-        }
-
-        if (sniper.HasModifier<GlitchHackedModifier>() || sniper.HasModifier<DisabledModifier>() || Camera.main == null)
-        {
-            return;
-        }
-
-        Fire(sniper);
-    }
-
-    private static bool IsClickOnHud()
-    {
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-        {
-            return true;
-        }
-
-        var uiCamera = HudManager.Instance.UICamera;
-        if (uiCamera == null)
-        {
-            return false;
-        }
-
-        var uiPoint = (Vector2)uiCamera.ScreenToWorldPoint(Input.mousePosition);
-        var hit = Physics2D.OverlapPoint(uiPoint, LayerMask.GetMask("UI"));
-        return hit != null && hit.GetComponentInParent<PassiveButton>() != null;
-    }
-
-    private void Fire(PlayerControl sniper)
-    {
-        var origin = SniperShots.GetShotOrigin(sniper);
-        var clickPoint = (Vector2)Camera.main!.ScreenToWorldPoint(Input.mousePosition);
-        var direction = (clickPoint - origin).normalized;
-
-        if (direction == Vector2.zero)
-        {
-            return;
-        }
-
-        EffectActive = false;
-        SetTimer(Cooldown);
-        EndAim();
-
-        var victims = SniperShots.FindHits(sniper, origin, direction, true);
-        if (victims.Count > 0)
-        {
-            sniper.RpcSpecialMultiMurder(victims, true, teleportMurderer: false, playKillSound: true,
-                causeOfDeath: "SuperSquadSniper");
-        }
-    }
-
-    private void BeginAim()
-    {
-        var sniper = PlayerControl.LocalPlayer;
-        sniper.moveable = false;
-        sniper.MyPhysics.ResetMoveState();
-        sniper.NetTransform.SetPaused(true);
-        HudManager.Instance.ShadowQuad.gameObject.SetActive(false);
-        aimLockActive = true;
-    }
-
-    private void EndAim()
-    {
-        if (!aimLockActive)
-        {
-            return;
-        }
-
-        aimLockActive = false;
-        var sniper = PlayerControl.LocalPlayer;
-        sniper.moveable = true;
-        sniper.NetTransform.SetPaused(false);
-        HudManager.Instance.ShadowQuad.gameObject.SetActive(!sniper.Data.IsDead);
-    }
-}

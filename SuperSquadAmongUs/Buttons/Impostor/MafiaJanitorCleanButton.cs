@@ -18,7 +18,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// TOU-Mira's standalone Janitor there is no clean delay, no use limit, and no kill button at all -
 /// TOR's mafia janitor only cleans.
 /// </summary>
-public sealed class MafiaJanitorCleanButton : TownOfUsRoleButton<MafiaJanitorRole, DeadBody>
+public sealed class MafiaJanitorCleanButton : SuperSquadRoleButton<MafiaJanitorRole, DeadBody>
 {
     public override string Name => TouLocale.GetParsed("SuperSquadRoleMafiaJanitorClean", "Clean");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;

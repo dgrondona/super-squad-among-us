@@ -18,13 +18,14 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 /// primary action, range-based like a vanilla kill button. Target any living player, impostors
 /// included (neutral killer), excluding anyone already carried.
 /// </summary>
-public sealed class KirbySwallowButton : TownOfUsRoleButton<KirbyRole, PlayerControl>, IKillButton
+public sealed class KirbySwallowButton : SuperSquadRoleButton<KirbyRole, PlayerControl>, IKillButton
 {
     public override string Name => TouLocale.GetParsed("SuperSquadRoleKirbySwallow", "Swallow");
 
-    // SecondaryAction, not Primary: Kirby's granted Kill (GrantedKillButton) claims PrimaryAction, and
-    // Swallow coexists with it once Kirby has inherited a kill (see docs/roles/gooper.md keybinds).
-    public override BaseKeybind Keybind => Keybinds.SecondaryAction;
+    // TertiaryAction: PrimaryAction belongs to the granted Kill, and borrowed kit buttons keep their
+    // source keybinds - which is almost always SecondaryAction - so Kirby's own core ability lives on
+    // the one slot borrowed kits rarely use (see docs/roles/gooper.md keybind allocation).
+    public override BaseKeybind Keybind => Keybinds.TertiaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Kirby;
 
     public override float Cooldown => Math.Clamp(

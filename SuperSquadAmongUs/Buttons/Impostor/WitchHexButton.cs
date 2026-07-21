@@ -19,7 +19,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// target changes mid-cast (TOR behavior). Each successful cast cumulatively adds the "additional
 /// cooldown" to future hexes, and optionally also puts the vanilla kill button on cooldown.
 /// </summary>
-public sealed class WitchHexButton : TownOfUsRoleButton<WitchRole, PlayerControl>
+public sealed class WitchHexButton : SuperSquadRoleButton<WitchRole, PlayerControl>
 {
     private PlayerControl? castTarget;
 

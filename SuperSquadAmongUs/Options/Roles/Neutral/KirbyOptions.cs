@@ -16,6 +16,13 @@ public sealed class KirbyOptions : AbstractOptionGroup<KirbyRole>
     [ModdedToggleOption("SuperSquadOptionKirbyCanVent")]
     public bool CanVent { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether swallowed abilities stack (default) or each new swallow
+    /// replaces whatever the previous ones granted.
+    /// </summary>
+    [ModdedToggleOption("SuperSquadOptionKirbyAccumulate")]
+    public bool AccumulateAbilities { get; set; } = true;
+
     [ModdedToggleOption("SuperSquadOptionKirbyImpostorVision")]
     public bool ImpostorVision { get; set; } = true;
 

@@ -18,8 +18,14 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 /// retarget to a different player later - the previous protection is dropped first, since the Sui can
 /// only protect one person at a time.
 /// </summary>
-public sealed class SuiProtectButton : TownOfUsRoleButton<SuiRole, PlayerControl>
+public sealed class SuiProtectButton : SuperSquadRoleButton<SuiRole, PlayerControl>
 {
+    // The currently protected player, mirrored on this client for retargeting; the synced state of
+    // record is SuiProtectedModifier on the target. Lives here rather than on SuiRole so a role that
+    // borrowed this kit (AbilityGrants.GrantedKits) has the same state - buttons are per-client
+    // singletons serving whichever role the local player is.
+    private PlayerControl? protectedTarget;
+
     public override string Name => TouLocale.GetParsed("SuperSquadRoleSuiProtect", "Protect");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Sui;
@@ -43,12 +49,25 @@ public sealed class SuiProtectButton : TownOfUsRoleButton<SuiRole, PlayerControl
             return;
         }
 
-        if (Role.Protected != null && Role.Protected.HasModifier<SuiProtectedModifier>())
+        if (protectedTarget != null && protectedTarget.HasModifier<SuiProtectedModifier>())
         {
-            Role.Protected.RpcRemoveModifier<SuiProtectedModifier>();
+            protectedTarget.RpcRemoveModifier<SuiProtectedModifier>();
         }
 
         Target.RpcAddModifier<SuiProtectedModifier>(PlayerControl.LocalPlayer);
-        Role.Protected = Target;
+        protectedTarget = Target;
+    }
+
+    protected override void FixedUpdate(PlayerControl playerControl)
+    {
+        base.FixedUpdate(playerControl);
+
+        // Self-heal the mirror: drop it once the protection modifier is gone (death, meeting clear,
+        // or removal by any other path), so retargeting logic never acts on stale state.
+        if (protectedTarget != null &&
+            (protectedTarget.HasDied() || !protectedTarget.HasModifier<SuiProtectedModifier>()))
+        {
+            protectedTarget = null;
+        }
     }
 }

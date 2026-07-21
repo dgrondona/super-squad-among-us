@@ -14,18 +14,19 @@ public static class SuperSquadGooper
 {
     /// <summary>
     /// Applies one goop of <paramref name="bodyId"/> and its tier reward, if any. No-ops if that body
-    /// was already gooped. <paramref name="chosenPoolAbility"/> (a <see cref="GrantableAbility"/> flag
-    /// cast to a byte for the RPC) is picked client-side by the Gooper before sending this RPC
-    /// (<see cref="AbilityGrants.PickRandomPoolAbility"/>) so every client applies the identical draw.
+    /// was already gooped. <paramref name="chosenPoolIndex"/> (an index into
+    /// <see cref="AbilityGrants.Pool"/>) is picked client-side by the Gooper before sending this RPC
+    /// (<see cref="AbilityGrants.PickRandomPoolIndex"/>) so every client applies the identical draw.
     /// </summary>
     /// <param name="source">The Gooper.</param>
     /// <param name="bodyId">The gooped body's <c>DeadBody.ParentId</c>.</param>
-    /// <param name="chosenPoolAbility">
-    /// The pool ability to grant if this is the 3rd goop or later, or <see cref="GrantableAbility.None"/>
-    /// if the pool is already exhausted or this is only the 1st/2nd goop.
+    /// <param name="chosenPoolIndex">
+    /// The pool entry to grant if this is the 3rd goop or later, or
+    /// <see cref="AbilityGrants.NoPoolChoice"/> if the pool is already exhausted or this is only the
+    /// 1st/2nd goop.
     /// </param>
     [MethodRpc((uint)SuperSquadRpc.GooperGoop, LocalHandling = RpcLocalHandling.Before)]
-    public static void RpcGoop(PlayerControl source, byte bodyId, byte chosenPoolAbility)
+    public static void RpcGoop(PlayerControl source, byte bodyId, byte chosenPoolIndex)
     {
         if (source.Data.Role is not GooperRole gooper)
         {
@@ -47,10 +48,10 @@ public static class SuperSquadGooper
                 break;
             case 2:
                 gooper.UnlockedAbilities |= GrantableAbility.Kill | GrantableAbility.Vent;
-                AbilityGrants.EnableVenting(gooper);
+                AbilityGrants.SyncVenting(gooper);
                 break;
             default:
-                gooper.UnlockedAbilities |= (GrantableAbility)chosenPoolAbility;
+                AbilityGrants.ApplyPoolGrant(gooper, chosenPoolIndex);
                 break;
         }
     }

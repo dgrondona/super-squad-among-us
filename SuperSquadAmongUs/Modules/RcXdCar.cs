@@ -36,7 +36,7 @@ public static class RcXdCar
     [MethodRpc((uint)SuperSquadRpc.DeployRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDeployCar(PlayerControl owner, float x, float y)
     {
-        if (owner.Data.Role is not RcXdRole)
+        if (!AbilityGrants.SenderIsOrHolds<RcXdRole>(owner))
         {
             Error("RpcDeployCar - Invalid RC-XD");
             return;
@@ -78,7 +78,7 @@ public static class RcXdCar
     [MethodRpc((uint)SuperSquadRpc.DetonateRcXdCar, LocalHandling = RpcLocalHandling.Before)]
     public static void RpcDetonateCar(PlayerControl owner, float x, float y)
     {
-        if (owner.Data.Role is not RcXdRole)
+        if (!AbilityGrants.SenderIsOrHolds<RcXdRole>(owner))
         {
             Error("RpcDetonateCar - Invalid RC-XD");
             return;

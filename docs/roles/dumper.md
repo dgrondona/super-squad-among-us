@@ -1,11 +1,12 @@
 # Dumper
 
-Impostor Support role. Pick up the nearest dead body with the Carry ability (on the **secondary**
+Impostor Support role. Store the nearest dead body with the Store ability (on the **secondary**
 keybind, since the Dumper keeps the vanilla kill button on Primary): the body is completely hidden — its
 renderers *and* the dead player's lingering pet (not visible or reportable, unlike TOU-Mira's Undertaker,
-which drags the body along visibly) — for a configurable carry duration (default 20s). The body can be
-dropped early at any time by pressing the button again, or it drops automatically — revealed at the
-Dumper's current position — when the duration runs out, a meeting is called, or the Dumper dies.
+which drags the body along visibly) — for a configurable store duration (default 20s). The body can be
+dumped early at any time by pressing the button again (it toggles Store/Dump), or it auto-dumps —
+revealed at the Dumper's current position — when the duration runs out, a meeting is called, or the
+Dumper dies.
 
 Files: `Roles/Impostor/DumperRole.cs`, `Buttons/Impostor/DumperCarryButton.cs`,
 `Modifiers/DumperCarryModifier.cs`, `Options/Roles/Impostor/DumperOptions.cs`.
@@ -31,65 +32,68 @@ repositions the body to the Dumper's *current* location — not the pickup spot 
 Because the body is fully hidden and non-colliding the whole time it's carried, nobody can see it move,
 so there's no need for a per-frame follow like Undertaker's drag — a single teleport on drop is enough.
 
-**Timed via `TimedModifier`, not `TownOfUsRoleButton.EffectDuration`.** `DumperCarryModifier : TimedModifier`
-with `Duration` from `DumperOptions.CarryDuration` and `AutoStart => true` — the same self-expiring-on-
-every-client mechanism `CloakHiddenModifier`/`ElusiveShieldModifier`/`SwoopModifier` already use. This
-was chosen over the button's own `EffectDuration`/`OnEffectEnd` machinery (RC-XD's shape), which assumes
-a fixed auto-expiring effect on the button's own player — awkward to bend around "an object might get
-released early too."
+**The store duration is the button's cancellable EFFECT, which is what shows the countdown.**
+`DumperCarryButton` sets `EffectDuration => DumperOptions.CarryDuration` and `IsEffectCancellable() =>
+true`. Storing goes through `base.ClickHandler()`, which (after `OnClick` adds the modifier) sets
+`EffectActive = true; Timer = EffectDuration` — so MiraAPI's `FixedUpdateHandler` draws the fill-up
+countdown (`SetFillUp(Timer, EffectDuration)` + the timer text) while the body is stored, and the button
+stays lit so it can be dumped early mid-countdown. This replaced a manual `storedTime`-in-`FixedUpdate`
+timer that dropped the body correctly but showed **no countdown** (and, before that, a `TimedModifier`
+that was observed to not expire at all). `DumperCarryModifier` stays a plain `BaseModifier`: the button's
+effect timer is the single timing authority (the Dumper's own client owns it and broadcasts the removal),
+so it's deterministic without each client racing an independent timer. This is the same RC-XD
+Deploy/Detonate effect shape — a duration you watch tick down and can cut short — see
+`docs/roles/daddy-hagrid.md`, which uses it identically for the cloak.
 
-**Manual early drop** is `DumperCarryButton`'s toggle: `OnClick` checks
-`PlayerControl.LocalPlayer.HasModifier<DumperCarryModifier>()` to decide Pickup vs. Drop, matching
-`UndertakerDragDropButton`'s shape rather than RC-XD's `EffectActive` cancellable-effect branch (which
-assumes a fixed window, awkward for "may end early on demand"). **The drop needs a `ClickHandler`
-override, not just a `CanUse()` special-case** — this is a targeted button (`<DumperRole, DeadBody>`),
-and `CustomActionButton<T>.CanClick()` (which the base `ClickHandler` gates on) hard-requires a fresh
-nearby `Target` *and* `Timer <= 0`. While carrying, the body is hidden and teleported out from under the
-player (no valid target) — so the earlier `CanUse()`-only approach never actually let the drop click
-through (this was the "premature drop doesn't work" bug). The override routes the drop straight through
-`CanUse()` (which owns the carry-state/alive/hacked/disabled guards). The same fix pattern is used by
-`DetonatorAttachButton`'s Detonate phase. A `0.3s` debounce guards against one physical press dispatching
-twice (keybind + click, or Proton key autorepeat) and instantly picking-up-then-dropping.
+**Dump paths all funnel through `OnEffectEnd`.** The store's terminal action (revealing the body via
+`RpcRemoveModifier<DumperCarryModifier>`) lives in `OnEffectEnd`, reached both when the effect times out
+(auto-dump at the duration) and when a mid-store press cancels it (`ResetCooldownAndOrEffect`). `OnClick`
+is store-only. Since the base targeted `ClickHandler` has no cancellable-effect branch, the button
+overrides `ClickHandler` to route a press-while-storing to the cancel instead of re-running `OnClick`
+(the RC-XD pattern). A `0.3s` debounce guards one physical press dispatching twice (keybind + click, or
+Proton key autorepeat) and instantly storing-then-dumping. A meeting or the Dumper's death remove the
+modifier via its own `OnMeetingStart`/`OnDeath`; the button then notices the modifier is gone (past a
+short sync-settle grace) and ends its own effect so the countdown stops and the cooldown starts.
 
-**The carry cooldown is a *drop* cooldown, independent of the carry duration.** Neither pickup nor
-carrying starts it; it begins the moment the carry actually *ends* — by early drop, duration expiry,
-meeting, or death alike. Since auto-drops never route through the button, the button detects the
-carry→not-carrying transition each `FixedUpdate` and sets `Timer = Cooldown` there, so every drop path
-starts the cooldown identically. (Previously the cooldown ran from pickup, which conflated it with the
-carry duration.)
+**The carry cooldown is a *dump* cooldown, independent of the store duration.** It starts when the
+effect ends — every dump path (early cancel, duration timeout, or the button ending the effect after a
+meeting/death drop) sets `Timer = Cooldown` via the effect-end machinery — so it's always measured from
+the drop, never the pickup.
 
-**Button label self-heals every tick.** `Name` is a fixed "Carry" expression (only read once at button
-creation, like every other button in this codebase); `FixedUpdate` re-asserts the correct "Carry"/"Drop"
-label via `OverrideName` every tick based on the actual modifier state, so the label stays correct even
-when the carry ends without a click (duration expiry, meeting, death).
+**Button label self-heals every tick.** `Name` is a fixed "Store" expression (only read once at button
+creation, like every other button in this codebase); `FixedUpdate` re-asserts the correct "Store"/"Dump"
+label via `OverrideName` every tick based on `EffectActive`, so the label stays correct even when the
+carry ends without a click (duration expiry, meeting, death).
 
 **Meeting/death auto-drop** come from the modifier's own `OnMeetingStart()`/`OnDeath(DeathReason)`
 overrides — both call `Player.RemoveModifier(this)`, the same one-line pattern every "carry/hide"
 modifier in this codebase uses. Since the modifier lives on the Dumper, `OnDeath` fires on the Dumper's
-own death automatically, no separate event handler needed.
+own death automatically, no separate event handler needed. (The store-duration auto-dump is the one
+drop path that does NOT live on the modifier — it's button-driven, see above.)
 
-**No new RPCs.** Pickup is `Target.RpcAddModifier<DumperCarryModifier>(nearestBody.ParentId)` (the
-generic modifier-add RPC, same shape `JailedModifier`'s constructor-arg usage uses upstream). Manual
-drop is `PlayerControl.LocalPlayer.RpcRemoveModifier<DumperCarryModifier>()`.
+**No new RPCs.** Store is `Target.RpcAddModifier<DumperCarryModifier>(nearestBody.ParentId)` (the
+generic modifier-add RPC, same shape `JailedModifier`'s constructor-arg usage uses upstream). Both the
+manual dump and the button-driven auto-dump are `PlayerControl.LocalPlayer.RpcRemoveModifier<DumperCarryModifier>()`.
 
 ## Design decisions
 
 - **Body hidden globally, not just from the Dumper's own view.** Every client hides the same body the
-  same way, since the modifier's state is synced — nobody can report or interact with a carried body.
+  same way, since the modifier's state is synced — nobody can report or interact with a stored body.
 - **Keeps the vanilla Impostor kill button.** Nothing about carrying conflicts with it, unlike the Mafia
   sub-roles' team-kill-coordination mechanic.
-- **Only unreported bodies can be picked up** (`IsTargetValid` checks `!target.Reported`), matching
+- **Only unreported bodies can be stored** (`IsTargetValid` checks `!target.Reported`), matching
   Undertaker's own targeting rule.
-- **Freely re-pickable.** A dropped body has no extra cooldown/lockout beyond the normal Carry ability
-  cooldown before it (or any other body) can be picked up again.
+- **Freely re-storable.** A dumped body has no extra cooldown/lockout beyond the normal Store ability
+  cooldown before it (or any other body) can be stored again.
 
 ## Not yet verified in-game / known follow-ups
 
-- Manual in-game verification needed — untestable solo (needs a body to pick up). Highest-value checks:
-  pickup hides both the body *and* the dead player's pet from every client, it can't be reported while
-  hidden, drop reveals both at the Dumper's *current* position (not the pickup spot), early drop works
-  (the fix above), and a meeting call or the Dumper's own death both drop the body correctly.
-- Role icon and the Carry/Drop button sprite have no dedicated art yet — both use
+- Manual in-game verification needed — untestable solo (needs a body to store). Highest-value checks:
+  storing hides both the body *and* the dead player's pet from every client, it can't be reported while
+  hidden, dumping reveals both at the Dumper's *current* position (not the store spot), early dump works,
+  the store duration actually ends and auto-dumps (the button-driven timing fix), and a meeting call or
+  the Dumper's own death both drop the body correctly.
+- Role icon and the Store/Dump button sprite have no dedicated art yet — both use
   `SuperSquadAssets.ImpostorPlaceholderIcon`/`ImpostorPlaceholderButton`.
-- If two Dumpers exist in the same lobby, there's no coordination between them — either could pick up
-  a body the other just dropped. Not expected to be a problem, but untested.
+- If two Dumpers exist in the same lobby, there's no coordination between them — either could store
+  a body the other just dumped. Not expected to be a problem, but untested.

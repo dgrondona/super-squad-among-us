@@ -6,7 +6,7 @@
 
 > Teleport to places around the map.
 
-The Apparater can open a map overlay and click any location on the ship to teleport there instantly. The destination must be reachable from your position—you can't teleport through closed doors or walls, and you can't reach a spot if there's no path to it through walkable areas. If you click on or near large obstacles (like the crate pile in Storage), the teleport will snap to the nearest walkable floor around it. Click on walls, doors, or off-map and nothing happens.
+The Apparater can open a map overlay and click any location on the ship to teleport there instantly.
 
 ## Abilities
 

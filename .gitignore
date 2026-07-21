@@ -1,7 +1,29 @@
+# Build output
 bin/
 obj/
+
+# NuGet
 /packages/
+packages.local/
+*.nupkg
+
+# JetBrains Rider
 riderModule.iml
 /_ReSharper.Caches/
-.idea
+.idea/
+*.DotSettings.user
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Local checkouts of MiraAPI/TOU-Mira used for reference only - see CLAUDE.md
 reference/
+
+# Local dev helper scripts (build/deploy/etc.) - see CLAUDE.md "Local scripts" section.
+# Not committed: they're per-machine (game install path, etc.) and regenerated/edited locally.
+/scripts/

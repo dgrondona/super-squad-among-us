@@ -46,6 +46,24 @@ or via the Cake build script used in CI: `dotnet cake build.cake`.
   doc comment produces a CS1591 warning at build time — this is expected, pre-existing noise in this
   codebase, not something that needs to be silenced for a build to be considered good.
 
+## Local scripts
+
+`scripts/` holds reused local dev scripts (build, deploy-to-game-folder, restore, clean) — check there
+before regenerating an equivalent one-off command, and add a new script there (not a throwaway shell
+one-liner) if a task looks like it'll come up again. The folder is git-ignored: these are per-machine
+(they reference the local `AmongUs` game install path) and not part of the shared repo, but they persist
+on disk across sessions in this checkout, so treat them as a durable local toolbox, not scratch space.
+
+Current scripts:
+
+- `build.sh` — `dotnet build SuperSquadAmongUs.sln`, forwarding any extra args.
+- `deploy.sh` — build and deploy to a local Among Us install for manual testing. Takes the install dir
+  as `$1` or falls back to the `AmongUs` env var, then just runs a normal build — deployment itself is
+  AmongUs.props' existing `Copy` MSBuild target, not reimplemented here.
+- `restore.sh` — `dotnet restore --force-evaluate`, needed after bumping a package version in
+  `AmongUs.props` (see Build section above).
+- `clean.sh` — removes every `bin/`/`obj/` folder (except under `reference/`) for a truly clean rebuild.
+
 ## Architecture
 
 See **[docs/architecture.md](docs/architecture.md)** for how roles/buttons/options are wired up

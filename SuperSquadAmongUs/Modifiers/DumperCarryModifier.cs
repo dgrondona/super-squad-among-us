@@ -1,20 +1,22 @@
-using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
-using MiraAPI.Modifiers.Types;
-using SuperSquadAmongUs.Options.Roles.Impostor;
 using TownOfUs.Utilities;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Modifiers;
 
 /// <summary>
-/// Dumper's held body: fully hidden (not visibly dragged along, unlike TOU-Mira's Undertaker) for a
-/// timed duration, then auto-dropped and revealed at the Dumper's current position. Lives on the
-/// Dumper (the carrier), not the body - <see cref="DeadBody"/> is a plain scene object, not a
-/// <see cref="PlayerControl"/>, so it can't host a modifier itself the way <see cref="CarriedModifier"/>'s
-/// living-player payload can. See docs/roles/dumper.md.
+/// Dumper's held body: fully hidden (not visibly dragged along, unlike TOU-Mira's Undertaker), then
+/// dropped and revealed at the Dumper's current position. Lives on the Dumper (the carrier), not the
+/// body - <see cref="DeadBody"/> is a plain scene object, not a <see cref="PlayerControl"/>, so it can't
+/// host a modifier itself the way <see cref="CarriedModifier"/>'s living-player payload can.
+/// <para/>
+/// Plain state, NOT a <c>TimedModifier</c>: the store-duration timing is owned by
+/// <see cref="Buttons.Impostor.DumperCarryButton"/>, which auto-drops it (via <c>RpcRemoveModifier</c>)
+/// on the Dumper's own client once the duration elapses - the same button-owns-its-timing pattern
+/// RC-XD and the Detonator use, and deterministic across clients since one client drives the removal.
+/// See docs/roles/dumper.md.
 /// </summary>
-public sealed class DumperCarryModifier(byte bodyId) : TimedModifier
+public sealed class DumperCarryModifier(byte bodyId) : BaseModifier
 {
     /// <summary>
     /// Gets the <see cref="DeadBody.ParentId"/> of the body currently held.
@@ -26,12 +28,6 @@ public sealed class DumperCarryModifier(byte bodyId) : TimedModifier
 
     /// <inheritdoc />
     public override bool HideOnUi => true;
-
-    /// <inheritdoc />
-    public override float Duration => OptionGroupSingleton<DumperOptions>.Instance.CarryDuration;
-
-    /// <inheritdoc />
-    public override bool AutoStart => true;
 
     private DeadBody? FindBody()
     {

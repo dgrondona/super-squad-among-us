@@ -173,7 +173,8 @@
     <!-- Daddy Hagrid Wiki -->
     <string name="SuperSquadRoleDaddyHagridWikiDescription">Daddy Hagrid is a Crewmate Protective role that can hide a player in his cloak. A hidden player is invisible, untargetable, and rides along with Hagrid until the hide duration runs out, popping back out at his position. Unlike a certain hungry bird, a meeting releases them unharmed - and if Hagrid dies, they're released alive where he fell.</string>
     <string name="SuperSquadRoleDaddyHagridHide">Hide</string>
-    <string name="SuperSquadRoleDaddyHagridHideWikiDescription">Tuck the nearest player into your cloak. They're hidden and protected until they pop back out.</string>
+    <string name="SuperSquadRoleDaddyHagridRelease">Release</string>
+    <string name="SuperSquadRoleDaddyHagridHideWikiDescription">Tuck the nearest player into your cloak. They're hidden and protected until you release them or they pop back out.</string>
     <!-- Daddy Hagrid Options -->
     <string name="SuperSquadOptionDaddyHagridHideCooldown">Hide Cooldown</string>
     <string name="SuperSquadOptionDaddyHagridHideDuration">Hide Duration</string>
@@ -236,9 +237,9 @@
     <string name="SuperSquadRoleDumperTabDescription">\%b\%Carry\%/b\% a nearby body to hide it completely, then \%b\%drop\%/b\% it wherever you please.</string>
     <!-- Dumper Wiki -->
     <string name="SuperSquadRoleDumperWikiDescription">The Dumper is an Impostor Support role that can pick up a nearby dead body, hiding it entirely from the round for a limited time. The body can be dropped early at any moment, or it will drop automatically - and become visible again - once the carry duration runs out, a meeting is called, or the Dumper dies.</string>
-    <string name="SuperSquadRoleDumperCarry">Carry</string>
-    <string name="SuperSquadRoleDumperCarryWikiDescription">Pick up the nearest body, hiding it until you drop it or the carry duration runs out.</string>
-    <string name="SuperSquadRoleDumperDrop">Drop</string>
+    <string name="SuperSquadRoleDumperCarry">Store</string>
+    <string name="SuperSquadRoleDumperCarryWikiDescription">Store the nearest body, hiding it until you dump it or the store duration runs out.</string>
+    <string name="SuperSquadRoleDumperDrop">Dump</string>
     <!-- Dumper Options -->
     <string name="SuperSquadOptionDumperCarryCooldown">Carry Cooldown</string>
     <string name="SuperSquadOptionDumperCarryDuration">Carry Duration</string>

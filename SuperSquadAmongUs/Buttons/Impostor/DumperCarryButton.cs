@@ -18,39 +18,50 @@ using UnityEngine;
 namespace SuperSquadAmongUs.Buttons.Impostor;
 
 /// <summary>
-/// Dumper's Carry/Drop toggle: pick up the nearest unreported body (hidden while held - see
-/// <see cref="DumperCarryModifier"/>), or, while already carrying one, drop it early at the Dumper's
-/// current position. Also auto-drops on its own after the configured duration, a meeting, or the
-/// Dumper's death - all handled by the modifier's own lifecycle, not this button.
+/// Dumper's Store/Dump toggle: pick up the nearest unreported body (hidden while held - see
+/// <see cref="DumperCarryModifier"/>), or dump it early while carrying. The store runs as a cancellable
+/// button EFFECT so the player sees a fill-up countdown of the remaining store time and can dump early
+/// mid-countdown (the RC-XD pattern). It auto-dumps when the effect times out; a meeting or the Dumper's
+/// death drop it via the modifier's own lifecycle, which this button then detects to end the effect.
 /// </summary>
 public sealed class DumperCarryButton : SuperSquadRoleButton<DumperRole, DeadBody>
 {
     // SecondaryAction, not Primary: Dumper keeps the vanilla Impostor kill button (on PrimaryAction), so
-    // Carry lives on Secondary like RC-XD's Deploy and the Undertaker's Drag.
+    // Store lives on Secondary like RC-XD's Deploy and the Undertaker's Drag.
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
 
     public override float Cooldown => Math.Clamp(
         OptionGroupSingleton<DumperOptions>.Instance.CarryCooldown + MapCooldown, 5f, 120f);
 
+    // The store duration IS the button's effect duration - that's what drives the visible fill-up
+    // countdown. Cancellable so a mid-store press dumps early instead of being ignored.
+    public override float EffectDuration => OptionGroupSingleton<DumperOptions>.Instance.CarryDuration;
+    public override bool IsEffectCancellable() => true;
+
     public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.ImpostorPlaceholderButton;
+    public override string Name => StoreLabel;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleDumperCarry", "Carry");
+    private static string StoreLabel => TouLocale.GetParsed("SuperSquadRoleDumperCarry", "Store");
+    private static string DumpLabel => TouLocale.GetParsed("SuperSquadRoleDumperDrop", "Dump");
 
-    // Name is only read once at button creation; label swaps need an explicit OverrideName call (same
-    // reason RcXdDeployButton swaps Deploy/Detonate this way instead of a computed Name getter).
-    private static string CarryLabel => TouLocale.GetParsed("SuperSquadRoleDumperCarry", "Carry");
-    private static string DropLabel => TouLocale.GetParsed("SuperSquadRoleDumperDrop", "Drop");
+    // When the current body was stored (local Time.time), only for the sync-settle grace below - a
+    // freshly-added modifier isn't visible via HasModifier for a tick or two.
+    private float storedTime = float.NegativeInfinity;
+    private const float SyncSettleTime = 2f;
 
-    // The carry cooldown is a *drop* cooldown - it starts when the body is dropped, not when it's picked
-    // up (so carry duration and cooldown are independent). Tracked here to detect the pickup -> drop
-    // transition each tick, including auto-drops the button never sees a click for.
-    private bool wasCarrying;
-
-    // Guards against one physical press dispatching twice (keybind + click, or key autorepeat under
-    // Proton - see RcXdDeployButton) picking up and instantly dropping the same body.
+    // Guards one physical press dispatching twice (keybind + click, or Proton key autorepeat) storing
+    // and instantly dumping the same body.
     private const float ToggleDebounce = 0.3f;
     private float lastToggleTime = float.NegativeInfinity;
+
+    // Keep this button ticking while its effect is live even if the role momentarily stops matching
+    // (e.g. the Dumper dies mid-store and swaps to a ghost role), so FixedUpdate can still end the
+    // effect and clear the stale state - same reason RC-XD keeps Enabled true during its drive.
+    public override bool Enabled(RoleBehaviour? role)
+    {
+        return base.Enabled(role) || EffectActive;
+    }
 
     public override DeadBody? GetTarget()
     {
@@ -62,9 +73,6 @@ public sealed class DumperCarryButton : SuperSquadRoleButton<DumperRole, DeadBod
         return target != null && !target.Reported;
     }
 
-    // While carrying, dropping early must not be gated by the pickup's own cooldown (TownOfUsButton's
-    // base CanUse() checks Timer<=0) - same "bypass base while a special state is active" pattern
-    // RcXdDeployButton/SniperSnipeButton use.
     public override bool CanUse()
     {
         if (HudManager.Instance.Chat.IsOpenOrOpening || MeetingHud.Instance)
@@ -72,22 +80,17 @@ public sealed class DumperCarryButton : SuperSquadRoleButton<DumperRole, DeadBod
             return false;
         }
 
-        if (PlayerControl.LocalPlayer.HasModifier<DumperCarryModifier>())
+        // While the effect is active (carrying), the button stays lit so it can be pressed to dump early.
+        if (EffectActive)
         {
             return !PlayerControl.LocalPlayer.HasDied() &&
                    !PlayerControl.LocalPlayer.HasModifier<GlitchHackedModifier>() &&
                    !PlayerControl.LocalPlayer.GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities);
         }
 
-        return base.CanUse() && Target != null;
+        return base.CanUse() && Timer <= 0f && Target != null;
     }
 
-    // The targeted-button ClickHandler routes through CustomActionButton<T>.CanClick(), which hard-requires
-    // a fresh nearby Target AND Timer<=0. Neither holds while carrying: the body is hidden and teleported
-    // out from under the player - so an early drop would never register. Route the drop straight through
-    // CanUse() (which owns the carry-state guards) instead. Neither phase starts the cooldown here: the
-    // pickup mustn't (carrying is free until the duration/drop), and the drop's cooldown is started by the
-    // FixedUpdate transition below so early drops and auto-drops behave identically.
     public override void ClickHandler()
     {
         if (Time.time - lastToggleTime < ToggleDebounce)
@@ -95,66 +98,67 @@ public sealed class DumperCarryButton : SuperSquadRoleButton<DumperRole, DeadBod
             return;
         }
 
-        if (PlayerControl.LocalPlayer.HasModifier<DumperCarryModifier>())
+        // Dump early: cancel the effect, which ends it via OnEffectEnd and starts the cooldown.
+        if (EffectActive)
         {
             if (!CanUse())
             {
                 return;
             }
 
-            OnClick();
+            ResetCooldownAndOrEffect();
             lastToggleTime = Time.time;
             return;
         }
 
-        // Pickup: same gating as the base targeted ClickHandler (CanClick + hacked/disabled), minus the
-        // Timer = Cooldown it would set - picking up must not put the button on cooldown.
-        if (!CanClick() || PlayerControl.LocalPlayer.HasModifier<GlitchHackedModifier>() ||
-            PlayerControl.LocalPlayer.GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities))
+        // Store: the base targeted ClickHandler owns the CanClick/hacked/disabled gates, calls OnClick,
+        // then sets EffectActive + Timer = EffectDuration (starting the countdown).
+        base.ClickHandler();
+        if (EffectActive)
         {
-            return;
+            lastToggleTime = Time.time;
         }
-
-        OnClick();
-        lastToggleTime = Time.time;
     }
 
+    // Store only - the dump path runs through OnEffectEnd, never here.
     protected override void OnClick()
     {
-        if (PlayerControl.LocalPlayer.HasModifier<DumperCarryModifier>())
-        {
-            PlayerControl.LocalPlayer.RpcRemoveModifier<DumperCarryModifier>();
-            OverrideName(CarryLabel);
-            return;
-        }
-
         if (Target == null)
         {
             return;
         }
 
         PlayerControl.LocalPlayer.RpcAddModifier<DumperCarryModifier>(Target.ParentId);
-        OverrideName(DropLabel);
+        storedTime = Time.time;
+        OverrideName(DumpLabel);
+    }
+
+    // The terminal dump - reached both when the store duration times out and when a mid-store press
+    // cancels the effect. Idempotent, so it's safe when a meeting/death already removed the modifier.
+    public override void OnEffectEnd()
+    {
+        if (PlayerControl.LocalPlayer.HasModifier<DumperCarryModifier>())
+        {
+            PlayerControl.LocalPlayer.RpcRemoveModifier<DumperCarryModifier>();
+        }
+
+        OverrideName(StoreLabel);
     }
 
     protected override void FixedUpdate(PlayerControl playerControl)
     {
         base.FixedUpdate(playerControl);
 
-        var carrying = playerControl.HasModifier<DumperCarryModifier>();
-
-        // Start the drop cooldown the moment the carry ends by ANY path - early drop, duration expiry,
-        // meeting, or death - so the cooldown is always measured from the drop, never the pickup.
-        if (wasCarrying && !carrying)
+        // If the body was dropped out from under the effect (the modifier's own OnMeetingStart/OnDeath
+        // removed it) while our effect is still running, end the effect so the countdown stops and the
+        // cooldown starts. Gated by the sync-settle grace so the brief post-store window where the
+        // just-added modifier isn't visible via HasModifier yet doesn't trip it.
+        if (EffectActive && Time.time - storedTime > SyncSettleTime &&
+            !playerControl.HasModifier<DumperCarryModifier>())
         {
-            SetTimer(Cooldown);
+            ResetCooldownAndOrEffect();
         }
 
-        wasCarrying = carrying;
-
-        // Name is a fixed expression body (like every other button's), so it can't reflect what
-        // OverrideName last set - re-assert the correct label every tick. Cheap, and self-heals the
-        // label if the carry ended without a click here.
-        OverrideName(carrying ? DropLabel : CarryLabel);
+        OverrideName(EffectActive ? DumpLabel : StoreLabel);
     }
 }

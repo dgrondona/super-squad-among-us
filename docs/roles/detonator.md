@@ -31,28 +31,41 @@ field for the relationship). A modifier buys three things a field doesn't:
 - **Trivial extensibility** if a visible indicator is ever wanted (currently `HideOnUi => true` — no
   tell to the target or bystanders, matching Witch's hex/Sniper's shot).
 
-**Arm delay is a pure client-side gate**, not a server-validated one: `DetonatorAttachButton.CanUse()`
-checks `Time.time - modifier.PlantedAt >= ArmDelay` before allowing the Detonate branch — the same
-technique `RcXdDeployButton.DetonateArmDelay` uses to guard double-dispatch. No RPC-side re-validation
-is needed since only the Detonator's own client can click their own button.
+**Arm delay is the button's own `Timer`, shown as a visible countdown.** Attaching calls
+`SetTimer(ArmDelay)`, so the button shows a plain cooldown-style countdown (greyed, ticking down) for
+those seconds — the "show a 5s cooldown on attach" the design calls for — and the bomb is armed
+(`Armed => activeBomb != null && Timer <= 0f`) the instant that Timer elapses. Driving the arm this way
+means the gate never depends on the synced modifier having reached any client, *and* it produces the
+countdown for free. `ArmDelay`'s minimum (2s) is far longer than the modifier sync window, so
+"Timer elapsed" doubles as "the modifier has certainly synced" for the stale-clear below. No RPC-side
+re-validation is needed since only the Detonator's own client can click their own button.
 
-**Timing: Attach → 5s arm → Detonate at any time → *then* the re-attach cooldown starts.** Attaching
-plants the bomb with **no** cooldown, and the "waiting to detonate" window runs no cooldown either — the
-cooldown only starts once the bomb is actually detonated. This is the same "cooldown measured from the
-terminal action, not the initial one" shape as the Dumper's drop cooldown.
+**Timing: Attach → visible arm countdown → Detonate at any time → *then* the re-attach cooldown
+starts.** Attaching starts only the arm countdown (`Timer = ArmDelay`), not a real cooldown; the
+"waiting to detonate" window after it runs no cooldown either. The re-attach cooldown (`Timer =
+AttachCooldown`) starts only once the bomb is actually detonated — the same "cooldown measured from the
+terminal action" shape as the Dumper's dump cooldown. The label reads **"Attach"** (greyed, counting
+down) while arming and flips to **"Detonate"** only once armed, so the sequence a player sees is
+"attach → a cooldown → the Detonate button appears → a normal attach cooldown".
 
 **Button toggles Attach/Detonate** by tracking the currently-bombed target in a private field
-(`activeBomb`) — `UndertakerDragDropButton`'s toggle shape, not RC-XD's `EffectActive`/`EffectDuration`
-machinery. **Detonate needs a `ClickHandler` override**: this is a targeted button
-(`<DetonatorRole, PlayerControl>`), and `CustomActionButton<T>.CanClick()` (which the base `ClickHandler`
-gates on) hard-requires a fresh nearby `Target` *and* `Timer <= 0` — after attaching there's usually no
-valid target under the cursor, so the Detonate press never registered (this was the "doesn't get the
-detonate ability after attaching" bug). The override attaches without setting `Timer`, and detonates
-directly when `activeBomb` still carries the modifier (gated only by `CanUse()`'s arm-delay/can-act
-checks), setting `Timer = Cooldown` only on that detonation. Both branches log to BepInEx so a "detonate
-did nothing" report is diagnosable. The label self-heals every `FixedUpdate` tick based on whether
-`activeBomb` still carries the modifier, in case it resolved itself (meeting, target's death) without a
-click here — a bomb cleared that way starts no cooldown (no detonation happened).
+(`activeBomb`) — `UndertakerDragDropButton`'s toggle shape rather than RC-XD's cancellable-effect
+machinery (the arm is a *disabled* wait, not a usable effect, so a plain `Timer` fits it — unlike the
+Dumper/Hagrid, whose durations are cancellable effects). `activeBomb` is the **local source of truth**
+for the Attach-vs-Detonate phase; it is deliberately NOT re-derived from
+`target.HasModifier<DetonatorBombModifier>()` each frame. A freshly-sent `RpcAddModifier` is only
+*queued* onto the target's `ModifierComponent` and isn't visible via `HasModifier` until that
+component's next `FixedUpdate`, so a phase driven by `HasModifier` flipped the label for a tick right
+after attaching (the "detonate button flashes then reverts" bug). `activeBomb` is instead cleared only
+on reliable signals: the target's death, a meeting starting (both also remove the synced modifier), or —
+once the arm countdown has elapsed (so the modifier has certainly synced) — the modifier genuinely being
+gone (external removal or stale cross-game state). **Detonate needs a `ClickHandler` override**: this is
+a targeted button, and the base can-click gate hard-requires a fresh nearby `Target` *and* an elapsed
+timer, which a detonate press never has (after attaching there's usually no valid target under the
+cursor) — this was also part of the "doesn't detonate after attaching" bug. The override attaches
+(starting the arm `Timer`) and detonates directly (gated only by `CanUse()`'s armed/can-act checks),
+setting `Timer = Cooldown` only on that detonation. A `0.3s` debounce guards one physical press
+dispatching twice. Both branches log to BepInEx so a "detonate did nothing" report is diagnosable.
 
 **Detonate — `SuperSquadDetonator.RpcDetonate`** — adapts Bomber's AoE-and-meeting-noop pattern
 (`Bomb.CoDetonate`) to a live target position: computes `Helpers.GetClosestPlayers(target.GetTruePosition(), radius)`,

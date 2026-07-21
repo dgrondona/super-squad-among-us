@@ -1,5 +1,4 @@
 using MiraAPI.Modifiers;
-using UnityEngine;
 
 namespace SuperSquadAmongUs.Modifiers;
 
@@ -10,7 +9,9 @@ namespace SuperSquadAmongUs.Modifiers;
 /// detonate time (see <see cref="SuperSquadAmongUs.Modules.SuperSquadDetonator.RpcDetonate"/>), so
 /// unlike a stationary planted bomb this one always follows a moving target - nothing needs to track
 /// position here. Removed (with no detonation) the instant a meeting is called - "bomb removed after a
-/// meeting" from the modifier's own lifecycle, no separate event handler needed.
+/// meeting" from the modifier's own lifecycle, no separate event handler needed. The arm-delay timing
+/// lives on <see cref="Buttons.Impostor.DetonatorAttachButton"/> (its own plant timestamp), not here,
+/// so it never depends on this synced modifier having reached the target's client yet.
 /// </summary>
 public sealed class DetonatorBombModifier(PlayerControl detonator) : BaseModifier
 {
@@ -19,23 +20,11 @@ public sealed class DetonatorBombModifier(PlayerControl detonator) : BaseModifie
     /// </summary>
     public PlayerControl Detonator { get; } = detonator;
 
-    /// <summary>
-    /// Gets the local time (<see cref="Time.time"/>) the bomb was planted, used for the client-side
-    /// arm-delay gate on the Detonate button.
-    /// </summary>
-    public float PlantedAt { get; private set; }
-
     /// <inheritdoc />
     public override string ModifierName => "Bombed";
 
     /// <inheritdoc />
     public override bool HideOnUi => true;
-
-    /// <inheritdoc />
-    public override void OnActivate()
-    {
-        PlantedAt = Time.time;
-    }
 
     /// <inheritdoc />
     public override void OnMeetingStart()

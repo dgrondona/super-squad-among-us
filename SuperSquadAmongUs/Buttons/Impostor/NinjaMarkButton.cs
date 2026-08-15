@@ -41,6 +41,10 @@ public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, Player
     /// </summary>
     public PlayerControl? Marked { get; private set; }
 
+    // Set by Assassinate() so ClickHandler knows whether the strike actually fired or bailed on a stale
+    // mark; a bail must not charge Cooldown for a click that did nothing.
+    private bool _assassinateFired;
+
     /// <inheritdoc />
     public override void CreateButton(Transform parent)
     {
@@ -106,6 +110,14 @@ public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, Player
 
         var wasMarked = Marked != null;
         OnClick();
+
+        // A stale-mark bail inside Assassinate() already cleared Marked without spending the ability -
+        // don't disable the button or charge Cooldown for a click that did nothing.
+        if (wasMarked && !_assassinateFired)
+        {
+            return;
+        }
+
         Button?.SetDisabled();
         SetTimer(wasMarked ? Cooldown : MarkArmingDelay);
     }
@@ -133,6 +145,19 @@ public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, Player
     private void Assassinate()
     {
         var target = Marked!;
+
+        // Recheck the mark immediately before the kill fires: FixedUpdate only clears a stale mark on
+        // its next tick, so a kill/sabotage that lands on the target in that ~1-tick window can beat
+        // this click. The murder RPC would safely no-op on an already-dead target, but without this
+        // check the mark and cooldown would still be spent for nothing.
+        if (target.HasDied())
+        {
+            _assassinateFired = false;
+            ClearMark();
+            return;
+        }
+
+        _assassinateFired = true;
         ClearMark();
 
         // TOR's exact sequence: launch trace -> invisibility -> teleport murder -> landing trace.

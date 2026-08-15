@@ -88,6 +88,11 @@ every tick because vanilla flips `Visible` back on across vent/ladder animations
 owner's own `Visible` is never touched (he keeps his ghost outline, and his vent/ladder visibility stays
 vanilla-managed), and dead-who-know viewers are likewise left visible so they keep seeing the outline.
 
+`RendererColor` (the faint outline alpha for dead-who-know viewers, set in `GetVisualAppearance()`) needs
+the same per-tick treatment: it's only actually written to the sprite when `RawSetAppearance` runs, so
+`ApplyLocalVisibility()` calls it every tick too, not just once from `OnActivate` — otherwise a viewer
+whose dead-know status changes after activation stays visible-but-transparent until deactivation.
+
 > Testing note: because the passive is computed per-observer (see above), a practice-mode dummy set to
 > Invisible Boy **is** solo-testable. A dummy isn't owned by your client, so you are a third-party
 > observer to it and see full invisibility (not the self-outline). You are also a watcher, though, so

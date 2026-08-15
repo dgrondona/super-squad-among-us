@@ -8,7 +8,7 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-eraser-vulture.md`.
 
 ## How it works
 
-**Eat button.** `VultureEatButton` is a primary-action button that targets the nearest dead body within range. Click to consume it via `SuperSquadBodies.RpcVultureEat`, which destroys the body GameObject on all clients and increments `VultureRole.EatenBodies` on every client.
+**Eat button.** `VultureEatButton` is a primary-action button that targets the nearest dead body within range. Click to consume it via `SuperSquadBodies.RpcVultureEat`, which destroys the body GameObject on all clients and increments `VultureRole.EatenBodies` on every client — but only when `DestroyBodies` actually found and removed a body; if a race (another report, or the Mafia Janitor's clean) already removed it first, the count doesn't tick up for nothing.
 
 **Eaten body count.** The count is tracked on every client (including the host). `VultureRole.WinConditionMet()` is called every frame by TOU-Mira's neutral win pipeline; when `EatenBodies >= BodiesNeededToWin`, the win triggers immediately and the game ends (TOR-style instant win, user decision per `docs/porting/README.md`).
 

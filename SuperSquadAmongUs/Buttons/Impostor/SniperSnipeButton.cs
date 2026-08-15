@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Networking;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modules;
@@ -143,8 +144,13 @@ public sealed class SniperSnipeButton : SuperSquadRoleButton<SniperRole>
         }
 
         // Same gating the TOU base ClickHandler applies to the arming click - being hacked or
-        // disabled mid-window must also block the trigger pull.
-        if (sniper.HasModifier<GlitchHackedModifier>() || sniper.HasModifier<DisabledModifier>())
+        // disabled mid-window must also block the trigger pull. Must respect each DisabledModifier's
+        // own CanUseAbilities opt-out (e.g. GrenadierFlashModifier, EclipsalBlindModifier both set it
+        // true), same as TownOfUsButton.CanUse() and every other button's fire/click gate in this repo
+        // (see RcXdDeployButton, DetonatorAttachButton) - a bare HasModifier<DisabledModifier>() presence
+        // check would block on modifiers that explicitly opt out of blocking abilities.
+        if (sniper.HasModifier<GlitchHackedModifier>() ||
+            sniper.GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities))
         {
             Info("Sniper: click ignored - sniper is hacked or disabled");
             return;
@@ -222,8 +228,11 @@ public sealed class SniperSnipeButton : SuperSquadRoleButton<SniperRole>
         Info($"Sniper: fired from {origin} toward {clickPoint}; {victims.Count} victim(s)");
         if (victims.Count > 0)
         {
-            sniper.RpcSpecialMultiMurder(victims, true, teleportMurderer: false, playKillSound: true,
-                causeOfDeath: "SuperSquadSniper");
+            // Explicit OutsideMeeting (not the List<PlayerControl> overload's implicit
+            // MeetingCheck.Ignore default) - a remote client already on the meeting screen from a
+            // report/emergency RPC race must not still apply this kill.
+            sniper.RpcSpecialMultiMurder(victims, MeetingCheck.OutsideMeeting, true, teleportMurderer: false,
+                playKillSound: true, causeOfDeath: "SuperSquadSniper");
         }
     }
 

@@ -70,10 +70,16 @@ dispatching twice. Both branches log to BepInEx so a "detonate did nothing" repo
 **Detonate — `SuperSquadDetonator.RpcDetonate`** — adapts Bomber's AoE-and-meeting-noop pattern
 (`Bomb.CoDetonate`) to a live target position: computes `Helpers.GetClosestPlayers(target.GetTruePosition(), radius)`,
 filters for alive/not-vented/not-`FirstDeadShield`/not-`DisabledModifier`-protected (same filter shape
-RC-XD's detonate uses), respects `CanKillImpostors`, then `RpcSpecialMultiMurder(..., causeOfDeath: "SuperSquadDetonator")`.
-The meeting-noop is double-covered: the modifier's own `OnMeetingStart` already removes it the instant a
-meeting starts, and the RPC handler's own `MeetingHud.Instance` guard is a second line of defense
-against a same-frame race.
+RC-XD's detonate uses), respects `CanKillImpostors`, then
+`RpcSpecialMultiMurder(..., MeetingCheck.OutsideMeeting, ..., causeOfDeath: "SuperSquadDetonator")`.
+The meeting-noop has two independent layers: the modifier's own `OnMeetingStart` removes the bomb
+locally the instant a meeting starts, and the kill is sent with an explicit `MeetingCheck.OutsideMeeting`
+(not the `List<PlayerControl>` overload's implicit `MeetingCheck.Ignore` default), so every receiving
+client re-checks its own meeting state before applying the kill — not just the sender's local
+`MeetingHud.Instance` guard, which alone can't stop a remote client already on the meeting screen from a
+report/detonate RPC race. Validation checks bomb ownership (`DetonatorBombModifier.Detonator ==
+source`), not just ability-holding — the kit is borrowable via AbilityGrants, so ability-holding alone
+doesn't imply the sender placed *this* bomb once more than one bomb-holder can exist at once.
 
 ## Design decisions
 

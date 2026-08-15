@@ -147,6 +147,15 @@ public sealed class InvisibleBoyModifier : ConcealedModifier, IVisualAppearance
             return;
         }
 
+        // RendererColor (the "dead know" outline alpha, see GetVisualAppearance) is baked into the
+        // appearance struct and only actually applied to the sprite when RawSetAppearance runs. Without
+        // this, it would only get applied once at OnActivate, so a viewer whose dead-know status changes
+        // later in a still-active passive (e.g. someone else dies while this player is already
+        // invisible, since the passive has no auto-expiry) would stay visible-but-fully-transparent
+        // until the modifier deactivates. Re-run it every tick, same as the Visible re-assertion below,
+        // so it always reflects the current LocalViewerSeesOutline() result.
+        Player.RawSetAppearance(this);
+
         var shouldBeVisible = LocalViewerSeesOutline();
         if (Player.Visible != shouldBeVisible)
         {

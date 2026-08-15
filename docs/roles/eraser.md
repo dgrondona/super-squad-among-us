@@ -11,13 +11,13 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-eraser-vulture.md`. The
 **Erase button.** `EraserEraseButton` is a secondary-action button that targets the nearest living player, limited to `MaxUses` (default 2; -1 is the infinite-uses sentinel, same convention as `ApparaterOptions.MaxUses`). Clicking behaves one of two ways depending on the `EraseImmediately` option:
 
 - **Next meeting (default, `EraseImmediately` off).** The target is marked with `FutureErasedModifier` (synced via `RpcAddModifier`). No in-game notification — they'll only notice their role UI is gone at the next meeting.
-- **Immediate (`EraseImmediately` on).** `EraserEvents.EraseRole` is called on the target right away, stripping their modded role on the spot.
+- **Immediate (`EraseImmediately` on).** `EraserEvents.RpcEraseRole` is called on the target right away (a `[MethodRpc]`, so it reaches the host even when a non-host Eraser clicks), stripping their modded role on the spot.
 
 **Mark state.** `FutureErasedModifier` is a synced modifier holding only the Eraser's reference. No in-game indicator on the victim; only the modifier's presence signals the mark. Once placed (non-immediate mode only), a mark persists until the exile screen.
 
-**Exile-screen resolution.** `EraserEvents.EjectionEventHandler` runs on every client once the exile controller fires (deterministically, since synced modifiers arrived on all clients). Every still-marked player is resolved through the same `EraserEvents.EraseRole` helper the immediate-mode path uses.
+**Exile-screen resolution.** `EraserEvents.EjectionEventHandler` runs on every client once the exile controller fires (deterministically, since synced modifiers arrived on all clients). Every still-marked player is resolved through the same private `EraserEvents.EraseRole` helper that `RpcEraseRole` calls for the immediate-mode path.
 
-**`EraserEvents.EraseRole` (shared strip logic).** For a given target: dead or disconnected players are skipped (deviation from TOR, documented inline; a role change on a dead player would replace their ghost role with a living one, breaking the dead spectator flow), otherwise the host sends `RpcChangeRole((ushort)RoleTypes.Crewmate)`. The eraser's own state is NOT checked — erases resolve even if the Eraser died in the meantime.
+**`EraserEvents.EraseRole` (shared strip logic).** For a given target: dead or disconnected players are skipped (deviation from TOR, documented inline; a role change on a dead player would replace their ghost role with a living one, breaking the dead spectator flow), otherwise the host sends `RpcChangeRole((ushort)RoleTypes.Crewmate)`. The eraser's own state is NOT checked — erases resolve even if the Eraser died in the meantime. The exile-screen path reaches this helper directly (that handler already runs identically on every client); the immediate-click path reaches it through `RpcEraseRole` instead, since a button click only happens on one client and needs an actual RPC to reach the host.
 
 **Cumulative cooldown escalation.** Each successful mark adds 10 seconds to `CurrentCooldownAddition`, permanently. The cooldown is clamped to 5–240 seconds. The escalation persists across all meetings and only resets at game start (via `EraserEvents.RoundStartEventHandler`, which runs when the intro fires). The button singleton outlives games, so without this reset, cooldowns would carry over between rounds if the mod is left running.
 
@@ -32,6 +32,7 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-eraser-vulture.md`. The
 - **Modifiers survive the erase.** Like Lovers, Mini, and other TOU-Mira modifiers — they are NOT cleared by the role strip. Only the modded role is removed; the modifier list is preserved.
 - **No notification.** The target finds out when they see their role UI gone (or, in immediate mode, when their role disappears mid-round). User decision to avoid telegraphing the erase.
 - **Permanent escalation.** Unlike a per-meeting cooldown penalty, the 10s escalation is never reset mid-game — the more you erase, the longer you wait, all game. Encourages strategic use.
+- **Immediate erase goes through `RpcEraseRole`, not a direct call.** Originally the button called `EraserEvents.EraseRole` directly, which only sends the actual role-change when `AmHost` — fine for the host, a silent no-op for anyone else (cooldown/uses still burned, nothing happened). The lesson: any button action gated on `AmHost` inside its handler needs its own `[MethodRpc]` dispatch to actually reach the host from a non-host clicker; the gate alone isn't enough. `RpcEraseRole` validates the sender via `AbilityGrants.SenderIsOrHolds<EraserRole>` and delegates to the same private `EraseRole` helper the exile-screen path uses.
 
 ## Not yet verified in-game / known follow-ups
 
@@ -40,3 +41,7 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-eraser-vulture.md`. The
 - Sound effects for mark and role strip are missing; TOR's equivalent sounds are extractable (see `docs/porting/README.md`).
 - Verify edge case: Eraser is voted out and thus dies at the same exile screen where their marks resolve — marks should still fire (confirmed in code, but real-game verification needed).
 - Verify that erasing a Lover results in a plain Crewmate Lover (modifier survives, role changes).
+- `FutureErasedModifier.Eraser` is captured but never read anywhere — harmless dead state, not a
+  behavioral gap.
+- The static-analysis "commented-out code" flag on `EraserEvents.cs`'s TOR-deviation comment is a false
+  positive — it's load-bearing documentation, not dead code. Leave it.

@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.GameOptions.OptionTypes;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Modules.Localization;
@@ -18,8 +19,11 @@ public sealed class SuiOptions : AbstractOptionGroup<SuiRole>
     [ModdedToggleOption("SuperSquadOptionSuiCanTargetAnyone")]
     public bool CanTargetAnyone { get; set; }
 
-    [ModdedToggleOption("SuperSquadOptionSuiDiesOnWrongTarget")]
-    public bool DiesOnWrongTarget { get; set; }
+    // Hidden unless CanTargetAnyone is on - see the comment above.
+    public ModdedToggleOption DiesOnWrongTarget { get; } = new("SuperSquadOptionSuiDiesOnWrongTarget", false)
+    {
+        Visible = () => OptionGroupSingleton<SuiOptions>.Instance.CanTargetAnyone,
+    };
 
     [ModdedToggleOption("SuperSquadOptionSuiOnlyImpostorKillsTrigger")]
     public bool OnlyImpostorKillsTrigger { get; set; }

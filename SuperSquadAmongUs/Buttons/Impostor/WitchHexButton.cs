@@ -22,6 +22,8 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 public sealed class WitchHexButton : SuperSquadRoleButton<WitchRole, PlayerControl>
 {
     private PlayerControl? castTarget;
+    private PlayerControl? cachedTarget;
+    private bool targetCached;
 
     public override string Name => TouLocale.GetParsed("SuperSquadRoleWitchHex", "Hex");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
@@ -62,6 +64,11 @@ public sealed class WitchHexButton : SuperSquadRoleButton<WitchRole, PlayerContr
         {
             CancelCast();
         }
+
+        // GetTarget() is also called earlier this tick by the base CanUse() check; targetCached makes
+        // both calls share one proximity scan instead of running it twice. Clear it here (the last
+        // thing that runs each tick, per CustomActionButton.FixedUpdateHandler) so next tick recomputes.
+        targetCached = false;
     }
 
     protected override void OnClick()
@@ -96,7 +103,18 @@ public sealed class WitchHexButton : SuperSquadRoleButton<WitchRole, PlayerContr
 
         var options = OptionGroupSingleton<WitchOptions>.Instance;
 
-        castTarget.RpcAddModifier<HexedModifier>(PlayerControl.LocalPlayer);
+        // Re-check for a race: with a borrowable kit and CastDuration reachable at 0 (instant cast),
+        // two independent hex sources (e.g. native Witch + a Kirby holding a borrowed kit) can both
+        // complete a cast on the same target near-simultaneously. Each RPC applies optimistically on
+        // its own sender's client first, so without this recheck both casters' clients could
+        // independently believe they own the hex - a cross-client desync that reaches the
+        // hex-save/reveal logic at the meeting. Only the first cast to actually land should apply;
+        // the loser just wastes its cooldown like a normal duplicate cast, nothing extra refunded.
+        if (!castTarget.HasModifier<HexedModifier>())
+        {
+            castTarget.RpcAddModifier<HexedModifier>(PlayerControl.LocalPlayer);
+        }
+
         castTarget = null;
 
         CurrentCooldownAddition += options.AdditionalCooldown;
@@ -117,8 +135,14 @@ public sealed class WitchHexButton : SuperSquadRoleButton<WitchRole, PlayerContr
 
     public override PlayerControl? GetTarget()
     {
-        var canHexAnyone = OptionGroupSingleton<WitchOptions>.Instance.CanHexAnyone;
-        return PlayerControl.LocalPlayer.GetClosestLivingPlayer(canHexAnyone, Distance, false,
-            x => !x.HasModifier<HexedModifier>());
+        if (!targetCached)
+        {
+            var canHexAnyone = OptionGroupSingleton<WitchOptions>.Instance.CanHexAnyone;
+            cachedTarget = PlayerControl.LocalPlayer.GetClosestLivingPlayer(canHexAnyone, Distance, false,
+                x => !x.HasModifier<HexedModifier>());
+            targetCached = true;
+        }
+
+        return cachedTarget;
     }
 }

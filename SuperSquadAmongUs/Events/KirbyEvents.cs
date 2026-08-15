@@ -3,7 +3,6 @@ using MiraAPI.Events.Vanilla.Meeting;
 using MiraAPI.Events.Vanilla.Player;
 using MiraAPI.Modifiers;
 using SuperSquadAmongUs.Modifiers;
-using SuperSquadAmongUs.Roles.Neutral;
 using TownOfUs.Events;
 using TownOfUs.Modifiers;
 using TownOfUs.Modules.Localization;
@@ -57,13 +56,15 @@ public static class KirbyEvents
 
     /// <summary>
     /// Kirby disconnected: release its stomach in place. Without this, swallowed players would stay
-    /// pinned and hidden forever - the death handler below never fires for a disconnect.
+    /// pinned and hidden forever - the death handler below never fires for a disconnect. Keyed on the
+    /// modifier's carrier, NOT on the leaver being a KirbyRole, so a Kirby erased mid-swallow (stripped
+    /// to Crewmate by <c>EraserOptions.EraseImmediately</c>) still releases its stomach correctly.
     /// </summary>
     [RegisterEvent]
     public static void PlayerLeaveEventHandler(PlayerLeaveEvent @event)
     {
         var player = @event.ClientData.Character;
-        if (player == null || player.Data?.Role is not KirbyRole)
+        if (player == null)
         {
             return;
         }
@@ -80,12 +81,13 @@ public static class KirbyEvents
     /// <summary>
     /// Kirby killed mid-round: everyone in its stomach is released alive where it died. Each client
     /// removes the modifier locally (state is already synced); only the released player's own client
-    /// performs the position snap, since movement is client-authoritative.
+    /// performs the position snap, since movement is client-authoritative. Carrier-keyed, not
+    /// role-keyed - see the disconnect handler above.
     /// </summary>
     [RegisterEvent]
     public static void PlayerDeathEventHandler(PlayerDeathEvent @event)
     {
-        if (@event.Player == null || @event.Player.Data?.Role is not KirbyRole)
+        if (@event.Player == null)
         {
             return;
         }

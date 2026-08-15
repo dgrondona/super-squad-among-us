@@ -56,11 +56,16 @@ the retaliation kill uses the existing generic `RpcCustomMurder`.
   separate countdown timer, matching how every other timed/armed state in this codebase self-clears at
   a meeting.
 - **`DiesOnWrongTarget` is only meaningful when `CanTargetAnyone` is on** — with it off, the target is
-  hard-locked to the actual interactor, so there's no "wrong person" to pick. The option's locale
-  description should make this dependency clear rather than leaving it silently inert when
-  `CanTargetAnyone` is off.
+  hard-locked to the actual interactor, so there's no "wrong person" to pick. Its `Visible` predicate
+  (`SuiOptions.cs`) hides it in the lobby UI unless `CanTargetAnyone` is on. Note this required switching
+  the option from the attribute-based `[ModdedToggleOption]` form to the instance-based
+  `ModdedToggleOption` property form (`new(...) { Visible = ... }`) — the attribute form has no way to
+  set `Visible`.
 - **The retaliation kill is a normal `RpcCustomMurder` call**, so it's naturally still subject to any
-  other shield/protect modifier the interactor happens to be carrying — no special-case bypass.
+  other shield/protect modifier the interactor happens to be carrying — with one explicit exception:
+  `SuiRetaliateButton.OnClick` guards on `InvulnerabilityModifier` before firing, matching Veteran's own
+  retaliation-kill guard, since killing an invulnerable target (e.g. Pestilence) can trigger its own
+  counter-kill and softlock the game.
 - **Sui can retarget protection freely** (cooldown-gated, like any other ability use), rather than a
   Medic-style limited number of retargets — simpler, and nothing in the brief asked for a retarget cap.
 
@@ -76,3 +81,6 @@ the retaliation kill uses the existing generic `RpcCustomMurder`.
 - Multiple simultaneous Suis (if `MaxRoleCount` allows more than one) aren't specially handled — each
   tracks its own `Protected`/retaliation state independently, with no shared coordination. Not expected
   to cause bugs, but untested.
+- **Indirect attackers arm Sui's retaliation, unlike Elusive/Veteran's exemption (open design
+  question).** Whether that's correct for Sui's specific mechanic (protect + retaliate against whoever
+  interacted) vs. a gap to close is a judgment call, not resolvable from code alone.

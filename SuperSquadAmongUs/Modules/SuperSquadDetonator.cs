@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
+using MiraAPI.Networking;
 using MiraAPI.Utilities;
 using Reactor.Networking.Attributes;
 using Reactor.Networking.Rpc;
@@ -38,17 +39,17 @@ public static class SuperSquadDetonator
             return;
         }
 
-        if (MeetingHud.Instance || ExileController.Instance)
+        // Holding the Detonator ability isn't the same as owning THIS bomb: the kit is borrowable via
+        // AbilityGrants, so with multiple simultaneous bomb-holders (e.g. a Kirby that swallowed a
+        // Detonator) a holder could otherwise detonate a bomb it didn't place. Require the sender to be
+        // the specific player who placed this target's bomb.
+        if (!target.TryGetModifier<DetonatorBombModifier>(out var bomb) || bomb.Detonator != source)
         {
-            if (target.HasModifier<DetonatorBombModifier>())
-            {
-                target.RemoveModifier<DetonatorBombModifier>();
-            }
-
+            Error("RpcDetonate - Sender did not place this bomb");
             return;
         }
 
-        if (source.AmOwner)
+        if (!MeetingHud.Instance && !ExileController.Instance && source.AmOwner)
         {
             var options = OptionGroupSingleton<DetonatorOptions>.Instance;
             var pos = target.GetTruePosition();
@@ -79,14 +80,14 @@ public static class SuperSquadDetonator
 
             if (filtered.Count > 0)
             {
-                source.RpcSpecialMultiMurder(filtered, true, teleportMurderer: false, playKillSound: true,
-                    causeOfDeath: "SuperSquadDetonator");
+                // Explicit OutsideMeeting (not the List<PlayerControl> overload's implicit
+                // MeetingCheck.Ignore default) - a remote client already on the meeting screen
+                // from a report/emergency RPC race must not still apply this kill.
+                source.RpcSpecialMultiMurder(filtered, MeetingCheck.OutsideMeeting, true, teleportMurderer: false,
+                    playKillSound: true, causeOfDeath: "SuperSquadDetonator");
             }
         }
 
-        if (target.HasModifier<DetonatorBombModifier>())
-        {
-            target.RemoveModifier<DetonatorBombModifier>();
-        }
+        target.RemoveModifier(bomb);
     }
 }

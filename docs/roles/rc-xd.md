@@ -10,7 +10,7 @@ Drive Time (default 8s), the car despawns harmlessly. A meeting or the RC-XD's d
 car harmlessly. The RC-XD keeps the normal kill button. Everyone can see the car.
 
 Files: `Roles/Impostor/RcXdRole.cs`, `Buttons/Impostor/RcXdDeployButton.cs`, `Modules/RcXdCar.cs`,
-`Modules/RcXdCarBehaviour.cs`, `Options/Roles/Impostor/RcXdOptions.cs`.
+`Modules/RcXdCarBehaviour.cs`, `Options/Roles/Impostor/RcXdOptions.cs`, `Events/RcXdEvents.cs`.
 
 ## How it works
 
@@ -75,6 +75,19 @@ destroy path.
   450 pixels/unit) — tune that pixels-per-unit value if the car reads too big/small in a live playtest.
 - **Observer smoothing quality.** Remote clients `MoveTowards` toward each RPC'd position; playtest
   will show if ~10/s feels jittery.
+
+Lessons from two fixed bugs, worth keeping in mind for similar roles:
+
+- A disconnect mid-drive has no "keep ticking" fix the way death does (see the `Enabled()` trick in
+  docs/il2cpp-gotchas.md) — a disconnected player has no client left running their button's
+  `FixedUpdate` at all. Needed a `PlayerLeaveEvent` hook instead (`Events/RcXdEvents.cs`, mirroring
+  `DumperEvents`/`PelicanEvents`/`DaddyHagridEvents`) that despawns the car directly on disconnect
+  rather than waiting for the meeting-time safety net in `RcXdCarBehaviour`.
+- `RpcSpecialMultiMurder`'s `List<PlayerControl>` overload silently defaults to `MeetingCheck.Ignore`
+  (no compiler warning) unless `MeetingCheck.OutsideMeeting` is passed explicitly — TOU-Mira's own
+  Bomber does this via `Bomb.cs`. Other call sites in this codebase (`SuperSquadDetonator`,
+  `SentinelExplodeButton`, `SniperSnipeButton`) use the same implicit-`Ignore` overload and may want
+  the same audit.
 
 ## Playtest history
 

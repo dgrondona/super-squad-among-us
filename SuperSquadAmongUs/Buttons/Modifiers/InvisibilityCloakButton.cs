@@ -5,6 +5,7 @@ using MiraAPI.Modifiers;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
+using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Modifiers;
 using TownOfUs.Buttons;
 using TownOfUs.Modules.Localization;
@@ -47,6 +48,13 @@ public sealed class InvisibilityCloakButton : TownOfUsButton
         return PlayerControl.LocalPlayer &&
                PlayerControl.LocalPlayer.HasModifier<InvisibilityCloakModifier>() &&
                !PlayerControl.LocalPlayer.Data.IsDead;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>.</remarks>
+    public override bool CanClick()
+    {
+        return base.CanClick() && KeybindArbiter.TryClaim(Keybind);
     }
 
     /// <inheritdoc />

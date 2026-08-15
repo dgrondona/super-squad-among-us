@@ -30,6 +30,13 @@ public abstract class SuperSquadRoleButton<TRole> : TownOfUsRoleButton<TRole>
     {
         return !Disabled && AbilityGrants.IsOrHolds(role, typeof(TRole));
     }
+
+    /// <inheritdoc />
+    /// <remarks>Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>.</remarks>
+    public override bool CanClick()
+    {
+        return base.CanClick() && KeybindArbiter.TryClaim(Keybind);
+    }
 }
 
 /// <summary>
@@ -47,6 +54,13 @@ public abstract class SuperSquadRoleButton<TRole, TTarget> : TownOfUsRoleButton<
     public override bool Enabled(RoleBehaviour? role)
     {
         return !Disabled && AbilityGrants.IsOrHolds(role, typeof(TRole));
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>.</remarks>
+    public override bool CanClick()
+    {
+        return base.CanClick() && KeybindArbiter.TryClaim(Keybind);
     }
 
     /// <inheritdoc />

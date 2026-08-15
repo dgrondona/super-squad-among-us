@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
+using MiraAPI.PluginLoading;
 using MiraAPI.Utilities;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Impostor;
@@ -17,6 +18,7 @@ namespace SuperSquadAmongUs.Modifiers;
 /// but timed (auto-starts) and with Swooper's viewer rule: fellow impostors and the informed dead see a
 /// faint outline, everyone else sees nothing.
 /// </summary>
+[MiraIgnore]
 public abstract class TimedInvisibilityModifier : ConcealedModifier, IVisualAppearance
 {
     // See InvisibleBoyModifier: the pinned TownOfUsMira package predates VanillaSystemCheckPatches'

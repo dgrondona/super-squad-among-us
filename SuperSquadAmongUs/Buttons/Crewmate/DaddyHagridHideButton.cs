@@ -4,6 +4,7 @@ using MiraAPI.Modifiers;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
+using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Roles.Crewmate;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
@@ -109,9 +110,12 @@ public sealed class DaddyHagridHideButton : SuperSquadRoleButton<DaddyHagridRole
         }
 
         // Release early: cancel the effect, which ends it via OnEffectEnd and starts the cooldown.
+        // KeybindArbiter check here too: this branch bypasses base.ClickHandler()'s CanClick() gate
+        // entirely, so without it a shared PrimaryAction press could release early AND let another
+        // grant-holder button (e.g. GrantedKillButton) fire uncontested on the same keypress.
         if (EffectActive)
         {
-            if (!CanUse())
+            if (!CanUse() || !KeybindArbiter.TryClaim(Keybind))
             {
                 return;
             }

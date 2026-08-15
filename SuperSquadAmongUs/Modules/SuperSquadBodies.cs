@@ -3,6 +3,7 @@ using Reactor.Networking.Attributes;
 using Reactor.Networking.Rpc;
 using SuperSquadAmongUs.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Neutral;
+using TownOfUs.Modules.Components;
 using TownOfUs.Options;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -50,17 +51,18 @@ public static class SuperSquadBodies
             return;
         }
 
-        DestroyBodies(parentId);
-
-        // Only a real Vulture advances its win counter - a role that borrowed the eat kit
-        // (AbilityGrants.GrantedKits) gets the body-removal utility but no Vulture win progress.
-        if (source.Data.Role is VultureRole vulture)
+        // Only advance the win counter if a body was actually destroyed - a race (another report
+        // landing first, or the Mafia Janitor's clean removing the same body first) can leave nothing
+        // for this eat to find, and crediting the count anyway would let the Vulture win without
+        // actually having consumed that many bodies.
+        if (DestroyBodies(parentId) && source.Data.Role is VultureRole vulture)
         {
             vulture.EatenBodies++;
         }
     }
 
-    private static void DestroyBodies(byte parentId)
+    /// <returns><see langword="true"/> if a matching body was found and destroyed.</returns>
+    private static bool DestroyBodies(byte parentId)
     {
         // Same pet-hiding rule TOU-Mira's own Janitor/Chef clean uses (Extensions.CoClean) - reuses
         // TOU's own VanillaTweakOptions.PetVisibilityUponDeath now that the pinned package has it
@@ -75,12 +77,19 @@ public static class SuperSquadBodies
             }
         }
 
+        var destroyed = false;
         foreach (var body in UnityEngine.Object.FindObjectsOfType<DeadBody>())
         {
             if (body.ParentId == parentId)
             {
+                // Mirrors TOU-Mira's own JanitorRole.RpcCleanBody, which fires this same call so a
+                // cleaned body doesn't leave inspectable Forensic evidence behind.
+                CrimeSceneComponent.ClearCrimeScene(body);
                 UnityEngine.Object.Destroy(body.gameObject);
+                destroyed = true;
             }
         }
+
+        return destroyed;
     }
 }

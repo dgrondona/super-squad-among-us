@@ -86,7 +86,8 @@ public sealed class KirbyRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRol
             return false;
         }
 
-        var kirbysAlive = CustomRoleUtils.GetActiveRolesOfType<KirbyRole>().Count(x => !x.Player.HasDied());
+        var kirbysAlive = CustomRoleUtils.GetActiveRolesOfType<KirbyRole>()
+            .Count(x => !x.Player.HasDied() && !x.Player.HasModifier<KirbySwallowedModifier>());
 
         // Swallowed-but-undigested players are as-good-as-dead (they die at the next meeting and
         // can't act), so - same reasoning as PelicanRole.WinConditionMet - they count neither as

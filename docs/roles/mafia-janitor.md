@@ -14,6 +14,8 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-mafia.md`.
 
 **Pet removal.** `SuperSquadBodies.DestroyBodies` mirrors TOU-Mira's own Janitor/Chef clean behavior: if the host's Vanilla Tweaks options have "Remove Pets Upon Janitor/Chef Clean" on and pet visibility set to Always Visible, the cleaned player's pet is removed along with the body (see `docs/il2cpp-gotchas.md` for why this isn't just a direct call into TOU-Mira's own method).
 
+**Crime scene clearing.** `DestroyBodies` also calls `CrimeSceneComponent.ClearCrimeScene` on the body before destroying it, same as TOU-Mira's own `JanitorRole.RpcCleanBody` — otherwise a cleaned body's crime scene would stay behind for the Forensic role to inspect even after the body is gone.
+
 **No kill button.** Configuration sets `UseVanillaKillButton = false`, so the Mafia Janitor relies entirely on the clean button. They are a support role, not a killer.
 
 **Mafia labels.** Every frame, `MafiaLabelsPatch` appends "(J)" to the Mafia Janitor's name, visible only to other mafia members. Dead impostors lose the tag — a deviation from TOR where dead mafia stay labeled.
@@ -33,3 +35,6 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-mafia.md`.
 - Role icon and ability sprite are placeholder art.
 - Body cleanup should be verified in a real lobby with multiple bodies and a second player to confirm visibility changes.
 - Verify that TOU Janitor-cleaned bodies (from a standalone Janitor, if present) don't interfere with the Mafia Janitor's clean mechanics.
+- Mafia Janitor allows sabotage (`CanUseSabotage = true` by inheritance), unlike TOR, which blocks this
+  role from sabotage entirely — undecided whether that's intentional; flagging so it's a deliberate call,
+  not an oversight. See `docs/roles/mafioso.md`.

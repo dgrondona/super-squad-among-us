@@ -38,7 +38,16 @@ public sealed class GooperGoopButton : SuperSquadRoleButton<GooperRole, DeadBody
 
     public override DeadBody? GetTarget()
     {
-        return PlayerControl.LocalPlayer.GetNearestDeadBody(Distance);
+        // Can't use the plain GetNearestDeadBody(Distance) helper here (see VultureEatButton) - it
+        // has no way to exclude already-gooped bodies from the search, so a closer gooped body would
+        // shadow a farther un-gooped one and IsTargetValid would reject the result, leaving Target
+        // null even though a legitimate target exists. GetNearestObjectOfType's predicate lets gooped
+        // bodies be skipped during the search itself instead of after a body is already chosen.
+        return PlayerControl.LocalPlayer.GetNearestObjectOfType<DeadBody>(
+            Distance,
+            Helpers.CreateFilter(Constants.NotShipMask),
+            "DeadBody",
+            body => body && !body.Reported && !Role.GoopedBodyIds.Contains(body.ParentId));
     }
 
     public override bool IsTargetValid(DeadBody? target)

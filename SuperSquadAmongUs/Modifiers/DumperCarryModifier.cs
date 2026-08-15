@@ -1,4 +1,5 @@
 using MiraAPI.Modifiers;
+using MiraAPI.Utilities;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -29,18 +30,7 @@ public sealed class DumperCarryModifier(byte bodyId) : BaseModifier
     /// <inheritdoc />
     public override bool HideOnUi => true;
 
-    private DeadBody? FindBody()
-    {
-        foreach (var body in UnityEngine.Object.FindObjectsOfType<DeadBody>())
-        {
-            if (body != null && body.ParentId == BodyId)
-            {
-                return body;
-            }
-        }
-
-        return null;
-    }
+    private DeadBody? FindBody() => Helpers.GetBodyById(BodyId);
 
     /// <inheritdoc />
     public override void OnActivate()
@@ -63,6 +53,10 @@ public sealed class DumperCarryModifier(byte bodyId) : BaseModifier
         var body = FindBody();
         if (body == null)
         {
+            // The body itself was destroyed mid-carry by another ability (e.g. Mafia Janitor's clean or
+            // Vulture's eat racing this hide) - nothing left to reposition/reveal, but the pet was hidden
+            // independently via BodyId and must still be restored here, or it stays hidden forever.
+            SetPetVisible(BodyId, true);
             return;
         }
 
@@ -103,12 +97,21 @@ public sealed class DumperCarryModifier(byte bodyId) : BaseModifier
         // body-hide technique (Janitor's clean fade, TownOfUs/Utilities/Extensions.cs CoCleanCustom).
         body.myCollider.enabled = visible;
 
-        // The dead player's pet lingers at the death spot as its own object - hide/show it with the body.
+        SetPetVisible(body.ParentId, visible);
+    }
+
+    /// <summary>
+    /// The dead player's pet lingers at the death spot as its own object, independent of the
+    /// <see cref="DeadBody"/> - hidden/shown by id rather than through the body so this still runs even
+    /// when the body itself has been destroyed by another ability mid-carry (see <see cref="OnDeactivate"/>).
+    /// </summary>
+    private static void SetPetVisible(byte parentId, bool visible)
+    {
         // petHiddenByViper is the key: a bare TogglePet(false) gets undone when the CARRIER exits a vent
         // (vanilla re-shows pets on vent exit), which is why a body dropped from a vent used to leave the
         // pet visible. Setting the flag (MiscUtils.RemovePet's PetHidden.DuringRound mechanism) suppresses
         // that automatic re-show; clear it again when revealing on drop.
-        var owner = MiscUtils.PlayerById(body.ParentId);
+        var owner = MiscUtils.PlayerById(parentId);
         if (owner != null && owner.cosmetics != null)
         {
             owner.cosmetics.petHiddenByViper = !visible;

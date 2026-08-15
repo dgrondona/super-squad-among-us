@@ -6,6 +6,7 @@ using MiraAPI.Utilities.Assets;
 using Reactor.Utilities.Extensions;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
+using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Modifiers;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
@@ -48,6 +49,13 @@ public sealed class SlideTackleButton : TownOfUsTargetButton<PlayerControl>
         return PlayerControl.LocalPlayer &&
                PlayerControl.LocalPlayer.HasModifier<SlideTackleModifier>() &&
                !PlayerControl.LocalPlayer.Data.IsDead;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>.</remarks>
+    public override bool CanClick()
+    {
+        return base.CanClick() && KeybindArbiter.TryClaim(Keybind);
     }
 
     /// <inheritdoc />

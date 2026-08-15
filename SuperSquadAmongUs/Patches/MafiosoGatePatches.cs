@@ -8,8 +8,8 @@ namespace SuperSquadAmongUs.Patches;
 /// <summary>
 /// The Mafioso's leash (TOR): while any living Godfather exists, the Mafioso can neither kill nor
 /// sabotage. Both gates are purely local UI/click logic, exactly like TOR (UpdatePatch.cs:296,
-/// UsablesPatch.cs:210) - no RPCs. When the Godfather dies the kill button reappears immediately
-/// with its cooldown NOT reset (TOR behavior).
+/// UsablesPatch.cs:210) - no RPCs. When the Godfather dies, both the kill and sabotage buttons
+/// reappear immediately, with the kill button's cooldown NOT reset (TOR behavior).
 /// </summary>
 public static class MafiosoGatePatches
 {
@@ -36,9 +36,9 @@ public static class MafiosoGatePatches
     }
 
     /// <summary>
-    /// Mirrors TOR's per-frame kill button state machine: hidden every frame while gated, re-shown
-    /// once on the gate lifting (vanilla only re-shows it on hud refreshes, which don't happen when
-    /// the Godfather dies mid-round to e.g. a Sheriff).
+    /// Mirrors TOR's per-frame kill/sabotage button state machine: both hidden every frame while
+    /// gated, re-shown once on the gate lifting (vanilla only re-shows them on hud refreshes, which
+    /// don't happen when the Godfather dies mid-round to e.g. a Sheriff).
     /// </summary>
     /// <param name="__instance">The hud.</param>
     [HarmonyPatch(typeof(HudManager), nameof(HudManager.Update))]
@@ -55,10 +55,12 @@ public static class MafiosoGatePatches
         if (gated)
         {
             __instance.KillButton.Hide();
+            __instance.SabotageButton.Hide();
         }
         else if (wasGated && !PlayerControl.LocalPlayer.HasDied() && !MeetingHud.Instance && !ExileController.Instance)
         {
             __instance.KillButton.Show();
+            __instance.SabotageButton.Show();
         }
 
         wasGated = gated;

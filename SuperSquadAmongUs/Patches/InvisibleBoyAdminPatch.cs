@@ -14,7 +14,9 @@ namespace SuperSquadAmongUs.Patches;
 /// <c>collider.GetComponent&lt;PlayerControl&gt;()</c>, so - short of editing TOU-Mira source - the only
 /// way to exclude him from that count is to disable the colliders on his object for the duration of that
 /// overlap check. A living player's colliders cannot simply stay disabled (he would clip through walls),
-/// so they are toggled off immediately before the overlap check runs and restored immediately after.
+/// so they are toggled off immediately before the overlap check runs and restored immediately after. The
+/// overlap check itself only runs once every 0.1s (see TOU-Mira's own <c>SpyMapCountOverlayPatch</c>
+/// throttle), and colliders are only toggled on the frames that check actually runs.
 /// </summary>
 [HarmonyPatch(typeof(MapCountOverlay), nameof(MapCountOverlay.Update))]
 public static class InvisibleBoyAdminPatch
@@ -30,8 +32,18 @@ public static class InvisibleBoyAdminPatch
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPriority(Priority.High)]
-    public static void Prefix()
+    public static void Prefix(MapCountOverlay __instance)
     {
+        // TOU-Mira's own SpyMapCountOverlayPatch prefix fully replaces Update and only actually runs the
+        // collider-overlap count once every 0.1s (resetting __instance.timer to 0 each time it does),
+        // returning early otherwise. Since this patch runs at Priority.High - before that timer gets
+        // incremented and checked - toggling colliders here on a frame where the overlap check won't run
+        // is pure waste; peek at the same condition to skip those frames.
+        if (__instance.timer + Time.deltaTime < 0.1f)
+        {
+            return;
+        }
+
         foreach (var player in PlayerControl.AllPlayerControls)
         {
             // One player's lookup throwing (e.g. a mid-despawn object) must not abort the loop before it

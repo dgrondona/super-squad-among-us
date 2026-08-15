@@ -57,11 +57,13 @@ the kill keybind), **Goop and Kirby's Swallow → `TertiaryAction`** (the role's
 the slot borrowed kits rarely use), granted Swoop → `ModifierAction`, Vest → click-only. **Borrowed kit
 buttons keep their source role's keybind** — usually `SecondaryAction` (Sniper's snipe, most targeted
 abilities) — which is exactly why Goop/Swallow moved off Secondary. Two borrowed kits can still collide
-with each other on Secondary (e.g. an accumulate-mode Kirby holding both Snipe and Hex); the mouse
-click only ever hits one button, so clicking is the disambiguation fallback. Real keybind arbitration
-(suppressing a borrowed button's keybind when another usable button shares it) is a known follow-up —
-MiraAPI's keybind handler is a closure registered per button at creation, with no per-source hook to
-override.
+with each other (e.g. an accumulate-mode Kirby holding both Snipe and Hex on Secondary, or a Gooper/Kirby
+holding both granted Kill and Daddy Hagrid's/Apparater's/Sui's kit on Primary) — `Modules/KeybindArbiter`
+resolves this: since MiraAPI fires every enabled button on a shared keybind synchronously within one
+keypress, the arbiter lets only the first button's `CanClick()` claim that (keybind, frame) pair; every
+other button sharing it simply doesn't fire that press (its own cooldown/uses are untouched). Which
+button wins is button-registration order, not deterministic-by-design — a player who wants a specific
+one of the two abilities can still disambiguate with a direct mouse click.
 
 ## Shared ability-grant architecture (Gooper + Kirby)
 
@@ -156,5 +158,17 @@ system by being recreated once as a Layer-2 primitive (like Swoop), prioritized 
   `BaseShieldModifier`); arrows only point at un-gooped bodies and disappear once gooped.
 - Role icon and every ability button sprite are placeholder art
   (`SuperSquadAssets.NeutralPlaceholderIcon`/`NeutralPlaceholderButton`).
-- Keybind collisions between two simultaneously-held borrowed kits (both on `SecondaryAction`) are
-  possible; mouse clicks disambiguate. See the keybind allocation note above.
+- **Fixed: target-starvation in the Goop button's nearest-body search.** The plain
+  `GetNearestDeadBody(Distance)` helper (`VultureEatButton`'s pattern) has no way to exclude
+  candidates, so a closer gooped body could shadow a farther un-gooped one and get rejected by
+  `IsTargetValid`, leaving `Target` null. `GetTarget()` now uses `GetNearestObjectOfType<DeadBody>`
+  with a predicate that skips gooped bodies during the search itself — note this generic helper needs
+  an explicit `"DeadBody"` collider tag param, since only the specialized `GetNearestDeadBody`/
+  `GetNearestDeadBodies` hardcode that tag internally.
+- **Multi-Gooper scarcity is per-instance, not game-wide (open design question, not a bug).** The doc
+  comment above says "a body can only be gooped once," but that's only true per-Gooper — in a
+  multi-Gooper lobby (not currently restricted by `MaxRoleCount`), two different Goopers can each
+  independently goop the same body and each collect their own tier progression from it. Whether that's
+  intended (independent private progression) or should be game-wide scarcity needs a design call.
+- Duplicated arrow-tracking logic (~45 near-identical lines) between `GooperGoopButton` and
+  `VultureEatButton` — worth factoring into a shared helper, not a bug.

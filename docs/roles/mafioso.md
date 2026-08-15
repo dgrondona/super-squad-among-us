@@ -10,7 +10,7 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-mafia.md`.
 
 **Gated kill and sabotage.** `MafiosoGatePatches` contains two Harmony prefixes on `KillButton.DoClick` and `SabotageButton.DoClick`, mirroring TOR's `UpdatePatch.cs` and `UsablesPatch.cs`. Both methods return false (block the action) while the local Mafioso is alive and any living Godfather exists. The gates are purely local UI logic — no RPCs, no server-side validation.
 
-**Button visibility on gate lift.** Vanilla only re-shows the kill button on full HUD refreshes (e.g., after a meeting or report). The Godfather can die mid-round (e.g., killed by a Sheriff) without triggering a refresh. `MafiosoGatePatches.HudUpdatePostfix` runs every frame to immediately hide the button while gated and re-show it when the gate lifts (once, on the transition from gated to ungated), preserving the vanilla button lifecycle.
+**Button visibility on gate lift.** Vanilla only re-shows the kill/sabotage buttons on full HUD refreshes (e.g., after a meeting or report). The Godfather can die mid-round (e.g., killed by a Sheriff) without triggering a refresh. `MafiosoGatePatches.HudUpdatePostfix` runs every frame to immediately hide both buttons while gated and re-show them when the gate lifts (once, on the transition from gated to ungated), preserving the vanilla button lifecycle.
 
 **Cooldown preserved on unlock.** When the Godfather dies, the Mafioso's kill button reappears with its existing cooldown — no reset. This matches TOR behavior and prevents a power spike where an imprisoned Mafioso suddenly has a fresh kill.
 
@@ -28,3 +28,6 @@ Design: ported from TheOtherRoles; see `docs/porting/tor-mafia.md`.
 - Role icon and ability sprite are placeholder art; Mafioso currently shares ATR's generic impostor icon with the Godfather.
 - Edge case: Mafioso kills someone while the Godfather is alive but dies before the kill resolves — should be confirmed.
 - Gating behavior during meetings and vents should be spot-checked (e.g., can't sabotage during a meeting anyway, gate is redundant then).
+- Separately, Mafia Janitor allows sabotage at all (`CanUseSabotage = true`), where TOR blocks that role
+  from sabotage entirely — undecided whether that's an intentional divergence; see
+  `docs/roles/mafia-janitor.md`.

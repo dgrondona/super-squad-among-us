@@ -5,6 +5,7 @@ using MiraAPI.Modifiers;
 using MiraAPI.Roles;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Assets;
+using SuperSquadAmongUs.Events;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Neutral;
 using TownOfUs;
@@ -85,7 +86,18 @@ public sealed class PelicanRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsR
             .Count(x => x != null && !x.HasDied() &&
                         (x.IsImpostor() || x.Is(RoleAlignment.NeutralKilling)));
 
-        return aliveNotDevoured <= 2 && MiscUtils.KillersAliveCount - devouredKillers == 1;
+        var winConditionMet = aliveNotDevoured <= 2 && MiscUtils.KillersAliveCount - devouredKillers == 1;
+
+        if (winConditionMet)
+        {
+            // Force the meeting-digest pass now, in case the threshold was hit mid-round with no
+            // meeting ever called - otherwise devoured players never get Exiled(), stay frozen under
+            // CarriedModifier forever, and show as "Alive" in the end-game summary. Idempotent, and
+            // this is polled every tick, so subsequent calls after the first are no-ops.
+            PelicanEvents.DigestStomach();
+        }
+
+        return winConditionMet;
     }
 
     public override bool DidWin(GameOverReason gameOverReason)

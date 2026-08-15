@@ -41,3 +41,9 @@ Design: ported from TheOtherRoles; see `docs/porting/README.md`.
 - Role icon has no dedicated art yet — uses Town of Us: Mira's generic Impostor team icon (`Resources/Placeholders/Impostor.png`) as a stand-in; the old AI-generated icon was removed. Swap out when real art exists.
 - Mark and assassination sound effects are missing. TOR's `warlockCurse` (mark) and `witchSpell` sounds are extractable from the TOR sound bundle; see `docs/porting/README.md`.
 - Multi-target retargeting: test a scenario where the closest target changes mid-mark to confirm it clears as intended.
+- **No `Events/NinjaEvents.cs` exists — a real design gap relative to the closest TOU-Mira analog
+  (Ambusher), which uses one.** Ninja instead polls target/self death state every `FixedUpdate` tick
+  rather than reacting to `PlayerDeathEvent` immediately. `Assassinate()` now rechecks mark validity
+  immediately before the kill fires, which closes the common case (target dies to something else in the
+  ~1-tick window before the `FixedUpdate` poll catches it), but client-side death-visibility lag means a
+  narrower version of the same race still exists — an event-driven clear would be the more complete fix.

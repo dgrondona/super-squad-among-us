@@ -2,6 +2,7 @@ using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Hud;
 using MiraAPI.Keybinds;
+using MiraAPI.Networking;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -70,9 +71,11 @@ public sealed class SentinelExplodeButton : SuperSquadRoleButton<SentinelRole>
             return;
         }
 
-        PlayerControl.LocalPlayer.RpcSpecialMultiMurder(dousedPlayers, true, teleportMurderer: false,
-            playKillSound: false,
-            causeOfDeath: "SentinelExplosion");
+        // Explicit OutsideMeeting (not the List<PlayerControl> overload's implicit
+        // MeetingCheck.Ignore default) - a remote client already on the meeting screen from a
+        // report/emergency RPC race must not still apply this kill.
+        PlayerControl.LocalPlayer.RpcSpecialMultiMurder(dousedPlayers, MeetingCheck.OutsideMeeting, true,
+            teleportMurderer: false, playKillSound: false, causeOfDeath: "SentinelExplosion");
 
         TouAudio.PlaySound(TouAudio.ArsoIgniteSound);
 

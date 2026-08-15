@@ -47,6 +47,15 @@ public sealed class ApparaterMapButton : SuperSquadRoleButton<ApparaterRole>
     // The frame the map was opened, so that same click can't also register as a map-target click.
     private int openedFrame;
 
+    // MiraAPI only drives a button's FixedUpdate while Enabled(role) is true, and dying swaps
+    // Data.Role to a ghost role - so stay enabled while the map is open, or the only code that can
+    // close it (FixedUpdate) would stop ticking the moment the role/kit disappears, stranding the map
+    // open forever (same reason RC-XD/Dumper's own buttons do this - see their Enabled overrides).
+    public override bool Enabled(RoleBehaviour? role)
+    {
+        return base.Enabled(role) || EffectActive;
+    }
+
     protected override void OnClick()
     {
         teleported = false;

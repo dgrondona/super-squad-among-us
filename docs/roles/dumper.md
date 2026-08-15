@@ -9,16 +9,15 @@ revealed at the Dumper's current position — when the duration runs out, a meet
 Dumper dies.
 
 Files: `Roles/Impostor/DumperRole.cs`, `Buttons/Impostor/DumperCarryButton.cs`,
-`Modifiers/DumperCarryModifier.cs`, `Options/Roles/Impostor/DumperOptions.cs`.
+`Modifiers/DumperCarryModifier.cs`, `Events/DumperEvents.cs`, `Options/Roles/Impostor/DumperOptions.cs`.
 
 ## How it works
 
 **Not `CarriedModifier`.** That family (`Modifiers/CarriedModifier.cs`, used by Pelican/Daddy Hagrid)
 carries a *living player* as the modifier's own `Player`. A dead body is a plain `DeadBody` scene
 object, not a `PlayerControl`, so it can't host a modifier itself — `DumperCarryModifier` lives on the
-**Dumper** (the carrier) instead, storing the held body's `ParentId` and looking it up via
-`FindObjectsOfType<DeadBody>()` each time it needs it (same technique `SuperSquadBodies.DestroyBodies`
-already uses).
+**Dumper** (the carrier) instead, storing the held body's `ParentId` and looking it up via MiraAPI's
+`Helpers.GetBodyById` each time it needs it.
 
 **Hide/reveal is a snap, not a fade.** `OnActivate` zeroes every `body.bodyRenderers[]` alpha and
 disables `body.myCollider` (stops it being reportable/clickable) — modeled on TOU-Mira's Janitor clean
@@ -31,6 +30,10 @@ each tick since the game can re-show a pet on its own. `OnDeactivate` reverses a
 repositions the body to the Dumper's *current* location — not the pickup spot — before revealing it.
 Because the body is fully hidden and non-colliding the whole time it's carried, nobody can see it move,
 so there's no need for a per-frame follow like Undertaker's drag — a single teleport on drop is enough.
+Pet-visibility restore is tracked by the dead player's id independently of the `DeadBody` object itself
+(a dedicated `SetPetVisible` step, not folded into the body-reveal logic), so it still runs even if
+another ability (Mafia Janitor's clean, Vulture's eat) destroys the carried body out from under the
+Dumper mid-carry — the pet no longer stays stranded hidden just because there's no body left to reveal.
 
 **The store duration is the button's cancellable EFFECT, which is what shows the countdown.**
 `DumperCarryButton` sets `EffectDuration => DumperOptions.CarryDuration` and `IsEffectCancellable() =>
@@ -69,7 +72,10 @@ carry ends without a click (duration expiry, meeting, death).
 overrides — both call `Player.RemoveModifier(this)`, the same one-line pattern every "carry/hide"
 modifier in this codebase uses. Since the modifier lives on the Dumper, `OnDeath` fires on the Dumper's
 own death automatically, no separate event handler needed. (The store-duration auto-dump is the one
-drop path that does NOT live on the modifier — it's button-driven, see above.)
+drop path that does NOT live on the modifier — it's button-driven, see above.) **Disconnect** is the one
+case none of that covers — a disconnect never fires `OnDeath` — so `Events/DumperEvents.cs` hooks
+`PlayerLeaveEvent` and releases the carried body in place if the carrying Dumper disconnects, the same
+pattern `PelicanEvents`/`KirbyEvents`/`DaddyHagridEvents` use for their own carry-disconnect cases.
 
 **No new RPCs.** Store is `Target.RpcAddModifier<DumperCarryModifier>(nearestBody.ParentId)` (the
 generic modifier-add RPC, same shape `JailedModifier`'s constructor-arg usage uses upstream). Both the
@@ -91,8 +97,8 @@ manual dump and the button-driven auto-dump are `PlayerControl.LocalPlayer.RpcRe
 - Manual in-game verification needed — untestable solo (needs a body to store). Highest-value checks:
   storing hides both the body *and* the dead player's pet from every client, it can't be reported while
   hidden, dumping reveals both at the Dumper's *current* position (not the store spot), early dump works,
-  the store duration actually ends and auto-dumps (the button-driven timing fix), and a meeting call or
-  the Dumper's own death both drop the body correctly.
+  the store duration actually ends and auto-dumps (the button-driven timing fix), and a meeting call, the
+  Dumper's own death, or the Dumper disconnecting mid-carry all drop the body (and pet) correctly.
 - Role icon and the Store/Dump button sprite have no dedicated art yet — both use
   `SuperSquadAssets.ImpostorPlaceholderIcon`/`ImpostorPlaceholderButton`.
 - If two Dumpers exist in the same lobby, there's no coordination between them — either could store

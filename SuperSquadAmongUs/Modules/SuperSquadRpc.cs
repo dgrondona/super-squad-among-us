@@ -16,4 +16,5 @@ public enum SuperSquadRpc : uint
     DespawnRcXdCar = 8,
     GooperGoop = 9,
     DetonatorDetonate = 10,
+    EraserErase = 11,
 }

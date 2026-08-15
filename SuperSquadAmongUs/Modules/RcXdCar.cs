@@ -132,8 +132,11 @@ public static class RcXdCar
 
                 if (others.Count > 0)
                 {
-                    owner.RpcSpecialMultiMurder(others, true, teleportMurderer: false, playKillSound: true,
-                        causeOfDeath: "SuperSquadRcXd");
+                    // Explicit OutsideMeeting (not the List<PlayerControl> overload's implicit
+                    // MeetingCheck.Ignore default) - a remote client already on the meeting screen
+                    // from a report/emergency RPC race must not still apply this kill.
+                    owner.RpcSpecialMultiMurder(others, MeetingCheck.OutsideMeeting, true, teleportMurderer: false,
+                        playKillSound: true, causeOfDeath: "SuperSquadRcXd");
                 }
 
                 if (deployerDies)

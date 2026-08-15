@@ -25,6 +25,19 @@ public static class PelicanEvents
     [RegisterEvent]
     public static void StartMeetingEventHandler(StartMeetingEvent @event)
     {
+        DigestStomach();
+    }
+
+    /// <summary>
+    /// Kills every currently devoured player via <see cref="PlayerControl.Exiled"/> (no body - they were
+    /// digested). Shared by the meeting-start digestion above and by
+    /// <see cref="PelicanRole.WinConditionMet"/>, which forces a digest pass before letting a win go
+    /// through - otherwise a Pelican that hits its win threshold before any meeting would leave victims
+    /// frozen alive under <see cref="CarriedModifier"/> forever. Safe to call repeatedly: already-digested
+    /// players have no modifier left to iterate and are skipped via <c>HasDied()</c>.
+    /// </summary>
+    public static void DigestStomach()
+    {
         foreach (var devoured in ModifierUtils.GetActiveModifiers<DevouredModifier>().ToList())
         {
             var target = devoured.Player;

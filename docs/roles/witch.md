@@ -37,3 +37,10 @@ Design: ported from TheOtherRoles; see `docs/porting/README.md`.
 - Role icon and ability sprite are placeholder art.
 - Cast start and completion sounds are missing. TOR's `witchSpell` sound is extractable; see `docs/porting/README.md`.
 - Edge case: if the Witch dies mid-cast (target changes or kills the Witch), the channel stops and the cast fails (no hex placed). This is TOR behavior but should be confirmed.
+
+`CompleteCast()` now rechecks `HasModifier<HexedModifier>()` before applying a hex, and `GetTarget()`
+caches its result for the tick so `CanUse()` and the `FixedUpdate` cancel-check share one scan — see
+`Buttons/Impostor/WitchHexButton.cs`. Lesson: any borrowable ability with an RPC that applies
+optimistically on the sender's own client before syncing needs a same-target recheck at completion, not
+just at click time, whenever the ability can also be granted to a second holder (AbilityGrants) — the
+race is between two *different* casters' clients, not just a double-click on one client.

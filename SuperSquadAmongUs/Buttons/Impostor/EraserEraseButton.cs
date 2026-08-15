@@ -70,7 +70,7 @@ public sealed class EraserEraseButton : SuperSquadRoleButton<EraserRole, PlayerC
 
         if (OptionGroupSingleton<EraserOptions>.Instance.EraseImmediately)
         {
-            EraserEvents.EraseRole(Target);
+            EraserEvents.RpcEraseRole(PlayerControl.LocalPlayer, Target);
         }
         else
         {

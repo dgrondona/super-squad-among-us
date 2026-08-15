@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
+using MiraAPI.PluginLoading;
 using MiraAPI.Utilities;
 using TownOfUs.Modifiers;
 using TownOfUs.Options;
@@ -18,6 +19,7 @@ namespace SuperSquadAmongUs.Modifiers;
 /// Inherits ConcealedModifier's AutoStart=false, so the state is indefinite unless a subclass opts
 /// into a timer.
 /// </summary>
+[MiraIgnore]
 public abstract class CarriedModifier(PlayerControl carrier) : ConcealedModifier, IVisualAppearance
 {
     /// <summary>

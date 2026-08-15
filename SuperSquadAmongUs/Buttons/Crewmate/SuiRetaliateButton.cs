@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
+using MiraAPI.Modifiers;
 using MiraAPI.Networking;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
@@ -7,6 +8,7 @@ using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Crewmate;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
+using TownOfUs.Modifiers;
 using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -75,6 +77,13 @@ public sealed class SuiRetaliateButton : SuperSquadRoleButton<SuiRole, PlayerCon
             return;
         }
 
+        // Matches Veteran's own retaliation-kill guard: without this, killing an invulnerable target
+        // (e.g. Pestilence) can trigger its own counter-kill and softlock the game.
+        if (Target.HasModifier<InvulnerabilityModifier>())
+        {
+            return;
+        }
+
         var options = OptionGroupSingleton<SuiOptions>.Instance;
         var correctTarget = lockedTarget != null && Target.PlayerId == lockedTarget.PlayerId;
 
@@ -82,7 +91,7 @@ public sealed class SuiRetaliateButton : SuperSquadRoleButton<SuiRole, PlayerCon
 
         // Sheriff misfire pattern: only meaningful when CanTargetAnyone is on - with it off, Target is
         // always the locked interactor, so correctTarget is always true.
-        if (options.CanTargetAnyone && options.DiesOnWrongTarget && !correctTarget)
+        if (options.CanTargetAnyone && options.DiesOnWrongTarget.Value && !correctTarget)
         {
             PlayerControl.LocalPlayer.RpcCustomMurder(PlayerControl.LocalPlayer);
         }
@@ -104,7 +113,14 @@ public sealed class SuiRetaliateButton : SuperSquadRoleButton<SuiRole, PlayerCon
     {
         base.FixedUpdate(playerControl);
 
-        if (lockedTarget == null || lockedTarget.HasDied() || playerControl.HasDied() || MeetingHud.Instance)
+        if (MeetingHud.Instance)
+        {
+            lockedTarget = null;
+            ClearArrow();
+            return;
+        }
+
+        if (lockedTarget == null || lockedTarget.HasDied() || playerControl.HasDied())
         {
             ClearArrow();
             return;

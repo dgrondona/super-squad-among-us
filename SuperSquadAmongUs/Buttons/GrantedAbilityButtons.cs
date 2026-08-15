@@ -65,6 +65,13 @@ public abstract class GrantedTargetButtonBase : TownOfUsTargetButton<PlayerContr
                holder.UnlockedAbilities.HasFlag(RequiredAbility);
     }
 
+    /// <inheritdoc />
+    /// <remarks>Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>.</remarks>
+    public override bool CanClick()
+    {
+        return base.CanClick() && KeybindArbiter.TryClaim(Keybind);
+    }
+
     public override void SetOutline(bool active)
     {
         if (Target != null && !PlayerControl.LocalPlayer.HasDied())
@@ -180,9 +187,13 @@ public sealed class GrantedSwoopButton : TownOfUsButton
                (EffectActive && Timer <= EffectDuration - 2f);
     }
 
+    // KeybindArbiter check here too: this toggle-style override bypasses base.ClickHandler()'s
+    // CanClick() gate entirely (mirrors DaddyHagridHideButton's early-release branch), so without it
+    // a shared ModifierAction press could fire this AND another grant-holder button (e.g.
+    // InvisibilityCloakButton/SlideTackleButton) uncontested on the same keypress.
     public override void ClickHandler()
     {
-        if (!CanUse())
+        if (!CanUse() || !KeybindArbiter.TryClaim(Keybind))
         {
             return;
         }

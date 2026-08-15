@@ -86,3 +86,5 @@ anything.
 - Puppeteer's control ability is excluded from Kirby's inheritable set for the same reason it's deferred
   from Gooper's pool (see `docs/roles/gooper.md`) — a whole remote-control subsystem on a TOU-Mira
   role, not yet separately scoped.
+- **Swallowing a phased Astral: possible interruption, unconfirmed.** See `docs/roles/astral.md`'s
+  follow-up note — needs an in-game test, not resolvable from code alone.

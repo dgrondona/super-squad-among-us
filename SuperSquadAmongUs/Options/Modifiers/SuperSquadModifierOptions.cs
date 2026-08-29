@@ -17,6 +17,9 @@ public sealed class SuperSquadModifierOptions : AbstractOptionGroup
     public override string GroupName => "Super Squad Modifiers";
 
     /// <inheritdoc />
+    public override MenuCategory ParentMenu => MenuCategory.Modifiers;
+
+    /// <inheritdoc />
     public override bool ShowInModifiersMenu => true;
 
     /// <inheritdoc />

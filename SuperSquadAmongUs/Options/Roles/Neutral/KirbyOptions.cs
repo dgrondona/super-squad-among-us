@@ -6,7 +6,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Neutral;
 
-public sealed class KirbyOptions : AbstractOptionGroup<KirbyRole>
+public sealed class KirbyOptions : AbstractRoleOptionGroup<KirbyRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleKirby", "Kirby");
 

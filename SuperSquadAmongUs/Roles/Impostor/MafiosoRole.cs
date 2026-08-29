@@ -43,6 +43,10 @@ public sealed class MafiosoRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUs
     public ModdedRoleTeams Team => ModdedRoleTeams.Impostor;
     public RoleAlignment RoleAlignment => RoleAlignment.ImpostorKilling;
 
+    // Spawns only as part of the mafia trio (MafiaAssignmentPatch) - a drafted Mafioso with no
+    // Godfather would be permanently gated by MafiosoGatePatches. See GodfatherRole.
+    public bool IsDraftable => false;
+
     public CustomRoleConfiguration Configuration => new(this)
     {
         UseVanillaKillButton = true,

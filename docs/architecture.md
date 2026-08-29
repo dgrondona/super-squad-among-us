@@ -21,9 +21,13 @@ Look at `Apparater` (Crewmate, `Roles/Crewmate/ApparaterRole.cs`) or `Sentinel` 
 follows the same shape:
 
 - `Roles/<Team>/<X>Role.cs` — implements `ITownOfUsRole` (TOU-Mira) + `ICustomRole` (MiraAPI), usually
-  also `IWikiDiscoverable` and `IDoomable`, on top of the vanilla base game role class (`CrewmateRole`,
-  `NeutralRole`, etc. — these live in Il2Cpp Assembly-CSharp, not this repo). See
-  [il2cpp-gotchas.md](il2cpp-gotchas.md) for the constructor/override quirks this requires.
+  also `IWikiDiscoverable` and `IDoomable`, on top of a base role class. `CrewmateRole`/`ImpostorRole`
+  are vanilla (Il2Cpp Assembly-CSharp, not this repo), but **`NeutralRole` is TOU-Mira's own class**
+  (`TownOfUs/Roles/Classic/Neutral/NeutralKilling/NeutralRole.cs`), which itself derives from
+  `RoleBehaviour` and overrides `Deinitialize`/`CanUse`/`SpawnTaskHeader`. That distinction matters on
+  a TOU-Mira version bump: the five Neutral roles sit on upstream source that can change between
+  releases, while the Crewmate/Impostor ones sit on a vanilla base that only moves with Among Us
+  itself. See [il2cpp-gotchas.md](il2cpp-gotchas.md) for the constructor/override quirks this requires.
 - `Buttons/<Team>/<X>Button.cs` — abilities extend this addon's `SuperSquadRoleButton<TRole>` (or
   `SuperSquadRoleButton<TRole, TTarget>` for targeted abilities, `SuperSquadKillRoleButton<...>` for
   kill buttons — all in `Buttons/SuperSquadRoleButton.cs`), never TOU-Mira's `TownOfUsRoleButton<TRole>`

@@ -15,6 +15,9 @@ namespace SuperSquadAmongUs.Options.Modifiers;
 public sealed class SlideTackleOptions : AbstractOptionGroup<SlideTackleModifier>
 {
     /// <inheritdoc />
+    public override MenuCategory ParentMenu => MenuCategory.Modifiers;
+
+    /// <inheritdoc />
     public override Func<bool> GroupVisible => () => OptionGroupSingleton<RoleOptions>.Instance.IsClassicRoleAssignment;
 
     /// <inheritdoc />

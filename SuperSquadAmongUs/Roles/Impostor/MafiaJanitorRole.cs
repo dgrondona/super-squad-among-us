@@ -50,6 +50,9 @@ public sealed class MafiaJanitorRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITow
     public ModdedRoleTeams Team => ModdedRoleTeams.Impostor;
     public RoleAlignment RoleAlignment => RoleAlignment.ImpostorSupport;
 
+    // Spawns only as part of the mafia trio (MafiaAssignmentPatch), never on its own. See GodfatherRole.
+    public bool IsDraftable => false;
+
     public CustomRoleConfiguration Configuration => new(this)
     {
         UseVanillaKillButton = false,

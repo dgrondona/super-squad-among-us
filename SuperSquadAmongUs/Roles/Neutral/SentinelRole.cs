@@ -82,7 +82,7 @@ public sealed class SentinelRole(IntPtr cppPtr)
 
     public void OffsetButtons()
     {
-        var canVent = OptionGroupSingleton<SentinelOptions>.Instance.CanVent || LocalSettingsTabSingleton<TownOfUsLocalSettings>.Instance.OffsetButtonsToggle.Value;
+        var canVent = OptionGroupSingleton<SentinelOptions>.Instance.CanVent || LocalSettingsTabSingleton<TouLocalTabButtons>.Instance.OffsetButtonsToggle.Value;
         var douse = CustomButtonSingleton<SentinelExplodeButton>.Instance;
         var ignite = CustomButtonSingleton<SentinelKillButton>.Instance;
         Coroutines.Start(MiscUtils.CoMoveButtonIndex(douse, !canVent));

@@ -7,7 +7,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
-public sealed class DetonatorOptions : AbstractOptionGroup<DetonatorRole>
+public sealed class DetonatorOptions : AbstractRoleOptionGroup<DetonatorRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleDetonator", "Detonator");
 

@@ -7,7 +7,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Crewmate;
 
-public sealed class SuiOptions : AbstractOptionGroup<SuiRole>
+public sealed class SuiOptions : AbstractRoleOptionGroup<SuiRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleSui", "Sui");
 

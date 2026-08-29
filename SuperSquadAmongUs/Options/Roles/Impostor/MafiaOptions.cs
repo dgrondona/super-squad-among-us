@@ -10,6 +10,8 @@ namespace SuperSquadAmongUs.Options.Roles.Impostor;
 /// </summary>
 public sealed class MafiaOptions : AbstractOptionGroup
 {
+    public override MenuCategory ParentMenu => MenuCategory.Roles;
+
     public override string GroupName => TouLocale.Get("SuperSquadRoleMafia", "Mafia");
 
     [ModdedNumberOption("SuperSquadOptionMafiaSpawnChance", 0, 100, 10, MiraNumberSuffixes.Percent)]

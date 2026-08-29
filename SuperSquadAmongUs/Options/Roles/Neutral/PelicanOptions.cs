@@ -6,7 +6,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Neutral;
 
-public sealed class PelicanOptions : AbstractOptionGroup<PelicanRole>
+public sealed class PelicanOptions : AbstractRoleOptionGroup<PelicanRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRolePelican", "Pelican");
 

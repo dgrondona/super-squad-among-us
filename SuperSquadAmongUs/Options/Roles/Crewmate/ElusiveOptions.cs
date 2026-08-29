@@ -6,7 +6,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Crewmate;
 
-public sealed class ElusiveOptions : AbstractOptionGroup<ElusiveRole>
+public sealed class ElusiveOptions : AbstractRoleOptionGroup<ElusiveRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleElusive", "Elusive");
 

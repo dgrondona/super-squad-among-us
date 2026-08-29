@@ -7,7 +7,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
-public sealed class EraserOptions : AbstractOptionGroup<EraserRole>
+public sealed class EraserOptions : AbstractRoleOptionGroup<EraserRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleEraser", "Eraser");
 

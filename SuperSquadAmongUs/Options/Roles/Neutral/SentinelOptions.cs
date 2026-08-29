@@ -7,7 +7,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Neutral;
 
-public sealed class SentinelOptions : AbstractOptionGroup<SentinelRole>
+public sealed class SentinelOptions : AbstractRoleOptionGroup<SentinelRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleSentinel", "Sentinel");
 

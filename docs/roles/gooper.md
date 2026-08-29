@@ -60,10 +60,18 @@ abilities) — which is exactly why Goop/Swallow moved off Secondary. Two borrow
 with each other (e.g. an accumulate-mode Kirby holding both Snipe and Hex on Secondary, or a Gooper/Kirby
 holding both granted Kill and Daddy Hagrid's/Apparater's/Sui's kit on Primary) — `Modules/KeybindArbiter`
 resolves this: since MiraAPI fires every enabled button on a shared keybind synchronously within one
-keypress, the arbiter lets only the first button's `CanClick()` claim that (keybind, frame) pair; every
-other button sharing it simply doesn't fire that press (its own cooldown/uses are untouched). Which
-button wins is button-registration order, not deterministic-by-design — a player who wants a specific
-one of the two abilities can still disambiguate with a direct mouse click.
+keypress, the arbiter lets only the first button to actually reach its `ClickHandler()` claim that
+(keybind, frame) pair; every other button sharing it simply doesn't fire that press (its own
+cooldown/uses are untouched). Which button wins is button-registration order, not
+deterministic-by-design — a player who wants a specific one of the two abilities can still
+disambiguate with a direct mouse click.
+
+**The claim lives in `ClickHandler()`, gated behind `CanClick()` — never in `CanClick()` itself.**
+`CanClick()` is polled several times per press by TOU-Mira's own event handlers, so claiming there
+consumed the press before the real fire and left every affected button visibly working but inert;
+and claiming *before* the can-fire check would let a cooling-down button swallow the press from a
+ready sibling. See the `CanClick()`-is-a-polled-predicate entry in
+[il2cpp-gotchas.md](../il2cpp-gotchas.md).
 
 ## Shared ability-grant architecture (Gooper + Kirby)
 

@@ -7,7 +7,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Crewmate;
 
-public sealed class DaddyHagridOptions : AbstractOptionGroup<DaddyHagridRole>
+public sealed class DaddyHagridOptions : AbstractRoleOptionGroup<DaddyHagridRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleDaddyHagrid", "Daddy Hagrid");
 

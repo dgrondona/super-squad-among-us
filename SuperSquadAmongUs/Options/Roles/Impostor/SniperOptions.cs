@@ -6,7 +6,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
-public sealed class SniperOptions : AbstractOptionGroup<SniperRole>
+public sealed class SniperOptions : AbstractRoleOptionGroup<SniperRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleSniper", "Sniper");
 

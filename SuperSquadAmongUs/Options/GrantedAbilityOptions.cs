@@ -17,6 +17,10 @@ namespace SuperSquadAmongUs.Options;
 /// </summary>
 public sealed class GrantedAbilityOptions : AbstractOptionGroup
 {
+    // Tunes role-ability cooldowns/durations (Kill/Swoop/Vest), so it belongs with role config even
+    // though it isn't tied to one specific role class - see the class summary above.
+    public override MenuCategory ParentMenu => MenuCategory.Roles;
+
     public override string GroupName => TouLocale.Get("SuperSquadGrantedAbilities", "Granted Abilities");
 
     public ModdedNumberOption KillCooldown { get; set; } =

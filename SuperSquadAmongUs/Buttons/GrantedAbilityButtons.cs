@@ -66,10 +66,19 @@ public abstract class GrantedTargetButtonBase : TownOfUsTargetButton<PlayerContr
     }
 
     /// <inheritdoc />
-    /// <remarks>Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>.</remarks>
-    public override bool CanClick()
+    /// <remarks>
+    /// Arbitrates shared keybinds - see <see cref="KeybindArbiter"/>. Claims only after
+    /// <c>CanClick()</c> passes, so a button that can't actually fire (cooldown, no target) doesn't
+    /// consume the keypress and block a ready sibling on the same keybind.
+    /// </remarks>
+    public override void ClickHandler()
     {
-        return base.CanClick() && KeybindArbiter.TryClaim(Keybind);
+        if (!CanClick() || !KeybindArbiter.TryClaim(Keybind))
+        {
+            return;
+        }
+
+        base.ClickHandler();
     }
 
     public override void SetOutline(bool active)

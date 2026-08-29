@@ -97,6 +97,28 @@ goes straight to `OnClick()` and re-arms the effect instead. Handle the effect-a
 own `ClickHandler` override (gating included) and call `ResetCooldownAndOrEffect()` yourself — see
 `RcXdDeployButton.ClickHandler`.
 
+## `CanClick()` is a polled predicate — never put a side effect in it
+
+`CanClick()` looks like "the framework asks once, right before firing." It isn't. Both MiraAPI
+dispatch paths (`CustomActionButton.CreateButton`'s `PassiveButton.OnClick` listener for mouse, and
+the `Keybind.OnActivate` handler right below it) invoke `MiraButtonClickEvent` **before** calling
+`ClickHandler()` — and TOU-Mira has ~20 event handlers subscribed to that event that call
+`button.CanClick()` purely as a read-only test (`MedicEvents`, `VeteranEvents`, `InvulnerabilityEvents`,
+`FirstShieldEvents`, `GuardianAngelEvents`, `DeadlyQuotaEvents`, …). So a single press evaluates
+`CanClick()` several times, and TOU-Mira's own buttons override it freely on that assumption.
+
+This bit us for real: `KeybindArbiter.TryClaim` (which records a per-frame claim so two abilities
+sharing a keybind can't both fire on one press) was called from `CanClick()`. A TOU-Mira event
+handler polled `CanClick()` first, consuming the claim; `ClickHandler()` then called `CanClick()`
+again, the claim failed, and it returned early — **every affected button rendered normally but did
+nothing, on both mouse and keybind**. Anything that mutates state belongs in the firing path
+(`ClickHandler`/`OnClick`), never in `CanClick()`, `Enabled()`, or `IsTargetValid()`.
+
+Corollary on ordering: claim/consume *after* the can-fire check, not before
+(`if (!CanClick() || !KeybindArbiter.TryClaim(Keybind)) return;`). Claiming first lets a button
+that's on cooldown swallow the keypress and block a ready sibling on the same keybind — the exact
+case the arbiter exists to resolve.
+
 ## A two-phase *targeted* button's second phase is blocked by `CanClick()`, not just `CanUse()`
 
 `CustomActionButton<T>.CanClick()` is `base.CanClick() && Target != null`, and `base.CanClick()` is
@@ -164,7 +186,8 @@ not which mechanism does what at runtime — cross-check against readable mod so
 ## `reference/TOU-Mira` can be ahead of the pinned `TownOfUsMira` package
 
 The reference checkout is a live source tree; the package this addon actually compiles against is
-whatever version is pinned in `AmongUs.props` (currently `1.5.0-beta.1`), which can lag behind it. A
+whatever version is pinned in `AmongUs.props` (currently `1.7.1`, which as of the 2026-08 upgrade
+matches the reference checkout's own `1.7.1` tag — but don't assume that stays true). A
 member that exists in `reference/TOU-Mira` source may not exist yet in the compiled DLL, and reference
 source can't stand in for that mismatch. Confirmed case: `VanillaTweakOptions.PetVisibilityUponDeath`
 and the `PetHidden`-enum overload of `MiscUtils.RemovePet` exist in reference source but not in
@@ -280,6 +303,16 @@ This is also a case where checking for a TOU-Mira update **first**, before deep-
 semantics, would have been the faster diagnostic path — worth doing whenever a crash is this
 inexplicable from the addon's own code alone.
 
+**Counter-lesson (2026-08, the 1.6.3-beta2 → 1.7.1 upgrade): skew is a suspect, not a verdict.**
+"Buttons stopped working right after I updated TOU-Mira" looked like a textbook repeat of the above,
+but wasn't. A full diff of the upgrade (492 commits, 769 files) found the entire button/keybind
+surface this addon consumes — `CustomActionButton`, `TownOfUsButton`, `TownOfUsRoleButton<T[,T]>`,
+`Keybinds.*`, registration — **unchanged**, and bumping the pins produced zero compile errors. The
+actual cause was our own `KeybindArbiter` putting a side effect in `CanClick()` (see that entry
+above), shipped in the same window as the update. Correlating with an upstream bump is weak
+evidence; confirm skew by finding the *specific* changed member, or by checking whether the pins were
+even mismatched, before rewriting anything.
+
 ## Local-death native crash — upstream TOU-Mira/AU 2026.6.5 memory corruption, not addon-fixable (open, tracked upstream)
 
 The recurring "self-kill crashes the game" bug (see docs/roles/rc-xd.md playtest history) is a
@@ -316,10 +349,13 @@ registered types/objects raise the odds of the corruption being hit during any g
 There is no known addon-side fix for upstream memory corruption. If this needs to stop happening
 now rather than waiting for a TOU-Mira update, the only currently-confirmed mitigation is
 downgrading the installed Among Us version below 2026.6.5 (per the maintainer's own advice) - a
-game/launcher-level change, not something this repo controls. Re-check
-[AU-Avengers/TOU-Mira releases](https://github.com/AU-Avengers/TOU-Mira/releases) periodically for
-a build past 1.6.3-beta2; if the changelog claims this fixed, bump the pin (`AmongUs.props`) *and*
-the installed plugin DLL together, per the version-skew entry above.
+game/launcher-level change, not something this repo controls.
+
+**Status update (2026-08):** the addon is now pinned to TOU-Mira `1.7.1` (up from 1.6.3-beta2), so
+the "stay on 1.6.3-beta2, it's the latest" framing above is historical. Whether 1.7.1 actually fixes
+this corruption is **untested** — re-run the self-kill repro (RC-XD detonating inside its own blast,
+or a plain TOU Sheriff misfire) on 1.7.1 before assuming either way, and update this entry with the
+result.
 
 Related pitfall fixed along the way: MiraAPI's `RpcCustomMurder`/`CustomMurder` default
 `teleportMurderer: true`, which makes the kill coroutine yield (blur animation, camera lock) instead

@@ -6,7 +6,7 @@ using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Neutral;
 
-public sealed class VultureOptions : AbstractOptionGroup<VultureRole>
+public sealed class VultureOptions : AbstractRoleOptionGroup<VultureRole>
 {
     public override string GroupName => TouLocale.Get("SuperSquadRoleVulture", "Vulture");
 

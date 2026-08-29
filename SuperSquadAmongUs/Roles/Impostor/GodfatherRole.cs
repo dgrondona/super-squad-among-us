@@ -43,6 +43,11 @@ public sealed class GodfatherRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOf
     public ModdedRoleTeams Team => ModdedRoleTeams.Impostor;
     public RoleAlignment RoleAlignment => RoleAlignment.ImpostorKilling;
 
+    // Spawns only as part of the mafia trio (MafiaAssignmentPatch), never on its own - drafting one
+    // in isolation would leave a Godfather with no Mafioso to gate. Same reason TOU-Mira opts
+    // TraitorRole/PestilenceRole out of the draft pool.
+    public bool IsDraftable => false;
+
     public CustomRoleConfiguration Configuration => new(this)
     {
         UseVanillaKillButton = true,

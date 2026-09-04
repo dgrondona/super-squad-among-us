@@ -154,9 +154,16 @@ public sealed class ApparaterMapButton : SuperSquadRoleButton<ApparaterRole>
         var origin = playerControl.GetTruePosition();
         var probeRadius = WalkableRegionSolver.GetProbeRadius(playerControl);
 
-        if (!WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, out var target))
+        // The search runs entirely inside one rendered frame, so its cost is a visible hitch if it grows.
+        // Logged rather than assumed - see docs/roles/apparater.md.
+        var searchTimer = System.Diagnostics.Stopwatch.StartNew();
+        var reachable = WalkableRegionSolver.TryFindReachablePoint(origin, rawTarget, probeRadius, out var target);
+        searchTimer.Stop();
+
+        if (!reachable)
         {
-            Info($"Apparater: no reachable point found near raw click {rawTarget}");
+            Info($"Apparater: no reachable point found near raw click {rawTarget} " +
+                 $"(search {searchTimer.Elapsed.TotalMilliseconds:F1}ms)");
             return;
         }
 
@@ -168,19 +175,31 @@ public sealed class ApparaterMapButton : SuperSquadRoleButton<ApparaterRole>
             return;
         }
 
-        Info($"Apparater: teleporting {origin} -> {target} (raw click {rawTarget}, alpha={alpha}, snapDistance={snapDistance})");
+        Info($"Apparater: teleporting {origin} -> {target} (raw click {rawTarget}, alpha={alpha}, " +
+             $"snapDistance={snapDistance}, search {searchTimer.Elapsed.TotalMilliseconds:F1}ms)");
         teleported = true;
         playerControl.NetTransform.RpcSnapTo(target);
         ResetCooldownAndOrEffect();
     }
 
-    // Map-sprite click -> ship-space world position. The alpha mask samples in the sprite's own local
-    // space; this conversion (map-local * MapScale) is only for the teleport target itself.
+    // Map-sprite click -> ship-space world position.
+    //
+    // This uses a DIFFERENT transform from MiniMapMask's alpha sample (ColorControl.rend, on the map's
+    // Background object) and that is deliberate, not a bug - the two frames are separated by a per-map
+    // translation (Skeld (0.54, 1.25), Polus (-4.15, 2.45)). HerePoint's parent is the frame where
+    // map-local * MapScale equals ship-world, which is why every mod parents map icons there; Background
+    // is the frame the sprite's pixels live in. Each conversion targets the frame it actually needs.
     private static Vector2 GetRawClickWorldPosition(Vector2 clickWorldPoint)
     {
         var mapRoot = MapBehaviour.Instance.HerePoint.transform.parent;
         var localPoint = mapRoot.InverseTransformPoint(clickWorldPoint);
-        return (Vector2)(localPoint * ShipStatus.Instance.MapScale);
+        var shipPoint = (Vector2)(localPoint * ShipStatus.Instance.MapScale);
+
+        // Mirrored maps (Dleks) reuse Skeld's un-mirrored map sprite and flip the ship instead, so the
+        // map<->ship conversion needs the sign. Prior art all converts world->map-local; ours is the
+        // inverse, but a sign flip is its own inverse, so the same multiply applies here.
+        shipPoint.x *= Mathf.Sign(ShipStatus.Instance.transform.localScale.x);
+        return shipPoint;
     }
 
 }

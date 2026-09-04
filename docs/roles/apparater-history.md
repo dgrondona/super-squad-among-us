@@ -290,3 +290,75 @@ no collider involved. That's the correct precedent.
 Fix: switched `HasClearEdge` to the collider-less overload, dropping the `Collider2D` parameter from
 `TryFindReachablePoint` entirely. Every edge check is now a pure geometric query between the two grid
 positions being tested, with zero dependency on the player's real-world contact state.
+
+## Round 14 — the door asymmetry, and connectivity's real job
+
+**Symptom.** The user reported you can't teleport *into* a room whose doors are closed. Teleporting
+*out* of one worked, which is why `apparater.md` had claimed "teleporting past a closed door is
+intended" since round 12 — only the outbound direction had ever been exercised.
+
+**Diagnosis.** Two facts combine. A closed door is a solid collider and an open one is a trigger
+(`PlainDoor.myCollider.isTrigger` *is* the open/closed flag; confirmed via TOU-Mira's
+`MapDoorPatches.cs:342-346`, which reads state back out of it), so our `useTriggers = false` queries
+treat a closed door as a wall. And both of round 12's seeds — the player, and the spawn anchor — sit in
+the **main map component**. Sealed room → map: the anchor is already on the far side, so it works. Map →
+sealed room: neither seed can cross the door, so it fails. The asymmetry was structural, not a bug in
+any one check.
+
+**A rejected design worth recording: replacing the search with a local "snap to nearest open point".**
+The reasoning was that `MiniMapMask` (added 2026-07-16) already rejects walls and off-map clicks, so
+connectivity looked redundant and was the only thing doors were breaking. It is wrong, and the user
+caught it: **obstacle colliders are hollow outlines, not filled solids.** Skeld's ground geometry is
+`EdgeCollider2D` polylines (verified directly against `SkeldShip.prefab`), so the space inside the
+Storage crate pile or an engine overlaps no collider at all and `Physics2D.OverlapCircle` reports it as
+open. A point test at the click — or anywhere on a ring around it — would cheerfully land the player
+inside the crates. Sampling minimap alpha along the snap path doesn't rescue it either: the map art
+doesn't draw furniture, so a crate interior reads as clean floor. **Connectivity is what excludes
+unreachable pockets, and is therefore load-bearing for obstacle avoidance, not merely for "is this on
+the ship."** This is `docs/architecture.md`'s "reachability, not classification" rule applied to an
+obstacle interior — which is just that thin wall wrapped into a loop.
+
+**A second rejected design: flipping `isTrigger` on every door for the duration of the search**
+(restoring in a `finally`). Simpler — no changes to either physics primitive — but rejected on the
+user's objection that mutating shared collider state could let a player pressed against a door slip
+through, and because it invites questions about Polus's door switches and host/client sabotage desync
+that a read-only approach never has to answer.
+
+**Fix.** Keep the search exactly as it is and make its two probes *door-tolerant by filtering results*.
+`CollectDoorColliderIds` gathers every door's blocking collider by instance ID; traversal treats a hit
+as open if every hit is a door, landing does not. Nothing writes to a door.
+
+Three implementation traps, all found by an independent review pass rather than in play:
+
+- **`AutoOpenMushroomDoor` needs its own case.** TOU-Mira installs it on Fungle whenever the host sets
+  `FungleDoorType` to `MapDoorType.Skeld`. It derives from `AutoOpenDoor`, so `TryCast<PlainDoor>()`
+  *succeeds* — but it keeps its collider in its own `wallCollider` field and never assigns the inherited
+  `myCollider`, and `TryCast<MushroomWallDoor>()` fails outright (no inheritance relationship). Both
+  obvious paths yield nothing and door-blindness silently no-ops on that configuration. The collector
+  sweeps components per type instead of trusting `AllDoors` (which is `OpenableDoor[]`, and so also
+  misses Airship's `ManualDoor`).
+- **The buffer overloads truncate silently.** `OverlapCircle`/`Linecast` fill to the array length and
+  report that count with no signal that more colliders overlapped, so "all hits are doors" over a
+  truncated window can miss a real wall. Ship geometry is many short edge colliders that bunch up at
+  doorframes, so this is reachable. Both probes fail closed when the buffer saturates.
+- **`Physics2D.Linecast`'s single-hit form is insufficient.** It returns only the *closest* collider, so
+  it would clear an edge whenever the nearest thing on it is a door with a wall just behind — the actual
+  geometry at a door jamb. The multi-result overload is required.
+
+**Also in this round.** Seeds extended to every vent (`+0.3636f`, TOU-Mira's own offset), ladder
+endpoints and their `Destination`, Airship's `GapPlatform` use-positions and Fungle's zipline landings —
+fixing the ladder/platform limitation from round 12's follow-ups. Every seed is landing-validated, so a
+bad candidate is dropped rather than trusted. The bare-spawn-centre last-resort fallback was deleted:
+vanilla places players *on* the ring at `SpawnRadius`, never at the centre, which is the meeting table.
+Mirrored maps (Dleks) got the missing `Mathf.Sign(ShipStatus.transform.localScale.x)` on the ship-space
+conversion. Search time is now logged on every click, since door filtering and extra seeds both make the
+search dearer and a frame hitch should be measured rather than assumed away.
+
+**A negative result, recorded so it isn't re-opened.** The alpha sample and the click conversion use
+different transforms (`ColorControl.rend` on `Background` vs. `HerePoint.transform.parent`), which looks
+like a latent bug. It isn't. They are separated by a per-map translation (Skeld `(0.54, 1.25)`, Polus
+`(-4.15, 2.45)`), and each conversion targets the frame it needs: `HereIndicatorParent` is where
+map-local × `MapScale` equals ship-world, `Background` is where the sprite's pixels live. That offset
+*is* the pivot-vs-ship-origin correction and correctly isn't applied to the pixel lookup. If it were
+wrong, Polus's 4.15-unit offset would have decorrelated validation from landing far beyond any snap cap,
+across thirteen rounds of play-testing. It hasn't.

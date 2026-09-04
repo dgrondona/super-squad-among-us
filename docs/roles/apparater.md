@@ -17,8 +17,17 @@ were tried and rejected with good reason — see "Design decisions" below).
 - **Movement while the map is open: allowed.** The player can keep walking while picking a destination.
 - **Map screen: bare minimap** — ship layout + the player's own position dot only, no tasks/vents/counts.
 - **Destination validity means "connected to the playable area," not "walkable from the player right
-  now."** Teleporting past a closed door works, because the search is seeded independently of the player
-  (see `WalkableRegionSolver` below). Deliberate, confirmed with the user.
+  now."** Teleporting past a closed door works **in both directions**, because the search is seeded
+  independently of the player *and* traverses blind to door colliders (see `WalkableRegionSolver`
+  below). Deliberate, confirmed with the user.
+  - This bullet used to claim closed doors worked while only the *outbound* case had ever been tried.
+    They didn't: a closed door is a solid collider, and both seeds lived in the main map component, so
+    sealed-room → map succeeded while map → sealed-room failed. Fixed in round 14.
+- **Connectivity is load-bearing for obstacle avoidance, not just for "is this on the ship."** Obstacle
+  colliders are hollow *outlines* — Skeld's ground geometry is `EdgeCollider2D` polylines — so the space
+  inside the Storage crates or an engine overlaps no collider and a point test reports it as open. Only
+  reachability excludes those pockets. **Do not replace the search with a "snap to the nearest open
+  point" scan**; it was proposed in round 14 and would teleport the player inside the crates.
 - **Kept the corner-routing pathfinder over a simpler line-of-sight blink.** A single swept `CircleCast`
   ("blink to wherever you can see, unlimited range, no grid") was offered as a much simpler alternative;
   the user chose to keep routing around obstacles instead. Don't propose switching without a new reason.
@@ -81,9 +90,24 @@ that used to apply to all clicks. Also added the same `Camera.main == null` guar
 ### Coordinate conversion
 
 Screen click → world position: `Camera.main.ScreenToWorldPoint` → `InverseTransformPoint` relative to
-the map root → `* ShipStatus.Instance.MapScale` — the inverse of the formula TOU-Mira uses to place
-vent/body icons on the map (`worldPos / MapScale`). Confirmed correct on the maps tested so far; not
-separately confirmed on multi-page maps (Polus/Airship/Fungle's "swipe" map).
+the map root → `* ShipStatus.Instance.MapScale` → `x *= Mathf.Sign(ShipStatus.transform.localScale.x)`
+— the inverse of the formula TOU-Mira uses to place vent/body icons on the map (`worldPos / MapScale`).
+Confirmed correct on the maps tested so far; not separately confirmed on multi-page maps
+(Polus/Airship/Fungle's "swipe" map).
+
+The sign flip handles mirrored maps (Dleks), which reuse Skeld's *un-mirrored* map sprite and flip the
+ship instead. Prior art all converts world→map-local, but a sign flip is its own inverse so the same
+multiply applies in our direction.
+
+**Two different transforms, deliberately.** `MiniMapMask` samples alpha against `ColorControl.rend`'s
+transform (the map's `Background` object) while `GetRawClickWorldPosition` converts relative to
+`HerePoint.transform.parent` (`HereIndicatorParent`). These are different objects, separated by a per-map
+translation (Skeld `(0.54, 1.25)`, Polus `(-4.15, 2.45)`). It looks like a bug and isn't: `HereIndicator
+Parent` is the frame where map-local × `MapScale` equals ship-world (which is why every mod parents map
+icons there), and `Background` is the frame the sprite's pixels live in. That offset *is* the
+pivot-vs-ship-origin correction, and correctly isn't applied to the pixel lookup. Investigated and
+dismissed twice — don't open it a third time. It's also why the Dleks sign flip belongs only on the
+ship-space conversion, not on the alpha sample.
 
 ### Reachability search (`WalkableRegionSolver`)
 
@@ -91,24 +115,43 @@ The problem: a point on the far side of a thin wall collider (or embedded in a w
 isn't *inside* any collider, so no point/circle overlap test alone can ever see it as blocked — only a
 chain of validated short steps from a known-good position can guarantee a destination is reachable
 without tunneling through a wall. `TryFindReachablePoint` is a greedy best-first search (ordered by
-distance to the click) over 8-connected grid cells, seeded twice:
+distance to the click) over 8-connected grid cells, seeded from:
 
 1. **The player's own position.**
-2. **A spawn-ring anchor** — a pre-validated clear point sampled from the map's own
-   `ShipStatus.MeetingSpawnCenter` ring (falling back to `InitialSpawnCenter`, then
-   `MeetingSpawnCenter2`, then each circle's center as a last resort — the center is usually obstructed
-   by the meeting table). This exists because the player's own position alone was, in practice, an
-   unreliable search seed in some standing spots; the anchor makes the search's correctness independent
-   of where the player is standing or what they're touching.
+2. **Every known-good standing position on the map** (`CollectSeedPoints`), so a region the player can't
+   walk to is still searchable. Each is landing-validated before use, so a bad candidate is silently
+   dropped rather than trusted:
+   - the spawn **rings** around `MeetingSpawnCenter`/`InitialSpawnCenter`/`MeetingSpawnCenter2` — vanilla
+     places players *on* the ring at `SpawnRadius`, never at the centre, which is the meeting table (the
+     old bare-centre last-resort fallback was removed in round 14 for exactly that reason);
+   - every **vent** (`AllVents`, `+0.3636f` on Y — TOU-Mira's own stand-in-front offset), which are
+     authored standing positions and therefore valid by construction;
+   - **link endpoints** — ladders and their `Destination`, Airship's `GapPlatform.Left/RightUsePosition`,
+     Fungle's `Zipline.landingPositionTop/Bottom` — covering sections a grid walk can't cross.
+
+This makes the search's correctness independent of where the player is standing or what they're touching.
 
 A cell is accepted into the search only if both:
 - **Traversal**: `Physics2D.OverlapCircle` at `probeRadius * TraversalRadiusFactor` (slightly under the
-  body's true radius) finds nothing.
-- **Edge**: `PhysicsHelpers.AnythingBetween(from, to, mask, false)` — the **collider-less** overload,
-  deliberately — finds nothing on the short step onto it. Do not pass a `Collider2D` here: that overload
-  sweeps *that collider's own live position*, not the `from`/`to` positions given to it, which silently
-  makes every edge check depend on whatever body the collider belongs to is currently touching rather
-  than the two points actually being tested (see history, round 13).
+  body's true radius) finds nothing **but doors**.
+- **Edge**: a positional `Physics2D.Linecast` finds nothing **but doors** on the short step onto it. Use
+  the multi-result overload — the single-hit form returns only the *closest* collider, so it would clear
+  an edge whenever the nearest thing on it is a door with a wall just behind (real geometry at a door
+  jamb). And never a collider-based cast: those sweep *that collider's own live position*, not the
+  `from`/`to` given to them, which silently makes every edge check depend on whatever the collider's body
+  is currently touching (see history, round 13).
+
+**Doors are ignored during traversal, respected when landing.** A closed door is a solid collider and an
+open one is a trigger, so an unfiltered `useTriggers = false` query treats a sealed room as walled off in
+both directions. `CollectDoorColliderIds` gathers every door's blocking collider and the two probes above
+skip them; the landing tier does not, so you can path *through* a closed door but not stop inside one.
+Door state is only ever **read** — an earlier draft flipped `isTrigger` during the search and was rejected,
+since mutating shared collider state could let a player pressed against a door slip through, and it raises
+sabotage/desync questions that filtering never has to answer.
+
+Both probes **fail closed on a saturated buffer**: the buffer overloads fill to the array length and
+report that count with no signal that more colliders overlapped, so a real wall outside the truncated
+window would be invisible and wrongly read as open.
 
 Only a cell that also passes a stricter, *padded* check (`probeRadius + WallPadding`) is eligible to be
 the final landing spot, so the destination always has some clearance — deliberately **not** required for
@@ -144,13 +187,22 @@ effects those other `Show*` methods have, so `BareMapVisuals.Open` sets them exp
 
 - Role icon and ability sprite are placeholder art (generated, not final) — swap out when real art
   exists.
-- Not tested on multi-page maps (Polus/Airship/Fungle) or maps with sections connected only by
-  ladders/moving platforms (Airship) — the search can't grid-walk across a gap like that from either
-  seed, so cross-section teleports there will likely be rejected until it's specifically addressed (e.g.
-  one anchor per ladder-connected section).
+- **Not tested on multi-page maps** (Polus/Airship/Fungle's "swipe" map). This is a *coordinate
+  conversion* concern and is still open — round 14's per-map click matrix retires it only if each map's
+  page-swipe UI is explicitly exercised. (The separate ladder/platform limitation this bullet used to
+  carry was fixed in round 14 by seeding link endpoints.)
+- **`SensorDoor` is unresolved.** A vanilla `MonoBehaviour` that isn't a `SomeKindaDoor` and exposes no
+  collider in its signature; MIRA HQ's sliding doors are the leading candidate. If it blocks movement
+  through `ShipAndAllObjectsMask` it is invisible to `CollectDoorColliderIds`, exactly like
+  `AutoOpenMushroomDoor` nearly was. Confirm on MIRA HQ with doors closed.
 - `WalkableRegionSolver`'s tunables (`MinCellSize`/`MaxCellSize`, `MaxExpandedCells`, `WallPadding`,
-  `TraversalRadiusFactor`) and `ApparaterMapButton.MaxSnapDistance` are reasoned first guesses, not
-  exhaustively tuned against real play.
+  `TraversalRadiusFactor`, `HitBufferSize`) and `ApparaterMapButton.MaxSnapDistance` are reasoned first
+  guesses, not exhaustively tuned against real play.
+- **Search cost is now logged, not bounded by measurement.** `ApparaterMapButton` reports search
+  milliseconds on every click. Door filtering made each probe slightly dearer and round 14 added seeds,
+  so watch for a hitch. If one appears: order seeds by distance to the click first (nearly free — the
+  frontier is already distance-keyed), and only then consider a bidirectional search (flood from the
+  click and the seed side, stop when they meet). Don't build the latter speculatively.
 - `WalkableRegionSolver` is written as a general-purpose reusable utility, not Apparater-specific —
   reach for it before writing another point-classification check for a similar "place/move something to
   a valid nearby spot" problem (see `docs/architecture.md`).

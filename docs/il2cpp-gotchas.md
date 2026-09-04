@@ -220,6 +220,46 @@ living, off for ghosts and spectators. TOU-Mira precedents: `MedSpiritObject.cs:
 Spectator watching), disable the shadow quad while active and self-heal it every rendered frame per
 the house doctrine (vanilla animations and other patches may flip it back).
 
+## Doors are triggers when open and solid when closed — a masked query can't tell you what you meant
+
+`PlainDoor.myCollider.isTrigger` *is* the open/closed flag; the collider is never enabled/disabled (the
+sprite animates, the geometry doesn't move). So any `useTriggers = false` query against
+`Constants.ShipAndAllObjectsMask` sees a **closed door as a wall and an open door as nothing at all**.
+That's exactly right for movement and line-of-sight, and exactly wrong for "could I *put* something
+there" — a reachability search will report a door-sealed room as unreachable in both directions. This
+cost the Apparater a whole round (see `docs/roles/apparater.md`).
+
+To make a query door-tolerant, **filter, don't mutate**: collect the door colliders and ignore those
+specific hits. Flipping `isTrigger` for the duration of a search works and is simpler, but it mutates
+shared state — a player pressed against a door can slip through, and it raises sabotage/host-desync
+questions that a read-only approach never has to answer. `Modules/WalkableRegionSolver.cs` has the
+working version.
+
+Collecting *every* door is the fiddly part — do not trust `ShipStatus.AllDoors`:
+- It is `OpenableDoor[]`, so Airship's `ManualDoor` (a `SomeKindaDoor` sibling, with its own blocking
+  `myCollider`) is not in it.
+- TOU-Mira's `AutoOpenMushroomDoor` (installed on Fungle when the host picks Skeld-style doors) derives
+  from `AutoOpenDoor`, so `TryCast<PlainDoor>()` **succeeds** — but it stores its collider in its own
+  `wallCollider` field and leaves the inherited `myCollider` null. `TryCast<MushroomWallDoor>()` fails
+  too (no inheritance relationship), so both obvious paths silently yield nothing.
+- TOU-Mira **rebuilds the door set at `OnEnable`** per map (`MapDoorPatches.cs`), destroying and
+  re-adding components, so anything cached at map load goes stale.
+
+Sweeping `ShipStatus.Instance.GetComponentsInChildren<T>(true)` per door type, per query, avoids all
+three. `SensorDoor` and `StaticDoor` are separate types again and are not yet characterised.
+
+## `Physics2D` buffer overloads truncate silently — "all hits are X" must fail closed
+
+`Physics2D.OverlapCircle`/`Linecast`'s `ContactFilter2D` + array overloads fill the buffer up to its
+length and return that count, with **no signal that more colliders overlapped**. Any rule of the form
+"treat this as clear if every hit is something I can ignore" is therefore unsound on a saturated
+buffer — a real wall sitting outside the truncated window is invisible. Treat `count == buffer.Length`
+as blocked. Ship geometry is many short `EdgeCollider2D` segments that bunch up at corners and
+doorframes, so saturation at a modest buffer size is realistic, not paranoid.
+
+Relatedly, `Physics2D.Linecast`'s single-hit form returns only the **closest** collider, so it cannot
+implement an "all hits are X" rule at all — use the multi-result overload.
+
 ## One throwing Harmony postfix skips the rest of the chain
 
 When a postfix on a shared hot method (e.g. `HudManager.Update`) throws an exception, Harmony aborts

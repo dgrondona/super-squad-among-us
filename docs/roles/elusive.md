@@ -36,10 +36,20 @@ retaliation-murdering an unkillable Pestilence (softlock), and teleporting one i
 **Random destination.** `WalkableRegionSolver.TryFindRandomReachablePoint(origin, probeRadius,
 minDistance)` aims the existing grid search at up to 3 random raw targets (random spawn center +
 `insideUnitCircle * 25`), preferring a result ≥ 5 units from the attacker and falling back to the
-farthest candidate. Reachability is guaranteed by the existing solver (including its spawn-anchor
-second seed for cross-map jumps). Pure `UnityEngine.Random` is fine — exactly one client computes,
-the snap syncs. If everything fails (no ShipStatus, no candidates), the interaction is still
-cancelled; the attacker just stays put.
+farthest candidate. Reachability is guaranteed by the existing solver (including its seed set — spawn
+rings, every vent, and ladder/platform/zipline endpoints — for cross-map jumps). Pure
+`UnityEngine.Random` is fine — exactly one client computes, the snap syncs. If everything fails (no
+ShipStatus, no candidates), the interaction is still cancelled; the attacker just stays put.
+
+**Deliberately one system, not two.** Elusive shares `WalkableRegionSolver` with the Apparater rather
+than owning a parallel "pick a random valid spot" implementation, so improvements land in both: round
+14's door-blind traversal and expanded seeds reached this role with no code change. If Elusive ever
+needs different behaviour (e.g. vent-biased destinations), add a parameter to the shared entry point
+rather than forking it.
+
+Two consequences of round 14 worth knowing: destinations can now be inside a door-sealed room (harmless
+— every door-close mechanism is timer-gated and reopens itself), and cross-section Airship/Fungle jumps
+are now reachable where they previously weren't.
 
 **No shield visual.** Deliberate: a Medic-style overlay would tell attackers not to bother,
 defeating the bluff. The Elusive sees the button's effect fill and the "Shielded" modifier timer.

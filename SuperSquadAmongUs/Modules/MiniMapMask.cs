@@ -49,6 +49,12 @@ internal static class MiniMapMask
         // Sprite-local units -> texture pixels. Sprite.pivot is in pixels within the sprite rect
         // (the runtime API; only the importer setting is normalized), and rect.x/y offset into the
         // atlas page if the sprite is packed.
+        //
+        // This samples against the RENDERER's transform (ColorControl.rend, on the map's Background
+        // object), which is deliberately NOT the frame ApparaterMapButton.GetRawClickWorldPosition
+        // converts in (HerePoint's parent). The two are separated by a per-map translation; each is
+        // correct for its own job, and this one must stay in displayed-sprite space - that's also why
+        // mirrored maps (Dleks) need no sign flip here while the ship-space conversion does.
         var local = (Vector2)renderer.transform.InverseTransformPoint(worldPoint);
         var px = sprite.rect.x + sprite.pivot.x + (local.x * sprite.pixelsPerUnit);
         var py = sprite.rect.y + sprite.pivot.y + (local.y * sprite.pixelsPerUnit);

@@ -85,9 +85,9 @@ Lessons from two fixed bugs, worth keeping in mind for similar roles:
   rather than waiting for the meeting-time safety net in `RcXdCarBehaviour`.
 - `RpcSpecialMultiMurder`'s `List<PlayerControl>` overload silently defaults to `MeetingCheck.Ignore`
   (no compiler warning) unless `MeetingCheck.OutsideMeeting` is passed explicitly — TOU-Mira's own
-  Bomber does this via `Bomb.cs`. Other call sites in this codebase (`SuperSquadDetonator`,
-  `SentinelExplodeButton`, `SniperSnipeButton`) use the same implicit-`Ignore` overload and may want
-  the same audit.
+  Bomber does this via `Bomb.cs`. The other three call sites in this codebase that had the same gap
+  (`SuperSquadDetonator`, `SentinelExplodeButton`, `SniperSnipeButton`) have since been fixed to pass
+  `MeetingCheck.OutsideMeeting` explicitly too — this was the last one and is also fixed.
 
 ## Playtest history
 

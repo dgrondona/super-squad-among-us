@@ -109,10 +109,26 @@ masked/filtered — a spot on the far side of a thin wall isn't inside any colli
 classifier can see it as blocked (`docs/roles/apparater.md` has the full multi-round story of learning
 this the hard way). The reliable approach is **reachability, not classification**: walk a chain of short
 steps from a known-good position (a `Physics2D.OverlapCircle` per cell for solid obstacles, plus a
-`PhysicsHelpers.AnythingBetween` line-crossing check on each step for thin wall colliders that overlap
-checks miss), and only accept destinations connected to that known-good start. `Modules/WalkableRegionSolver.cs`
-implements exactly this as a general-purpose utility (`TryFindReachablePoint`) — reach for it before
-writing another point-classification check for this kind of problem.
+positional line-crossing check on each step for thin wall colliders that overlap checks miss), and only
+accept destinations connected to that known-good start. `Modules/WalkableRegionSolver.cs` implements
+exactly this as a general-purpose utility (`TryFindReachablePoint`) — reach for it before writing
+another point-classification check for this kind of problem.
+
+**The trap is bigger than thin walls: obstacle colliders are hollow outlines.** Skeld's ground geometry
+is `EdgeCollider2D` polylines, so the space *inside* the Storage crate pile or an engine overlaps no
+collider and every point test reports it as open — it is the same thin wall, wrapped into a loop. This
+is why connectivity is load-bearing for **obstacle avoidance**, not just for "is this point on the
+ship": only reachability excludes an enclosed pocket. A "snap to the nearest non-colliding point" scan
+is therefore never a valid substitute for the search, however the click was validated upstream.
+
+Two things a reachability search must decide explicitly, because neither has a safe default:
+- **Which colliders it may pass through.** Doors are solid when closed and triggers when open, so an
+  unfiltered search treats a sealed room as walled off. `WalkableRegionSolver` filters door colliders
+  out of its traversal probes (read-only — never mutate collider state) while its landing probe still
+  respects them. See `docs/il2cpp-gotchas.md`.
+- **What a saturated result buffer means.** The buffer-based `Physics2D` overloads fill to the array
+  length and report that count with no signal that more colliders overlapped. Any "all hits are X" rule
+  over a truncated window is unsound — fail closed.
 
 ## Per-role notes
 

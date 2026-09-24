@@ -22,6 +22,10 @@ to separate *bugs* from *recorded design decisions*. That pass changed three fin
 - **New: SSA-019 – SSA-022**, including a logic bug in the reachability search and two design docs that
   assert invariants the code does not hold.
 
+**Pass 3 (in progress)** — the targeted read of the ability implementations planned in
+[PASS_3_PLAN.md](PASS_3_PLAN.md) — has so far added **SSA-023 – SSA-026** and cleared
+`ElusiveShieldButton`, `AstralFormButton` and `DaddyHagridHideButton`.
+
 ### Decisions taken
 
 Confirmed with the maintainer; Phase 2 should implement these rather than re-litigate them.
@@ -526,6 +530,176 @@ The finding is about the *mechanism* — `FindObjectsOfType` — not the cadence
 bodies via the existing `DeadBody` lifecycle (bodies are created on murder and destroyed at meeting
 start / on clean), or reuse whatever body cache TOU-Mira already maintains if one exists. Behaviour to
 preserve: arrows appear for new bodies and disappear when a body is reported, cleaned or eaten.
+
+---
+
+### SSA-023 — Two `ClickHandler` overrides bypass the keybind arbiter
+
+**Severity:** Medium
+**Location:** [`Buttons/Impostor/NinjaMarkButton.cs:101-121`](../SuperSquadAmongUs/Buttons/Impostor/NinjaMarkButton.cs#L101-L121),
+[`Buttons/Impostor/RcXdDeployButton.cs:106-129`](../SuperSquadAmongUs/Buttons/Impostor/RcXdDeployButton.cs#L106-L129)
+
+**Evidence.** Every `ClickHandler` in the addon was audited. Four of six claim the keybind; two do not:
+
+| Override | Claims `KeybindArbiter`? |
+|---|---|
+| `SuperSquadRoleButton<TRole>` / `<TRole,TTarget>` | yes |
+| `GrantedTargetButtonBase`, `GrantedSwoopButton` | yes |
+| **`NinjaMarkButton`** | **no** — replicates the hacked/disabled gating, then calls `OnClick()` directly, never `base.ClickHandler()` |
+| **`RcXdDeployButton`** (detonate branch only) | **no** — `if (EffectActive) { … detonateRequested = true; ResetCooldownAndOrEffect(); return; }` returns before reaching `base.ClickHandler()` |
+
+`GrantedSwoopButton` carries a comment showing the project already knows this shape is a hazard:
+*"KeybindArbiter check here too: this toggle-style override bypasses `base.ClickHandler()`'s
+`CanClick()` gate entirely … so without it a shared `ModifierAction` press could fire this AND another
+grant-holder button uncontested on the same keypress."* The same reasoning applies to these two and was
+not applied.
+
+**Why this is likely to bite.** `gooper.md` notes borrowed kits keep their source keybind, "usually
+`SecondaryAction`". A keybind census shows **ten** buttons on `SecondaryAction` — Elusive, Sui
+(retaliate), Astral, Detonator, Dumper, Eraser, MafiaJanitor, **Ninja**, **RC-XD**, Sniper, Witch. So an
+accumulate-mode Kirby holding two Secondary kits is an ordinary outcome, not a corner case.
+
+**Failure scenario.** A Kirby has swallowed a Ninja and a Sniper (both Secondary). One Secondary press:
+`NinjaMarkButton.ClickHandler` fires unarbitrated *and* `SniperSnipeButton.ClickHandler` claims the
+frame and arms the aim — the player marks a target and enters sniper aim on one keypress. For RC-XD, a
+Kirby driving a car who also holds another Secondary ability detonates *and* triggers that ability.
+
+**Impact.** Exactly the double-fire the `KeybindArbiter` exists to prevent, on the two abilities whose
+own docs record having previously shipped a "one press did two things" bug (`rc-xd.md`, 2026-07-19).
+
+**Suggested fix.** Add `|| !KeybindArbiter.TryClaim(Keybind)` to both early-return guards. Note the
+arbiter must be claimed *after* the can-fire check, per `KeybindArbiter`'s own remarks — both sites
+already check first, so the claim slots in directly after. This also removes the need for
+`RcXdDeployButton`'s bespoke `DetonateArmDelay`? **No — keep it.** The arm delay defends against
+same-press double dispatch and key autorepeat, which is a different problem from two *different*
+buttons sharing a keybind; the arbiter's claim is per (keybind, frame) and would not stop autorepeat
+across frames.
+
+**Verify.** Playtest: as a Kirby holding two Secondary kits, one press must fire exactly one ability.
+
+---
+
+### SSA-024 — `NinjaMarkButton` uses the bare `DisabledModifier` presence check the docs warn against
+
+**Severity:** Medium
+**Location:** [`Buttons/Impostor/NinjaMarkButton.cs:105-106`](../SuperSquadAmongUs/Buttons/Impostor/NinjaMarkButton.cs#L105-L106)
+
+**Evidence.**
+
+```csharp
+if (!CanClick() || PlayerControl.LocalPlayer.HasModifier<GlitchHackedModifier>() ||
+    PlayerControl.LocalPlayer.HasModifier<DisabledModifier>())     // <-- bare presence check
+```
+
+`docs/roles/sniper.md` states the rule explicitly: *"The disabled check must use
+`GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities)`, not a bare
+`HasModifier<DisabledModifier>()` — some subclasses (`GrenadierFlashModifier`, `EclipsalBlindModifier`)
+set `CanUseAbilities = true` to explicitly opt out of blocking abilities."*
+
+A repo-wide grep confirms this is the **only** remaining bare gate; the other nine call sites
+(`SniperSnipeButton`, `RcXdDeployButton`, `DetonatorAttachButton`, `DumperCarryButton`,
+`DaddyHagridHideButton`, `SlideTackleButton`, `GrantedAbilityButtons`, `SniperShots`,
+`SuperSquadDetonator`, `RcXdCar`) all use the correct opt-out-respecting form.
+
+**Failure scenario.** A Ninja flashed by a Grenadier or blinded by an Eclipsal cannot mark or
+assassinate, even though both modifiers explicitly declare they do not block abilities. The Ninja is
+silently more punished by those effects than every other role in the addon.
+
+**Impact.** Over-blocking: the ability is denied in states where it should work. Note this errs safe —
+it never lets a disabled player act — which is why it has gone unnoticed.
+
+**Suggested fix.** One-line change to the documented form. Consider pairing with SSA-023 since both are
+in the same guard.
+
+---
+
+### SSA-025 — RC-XD computes "does the deployer die?" twice, and the two can disagree
+
+**Severity:** Medium
+**Location:** [`Buttons/Impostor/RcXdDeployButton.cs:160-173`](../SuperSquadAmongUs/Buttons/Impostor/RcXdDeployButton.cs#L160-L173)
+vs [`Modules/RcXdCar.cs:105-133`](../SuperSquadAmongUs/Modules/RcXdCar.cs#L105-L133)
+
+**Evidence.** The button decides whether to skip the camera linger:
+
+```csharp
+var deployerInBlast = options.CanKillImpostors &&
+    Helpers.GetClosestPlayers(new Vector2(carPosition.x, carPosition.y), radius).Any(p => p.AmOwner);
+```
+
+The RPC independently decides who actually dies, with a different and longer filter:
+
+```csharp
+if (player == null || player.Data == null || player.Data.IsDead || player.Data.Disconnected || player.inVent) continue;
+if (!options.CanKillImpostors && player.IsImpostorAligned()) continue;
+if (player.HasModifier<FirstDeadShield>() ||
+    player.GetModifiers<DisabledModifier>().Any(x => !x.CanBeInteractedWith)) continue;
+```
+
+Two copies of the same question, sharing no code. They diverge in at least three reachable cases:
+
+1. **Borrowed kit + `CanKillImpostors` off.** `RcXdRole`'s kit is transferable, so a Kirby can drive the
+   car. The button short-circuits on `options.CanKillImpostors` → `deployerInBlast == false` → it takes
+   the **linger** branch. But the RPC's skip rule is `!CanKillImpostors && IsImpostorAligned()`, and a
+   Kirby is **not** impostor-aligned — so the Kirby **is** killed. The button then restores camera and
+   light onto a player mid-death-teardown, which is precisely the situation the linger-skip exists to
+   avoid (`rc-xd.md`: *"restore fully while still alive and skip the linger instead of restoring onto a
+   ghost mid-death-teardown"*). This is the 2026-07-17 "camera stuck at the blast site" bug's
+   preconditions, reachable again through a borrowed kit.
+2. **`FirstDeadShield` holder.** Button says in-blast → skips the linger; RPC filters them out → they do
+   not die. The deployer survives but loses the explosion camera for no reason.
+3. **`DisabledModifier` with `CanBeInteractedWith == false`, or `inVent`.** Same shape as (2).
+
+**Impact.** Case 1 is the real one: a wrong branch during death teardown, on the exact code path the
+role's history says was hard to get right. Cases 2–3 are cosmetic.
+
+**Suggested fix.** Have one function answer the question. Extract the victim filter from
+`RcXdCar.RpcDetonateCar` into a shared helper (e.g. `RcXdCar.GetBlastVictims(position)`) and let the
+button ask `victims.Any(p => p.AmOwner)` rather than re-deriving it. That removes the divergence by
+construction instead of patching three cases.
+
+**Verify.** Playtest case 1 specifically: Kirby swallows an RC-XD, `CanKillImpostors` off, deploy and
+detonate on top of yourself — control and camera must return cleanly.
+
+---
+
+### SSA-026 — `WitchHexButton` keeps cast state but neither survives death nor self-heals
+
+**Severity:** Medium
+**Location:** [`Buttons/Impostor/WitchHexButton.cs:24-26`](../SuperSquadAmongUs/Buttons/Impostor/WitchHexButton.cs#L24-L26),
+[`:57-71`](../SuperSquadAmongUs/Buttons/Impostor/WitchHexButton.cs#L57-L71)
+
+**Evidence.** The button holds a multi-tick channel: `castTarget`, `EffectActive`, and
+`CurrentCooldownAddition`. It does **not** override `Enabled`.
+
+`docs/il2cpp-gotchas.md` §"Role-gated buttons stop ticking the moment the player dies": MiraAPI only
+drives `FixedUpdate` while `Enabled(role)` is true, and death swaps `Data.Role` to a ghost role. Every
+other effect-holding button in the addon that owns local state overrides `Enabled` to keep ticking —
+`SniperSnipeButton`, `RcXdDeployButton`, `DumperCarryButton`, `DaddyHagridHideButton`,
+`ApparaterMapButton`, `SlideTackleButton`, `InvisibilityCloakButton`, `SuiRetaliateButton`. Witch is the
+one that does not.
+
+I checked the other two effect buttons lacking the override and they are **fine**: `ElusiveShieldButton`
+and `AstralFormButton` hold no local fields — their state lives on modifiers, which tick independently
+of the button.
+
+**Failure scenario.** A Witch dies mid-channel (a Sheriff misfire, or hexing an alerted Veteran).
+`FixedUpdate` stops, so neither `CancelCast()` nor `OnEffectEnd()`→`CompleteCast()` ever runs;
+`castTarget` and `EffectActive` are left set on a singleton that, per the same doc, *"persists for the
+whole game process"*. `WitchEvents` resets only `CurrentCooldownAddition` — nothing clears `castTarget`.
+
+**Impact.** At minimum the channel never resolves and the hex is silently lost. The cross-game leak —
+a pending `EffectActive` completing against a stale `PlayerControl` from a previous lobby — is the worse
+case; `CompleteCast()`'s `castTarget == null || castTarget.HasDied()` guard mitigates it, but a
+destroyed Il2Cpp reference is not a safe thing to call `HasDied()` on.
+
+**Confidence.** The "cleanup never runs on death" half is certain from the control flow plus the
+documented gotcha. The cross-game half is **unverified** — it depends on MiraAPI's exact handling of
+`EffectActive` when a button is re-enabled in a later game, which I did not trace.
+
+**Suggested fix.** Two lines, mirroring what the other buttons already do: override `Enabled` to stay
+true while `EffectActive`, and add a `FixedUpdate` self-heal that cancels the cast when the caster has
+died or a meeting has started. Consider also clearing `castTarget` in `ResetCooldownAddition()` (rename
+it) so the existing game-start hook covers everything.
 
 ---
 

@@ -9,6 +9,30 @@ configuration. `reference/` was used only as evidence for upstream contracts, ne
 > line numbers are against that commit; the working tree is clean. Several findings below (SSA-003,
 > SSA-004) concern code that upgrade touched.
 
+## Second pass (2026-09-24)
+
+After the initial sweep, every finding was re-checked against the per-role design docs in `docs/roles/`
+to separate *bugs* from *recorded design decisions*. That pass changed three findings and added four:
+
+- **SSA-010 was wrong to recommend deletion** — `sniper.md` records a dated user decision to keep the
+  Sniper's projectile machinery. Corrected below.
+- **SSA-006 understated what already exists** — `apparater.md` shows the search is already instrumented
+  and already names the optimisations I proposed. Corrected below.
+- **SSA-013 understated the residue** — `sentinel.md` lists more than I found. Expanded below.
+- **New: SSA-019 – SSA-022**, including a logic bug in the reachability search and two design docs that
+  assert invariants the code does not hold.
+
+### Decisions taken
+
+Confirmed with the maintainer; Phase 2 should implement these rather than re-litigate them.
+
+| Topic | Decision |
+|---|---|
+| Neutral win conditions (SSA-001, SSA-005) | **Match upstream.** Switch all four to `MiscUtils.GetImpactfulLivingPlayers()` and restore the `KillersAliveCount == 0` guard. Neutral Benign players must not block a Neutral Killing win. |
+| Apparater (SSA-019, SSA-006) | **Fix the `visited` bug *and* cache the walkable region per round.** The traversal graph is door-independent, so it is invariant for a round and can be built off the critical path. |
+| Vulture kit borrowing (SSA-020) | **Exclude `VultureRole` from `KitExcludedRoles`'s inverse** — i.e. add it to the exclusion list, as Godfather/Mafioso already are. |
+| Modifier localization (SSA-007) | **Convert all of them**, names and descriptions, plus `SuperSquadModifierOptions.GroupName`. |
+
 ## Overall health
 
 Good. This is a carefully built codebase — unusually so for a game mod. The ability-grant architecture,
@@ -26,11 +50,11 @@ inconsistent localization story**. None of these crash; all of them change what 
 
 | # | ID | Issue | Severity |
 |---|----|-------|----------|
-| 1 | SSA-001 | All four "last one standing" neutral win conditions count Neutral Benign players as opposition, unlike the upstream roles they were ported from — the win can fail to trigger | High |
-| 2 | SSA-002 | Six finished role icons are embedded in the DLL but never wired to `Configuration.Icon`; those roles show MiraAPI's default icon | High |
-| 3 | SSA-003 | `PelicanRole.WinConditionMet()` mutates game state, and the only caller is host-gated — the fix it implements never runs on non-host clients | Medium |
-| 4 | SSA-006 | `WalkableRegionSolver` runs a worst-case ~190k-query synchronous search on the main thread; Elusive triggers up to 3 of them on a single kill attempt | Medium |
-| 5 | SSA-007 | 19 of 21 modifiers hardcode English display strings despite the addon shipping 20 locale files | Medium |
+| 1 | SSA-019 | `WalkableRegionSolver` blacklists a grid cell before testing it, so a cell rejected for one bad *step* is permanently excluded even when a clear step to it exists — the likely cause of Apparater feeling unreliable | High |
+| 2 | SSA-001 | All four "last one standing" neutral win conditions count Neutral Benign players as opposition, unlike the upstream roles they were ported from — the win can fail to trigger | High |
+| 3 | SSA-002 | Six finished role icons are embedded in the DLL but never wired to `Configuration.Icon`; those roles show MiraAPI's default icon | High |
+| 4 | SSA-003 | `PelicanRole.WinConditionMet()` mutates game state, and the only caller is host-gated — the fix it implements never runs on non-host clients, contradicting what `pelican.md` claims | Medium |
+| 5 | SSA-022 | Two design docs assert invariants the code does not hold, which is *why* SSA-001 and SSA-003 went unnoticed | Medium |
 
 ### What I could not review thoroughly
 
@@ -48,10 +72,92 @@ inconsistent localization story**. None of these crash; all of them change what 
   falls outside those classes could have been missed.
 - **Art/asset quality** (sizing, PPU correctness) was not assessed beyond checking that referenced files
   exist and that declared assets are actually referenced.
+- **Second pass closed the docs gap.** Every finding has now been cross-checked against
+  `docs/roles/*.md`, `docs/modifiers/*.md` and `docs/architecture.md`, which is what caught the three
+  corrections and SSA-022. The three architectural rules in `gooper.md` were re-audited against the code
+  rather than taken on trust: rule 2 (RPC validators) and rule 3 (handlers key on caster, not role type
+  — `WitchEvents` and `DaddyHagridEvents` both verified) hold; rule 1 (state on the button singleton)
+  has one live and one latent violation (SSA-020, SSA-021).
 
 ---
 
 ## High
+
+### SSA-019 — The reachability search blacklists a cell before testing it, permanently excluding reachable ground
+
+**Severity:** High
+**Location:** [`Modules/WalkableRegionSolver.cs:185-198`](../SuperSquadAmongUs/Modules/WalkableRegionSolver.cs#L185-L198)
+
+**Evidence.** The expansion loop marks a neighbour visited *before* either validity check runs:
+
+```csharp
+foreach (var (dx, dy) in Neighbors)
+{
+    var neighborCell = (Cx: curCell.Cx + dx, Cy: curCell.Cy + dy);
+    if (!visited.Add(neighborCell))      // <-- blacklisted here, unconditionally
+    {
+        continue;
+    }
+
+    var neighborCenter = CellCenter(neighborCell);
+
+    if (!IsOpen(neighborCenter, traversalRadius, true) ||     // node property  (permanent)
+        !HasClearEdge(curCenter, neighborCenter))             // EDGE property  (this step only)
+    {
+        continue;                                             // ...but the cell stays blacklisted
+    }
+```
+
+The two checks have different scopes. `IsOpen` asks "is this cell clear?" — a permanent property of the
+cell, so caching a failure is correct. `HasClearEdge(from, to)` asks "can I step from *this particular*
+cell to that one?" — a property of the **pair**. Conflating them means a cell is permanently excluded by
+whichever neighbour happened to reach it first, even when it was rejected for a reason specific to that
+one step.
+
+**Failure scenario.** Cell **X** sits just past a wall corner. Cell **A** is diagonally adjacent and
+marginally closer to the click, so the distance-keyed frontier expands it first; the diagonal step A→X
+clips the corner collider, so `HasClearEdge` fails — but X is already in `visited`. Cell **B**,
+orthogonally adjacent to X with a completely clear step, is expanded later and is refused at line 188.
+**X is never evaluated**, though it is open ground reachable in one clean step.
+
+**Impact.** The search returns `bestCell`, the closest *accepted* cell. When the true-closest cell is
+punched out this way the teleport either lands noticeably off from the click, or — because
+`ApparaterMapButton` rejects any result farther than the snap cap
+([`ApparaterMapButton.cs:170-176`](../SuperSquadAmongUs/Buttons/Crewmate/ApparaterMapButton.cs#L170-L176),
+1.5u fallback / 6u in-room) — the click is discarded and nothing happens at all. That is the
+"clicked a valid spot and got nothing" shape of unreliability. Corner and doorway geometry is exactly
+where diagonals get tried first, so this biases toward failing near the tight spots players aim at.
+
+`Modules/WalkableRegionSolver.cs` is shared, so `ElusiveEvents`' random teleport inherits the same
+defect.
+
+**Confidence.** The defect is certain from the control flow. Its *frequency* is geometry-dependent and
+I could not quantify it without running the game — but the ability already logs every rejection and the
+search duration, so `BepInEx/LogOutput.log` will show whether rejections dominate.
+
+**DECIDED — fix, and pair it with the per-round region cache** (SSA-006). The fix is to split the two
+concerns: keep a permanent per-cell node verdict (also removing today's duplicate probing), and treat a
+failed edge as rejecting only that step, never the cell:
+
+```csharp
+if (nodeBad.Contains(n)) continue;                   // permanent, cached
+if (!nodeOk.Contains(n))
+{
+    if (!IsOpen(n, traversalRadius, true)) { nodeBad.Add(n); continue; }
+    nodeOk.Add(n);
+}
+if (!HasClearEdge(cur, n)) continue;                 // edge only - do NOT blacklist n
+if (!enqueued.Add(n)) continue;                      // enqueue-once bookkeeping
+```
+
+This can only ever *widen* the set of cells considered, never narrow it, so it cannot make any currently
+working click fail. Note the full flood-fill in the region cache is immune to the bug by construction
+(no greedy ordering, every cell reached from every direction), so the two changes reinforce each other.
+
+**Verify.** Re-run the per-map click matrix in `docs/roles/apparater.md`, paying attention to clicks
+just past doorways and around the Storage crate pile — the cases the bug should most affect.
+
+---
 
 ### SSA-001 — Neutral win conditions count Neutral Benign players, diverging from the upstream roles they port
 
@@ -99,12 +205,18 @@ the `aliveNotDevoured <= 2` threshold is likewise inflated by any living Neutral
 drag; with a Jester or Survivor alive the win may be unreachable without extra kills the design did not
 intend to require. Affects 4 of the 5 neutral roles.
 
-**Suggested fix.** Replace `Helpers.GetAlivePlayers()` with `MiscUtils.GetImpactfulLivingPlayers()` in
-all four win conditions. In Pelican/Kirby, keep the existing devoured/swallowed subtraction on top.
-Additionally restore the `|| MiscUtils.KillersAliveCount == 0` guard in Sentinel and Gooper (see
-SSA-005). This is a deliberate-looking divergence in four places, so confirm with the designer that
-"Neutral Benign don't block a neutral win" is the intended rule before changing it — but the current
-state does not match any of the three upstream roles cited in the code's own comments.
+**Why it went unnoticed.** `docs/roles/sentinel.md` states that `WinConditionMet()` is *"a byte-for-byte
+copy of `GlitchRole.WinConditionMet()`, including the leftover local variable name `glitchCount`."* It
+is not: it drops the `KillersAliveCount == 0` clause and swaps the player helper. The doc asserting
+parity is exactly why nobody re-checked it. See SSA-022.
+
+**DECIDED — match upstream.** Replace `Helpers.GetAlivePlayers()` with
+`MiscUtils.GetImpactfulLivingPlayers()` in all four win conditions, keeping Pelican/Kirby's
+devoured/swallowed subtraction on top, and restore the `|| MiscUtils.KillersAliveCount == 0` guard in
+Sentinel and Gooper (SSA-005). Verified available in the pinned package:
+`MiscUtils.GetImpactfulLivingPlayers()` is public static in
+`~/.nuget/packages/townofusmira/1.7.3/lib/net6.0/TownOfUsMira.dll`. Also correct `sentinel.md`'s
+"byte-for-byte" claim as part of the same change.
 
 ---
 
@@ -182,9 +294,16 @@ called. The digest runs only on the host. On every other client the devoured pla
 under `CarriedModifier` until the game-over screen. The end-game summary therefore disagrees between
 host and clients — which is precisely the symptom the comment says this code exists to prevent.
 
+**The design doc asserts the opposite.** `docs/roles/pelican.md` justifies the exception explicitly:
+*"this makes `WinConditionMet()` an exception to the 'pure predicate' pattern every other role's win
+check follows; it's safe only because the digest is idempotent … **and it's called on every client that
+evaluates the win check, not just host**."* The second half of that safety argument is false — the
+patch above means only the host ever evaluates it. The stated precondition for the exception being safe
+does not hold. See SSA-022.
+
 **Impact.** Incorrect end-game summary on all non-host clients whenever a Pelican wins without a meeting.
-Cosmetic rather than game-breaking, but it is a real host/client divergence, and the code reads as if it
-were solved.
+Cosmetic rather than game-breaking, but it is a real host/client divergence, and both the code and the
+doc read as if it were solved.
 
 **Suggested fix.** Move the forced digest out of the predicate. Either (a) have the host broadcast the
 digest over an RPC so every client performs it, or (b) trigger it from a game-over/`TriggerGameOver`
@@ -273,15 +392,38 @@ Apparater's teleport click, and any kill attempt on a shielded Elusive. The boun
 target is unreachable (the search then explores the whole connected region before giving up), which is
 also the case where the player is most likely to retry.
 
-**Suggested fix.** Measure first — instrument `TryFindReachablePoint` with a stopwatch and log the
-elapsed time and `expanded` count on the two real call paths, on the largest map (Airship). If the
-worst case is material: hoist `CollectDoorColliderIds()` out of the per-attempt loop in
-`TryFindRandomReachablePoint`; lower `MaxExpandedCells`; and/or cache `IsOpen` results per cell (the
-same cell centre is currently probed once as a neighbour and again as a landing candidate).
+**Correction after reading `apparater.md`.** Two things I proposed already exist or are already planned,
+and Phase 2 should not re-derive them:
 
-**Unverified** — this is a static worst-case bound, not a measurement. Typical-case cost may be far
-lower because the early-success break at line 179 fires as soon as a cell lands within one cell of the
-target.
+- **It is already instrumented.** [`ApparaterMapButton.cs:159-179`](../SuperSquadAmongUs/Buttons/Crewmate/ApparaterMapButton.cs#L159-L179)
+  times every search with a `Stopwatch` and logs the milliseconds on both the success and the
+  no-reachable-point paths, alongside a distinct `Apparater: click ignored - <reason>` line for every
+  rejection. `BepInEx/LogOutput.log` from any past session already distinguishes *slow* from
+  *unreliable*. Read it before optimising.
+- **The doc already names the next two steps**: *"order seeds by distance to the click first (nearly
+  free — the frontier is already distance-keyed), and only then consider a bidirectional search (flood
+  from the click and the seed side, stop when they meet). Don't build the latter speculatively."*
+
+Note also that `MaxExpandedCells` is deliberate — `apparater.md` calls it out as the thing that stops a
+cross-ship click hitching — so lowering it is a gameplay change (distant-but-reachable targets start
+failing), not a free optimisation.
+
+**DECIDED — cache the region per round** (see SSA-019 for the paired correctness fix). The key fact,
+verified in code: traversal is **door-independent** — `IsOpen(..., ignoreDoors: true)` and
+`HasClearEdge` both skip door colliders, and only the *landing* probe is door-aware. The connectivity
+graph is therefore invariant for a whole round and can be flood-filled once by a coroutine spread over
+frames, after which a click is a small local lookup plus one door-aware landing probe. This is *not* the
+"pregenerated map of valid teleport points" rejected in round 6: that rejection was about total eager
+work, and did not account for the graph being static, so the cost can be moved off the click entirely.
+Two costs to design for: the memory for the cell set, and a fallback to the live search for a click that
+arrives before the flood finishes.
+
+Free win regardless: hoist `CollectDoorColliderIds()` out of the per-attempt loop in
+`TryFindRandomReachablePoint` — it runs four `GetComponentsInChildren` sweeps per attempt and the door
+set cannot change between attempts within one frame.
+
+**Still unverified** — the ~130k–190k figure is a static worst-case bound, not a measurement. The
+early-success break at line 179 may make the typical case far cheaper.
 
 ---
 
@@ -376,10 +518,82 @@ ability use, which is fine.
 **Impact.** 50 full scene scans per second for the duration of a Vulture's or Gooper's life, plus
 per-tick array allocation feeding GC pressure in an IL2CPP runtime.
 
+**Not a disagreement with the design.** `vulture.md` deliberately chose per-frame local arrow syncing
+over RPCs ("arrows are a UI-only convenience … reducing network traffic") and that reasoning is sound.
+The finding is about the *mechanism* — `FindObjectsOfType` — not the cadence or the locality.
+
 **Suggested fix.** Dead bodies change rarely. Either poll on a slower cadence (every N ticks), or track
 bodies via the existing `DeadBody` lifecycle (bodies are created on murder and destroyed at meeting
 start / on clean), or reuse whatever body cache TOU-Mira already maintains if one exists. Behaviour to
 preserve: arrows appear for new bodies and disappear when a body is reported, cleaned or eaten.
+
+---
+
+### SSA-020 — `VultureRole.EatenBodies` breaks the documented "state on the button singleton" rule
+
+**Severity:** Medium
+**Location:** [`Roles/Neutral/VultureRole.cs:62`](../SuperSquadAmongUs/Roles/Neutral/VultureRole.cs#L62),
+[`Modules/SuperSquadBodies.cs:58-61`](../SuperSquadAmongUs/Modules/SuperSquadBodies.cs#L58-L61)
+
+**Evidence.** `docs/roles/gooper.md` states the rule as verified: *"Three rules keep buttons borrowable
+(all verified by audit): per-ability mutable state lives on the BUTTON singleton, never on the role
+class…"*. I re-ran that audit. Two role classes hold per-ability mutable state:
+
+```
+GooperRole.GoopedBodyIds   (see SSA-021 - latent only, Gooper's kit never transfers)
+VultureRole.EatenBodies    (live violation - VultureRole IS kit-transferable)
+```
+
+`AbilityGrants.KitExcludedRoles` contains only `GodfatherRole` and `MafiosoRole`, so swallowing a
+Vulture adds `VultureRole` to a Kirby's `GrantedKits`, and `VultureEatButton` — a
+`SuperSquadRoleButton<VultureRole, DeadBody>` — becomes enabled for it. The RPC then splits:
+
+```csharp
+// SuperSquadBodies.cs:48  - passes for a borrower
+if (!AbilityGrants.SenderIsOrHolds<VultureRole>(source)) { ... return; }
+// SuperSquadBodies.cs:58  - fails for a borrower
+if (DestroyBodies(parentId) && source.Data.Role is VultureRole vulture) { vulture.EatenBodies++; }
+```
+
+**Failure scenario.** A Kirby swallows a Vulture, then eats bodies. Each eat destroys the body on every
+client and credits nobody. Worse, `kirby.md` advertises kit inheritance as universal ("swallow an
+Apparater → real Apparate, an RC-XD → the real car … automatic for every current and future role here"),
+so this reads as a working inherited ability. If a second Vulture is alive, the Kirby is silently
+destroying the bodies that Vulture needs to win, with no benefit to itself.
+
+**Impact.** A borrowed ability that is useless to its holder and actively harmful to another role's win
+condition — a griefing tool reachable through normal play.
+
+**DECIDED — exclude Vulture from kit transfer.** Add `typeof(Roles.Neutral.VultureRole)` to
+`AbilityGrants.KitExcludedRoles` alongside Godfather/Mafioso, and extend that field's comment to say
+why: the eat ability is meaningless without the per-Vulture counter its win is measured on. Note this in
+`vulture.md` and in `kirby.md`'s list of deliberate exceptions, both of which currently imply the
+opposite.
+
+---
+
+### SSA-022 — Two design docs assert invariants the code does not hold
+
+**Severity:** Medium
+**Location:** `docs/roles/sentinel.md`, `docs/roles/pelican.md`
+
+**Evidence.** Both state a specific, checkable property as settled fact, and both are wrong. Each
+false claim is load-bearing: it is the reason the underlying defect went unexamined.
+
+| Doc | Claim | Reality |
+|---|---|---|
+| `sentinel.md` | `WinConditionMet()` is *"a byte-for-byte copy of `GlitchRole.WinConditionMet()`"* | It drops `\|\| MiscUtils.KillersAliveCount == 0` and swaps `GetImpactfulLivingPlayers()` → `GetAlivePlayers()` (SSA-001, SSA-005) |
+| `pelican.md` | the in-predicate digest *"is called on every client that evaluates the win check, not just host"* | `CheckEndCriteria` is host-gated, so only the host ever evaluates it (SSA-003) |
+
+**Impact.** This is the most consequential *process* finding in the review. `CLAUDE.md` instructs future
+sessions to read the role doc before touching a role, so a doc that certifies a property nobody
+re-checked converts a one-time mistake into a permanent blind spot. Both defects survived a version
+upgrade and this review's first pass for exactly that reason.
+
+**Suggested fix.** Correct both statements as part of the code fixes they describe (SSA-001, SSA-003),
+rather than as a separate docs pass — the doc and the code should change in the same commit. More
+generally, worth preferring "intended to match X" over "is a byte-for-byte copy of X" in these docs
+unless the equivalence is actually enforced by something.
 
 ---
 
@@ -401,10 +615,17 @@ projectile."* Two consequences follow:
 - `SuperSquadImpAssets.SniperGuideSprite` and its `SniperGuide.png` are referenced only from the dead
   coroutine, so the image is embedded for nothing.
 
-**Suggested fix.** Delete the four members, the RPC enum entry, the sprite member and the PNG. Git
-history preserves it if a future role wants it back. If it is genuinely wanted soon, at minimum add the
-missing `AbilityGrants.SenderIsOrHolds<SniperRole>` guard so a dead code path is not also an unvalidated
-network entry point.
+**CORRECTION — do not delete.** `docs/roles/sniper.md` records this as a dated user decision, not an
+oversight: *"**Bullet visual removed entirely.** User decision 2026-07-16 … `SniperShots.RpcShowShot` /
+`ShowShotLocally` are KEPT as reusable machinery for future roles that copy the shot logic but want a
+visible projectile."* The same doc explains the aim guide's removal, which is why `SniperGuideSprite`
+is also retained deliberately. My Phase 1 recommendation to delete all of it was wrong.
+
+**Revised fix.** Keep the machinery; close the one real defect — add the missing
+`AbilityGrants.SenderIsOrHolds<SniperRole>(source)` guard to `RpcShowShot`, matching the other ten RPCs,
+so a retained-for-later code path is not also an unvalidated network entry point any client can spam.
+Optionally add a one-line comment on `SuperSquadRpc.ShowSniperShot` noting it is intentionally unused,
+so the next reviewer does not re-file this.
 
 ### SSA-011 — Duplicate role art shipped twice
 
@@ -438,15 +659,23 @@ the icon members via SSA-002 first, then delete whichever remain genuinely unuse
 **Location:** [`Roles/Neutral/SentinelRole.cs:73`](../SuperSquadAmongUs/Roles/Neutral/SentinelRole.cs#L73),
 [`Roles/Neutral/SentinelRole.cs:86-87`](../SuperSquadAmongUs/Roles/Neutral/SentinelRole.cs#L86-L87)
 
-**Evidence.** `var glitchCount = CustomRoleUtils.GetActiveRolesOfType<SentinelRole>()...` — named after
-TOU-Mira's Glitch. In `OffsetButtons`, `var douse = CustomButtonSingleton<SentinelExplodeButton>.Instance;`
-and `var ignite = CustomButtonSingleton<SentinelKillButton>.Instance;` — named after the Arsonist's
-douse/ignite, and additionally swapped relative to their meanings (`douse` holds the *explode* button).
+**Evidence.** `sentinel.md` already tracks this as a known follow-up ("Unrenamed copy-paste residue …
+confirmed, no functional bug") and lists more of it than my first pass found. Full verified set:
 
-**Impact.** Misleading to a reader; `douse`/`ignite` actively suggest the wrong ability.
+| Residue | Location | From |
+|---|---|---|
+| `glitchCount` | `SentinelRole.cs:73` | TOU-Mira Glitch |
+| `douse` (holds the *explode* button), `ignite` (holds the *kill* button) | `SentinelRole.cs:86-87` | Arsonist |
+| `dousedPlayers` (Sentinel has no douse step) | `SentinelExplodeButton.cs:68,69,77` | Arsonist |
+| `igniteRadius`, local `ignite` | `Explode.cs:21,23,26,31` | Arsonist |
+| `TouAudio.ArsoIgniteSound`, `AuAvengersAnims.IgniteMaterial` | `SentinelExplodeButton.cs:80`, `Explode.cs:24` | Arsonist (assets, not just names) |
 
-**Suggested fix.** Rename to `sentinelCount`, `explodeButton`, `killButton`. Pure rename, no behaviour
-change.
+**Impact.** Misleading to a reader; `douse`/`ignite` in `OffsetButtons` actively name the wrong
+abilities. The two borrowed Arsonist assets are a cosmetic follow-up, not a rename.
+
+**Suggested fix.** Rename the identifiers (`sentinelCount`, `explodeButton`, `killButton`,
+`playersInRange`, `explosionRadius`, `explosion`). Pure rename, no behaviour change. The Arsonist sound
+and material are an art/audio task — leave them, they are already tracked in `sentinel.md`.
 
 ### SSA-014 — `SniperShots` class comment contradicts the implementation
 
@@ -537,6 +766,40 @@ a living `GodfatherRole`, or cache per frame.
 Together with the two CA1310s in SSA-008, these five are the entire non-CS1591, non-false-positive
 warning surface of the build — the signal-to-noise here is genuinely good once doc-comment warnings are
 set aside.
+
+---
+
+### SSA-021 — `GooperGoopButton` dereferences `Role` in four places, which is null for a borrower
+
+**Severity:** Low (latent)
+**Location:** [`Buttons/Neutral/GooperGoopButton.cs:50,55,68,110`](../SuperSquadAmongUs/Buttons/Neutral/GooperGoopButton.cs#L50)
+
+**Evidence.** Four call sites read `Role.GoopedBodyIds`, two of them on per-frame paths (`GetTarget`,
+the arrow sync). `gooper.md` gives "their `Role`-typed buttons NRE for a borrower" as one of the reasons
+TOU-Mira's buttons cannot be Layer 1 — our own button has the same shape.
+
+It is safe **today** purely because `ApplyPortableGrant` routes a victim that is itself an
+`IAbilityGrantHolder` down a branch that never adds its kit:
+
+```csharp
+if (victimRole is IAbilityGrantHolder victimHolder)   // Gooper and Kirby take this branch
+{
+    recipient.UnlockedAbilities |= victimHolder.UnlockedAbilities;
+    recipient.GrantedKits.UnionWith(victimHolder.GrantedKits);   // never adds victimRole itself
+}
+```
+
+So `GooperRole` can never enter anyone's `GrantedKits`, and `Enabled` gates the button to real Goopers.
+
+**Impact.** None currently. It is a tripwire: adding `GooperRole` to `AbilityGrants.Pool`, or making
+grant-holders transfer their own kit, produces an NRE inside `GetTarget()` — which runs every frame —
+with nothing in the code stating the dependency.
+
+**Suggested fix.** Cheapest is a comment at the `Role.` sites (and on `GoopedBodyIds`) recording that
+this button is safe only because Gooper's kit is non-transferable. Better, and consistent with the rule
+`gooper.md` states: move the gooped-body set onto the button singleton the way `SuiProtectButton`'s
+`protectedTarget` already was — the doc cites that as the worked example of exactly this migration. Not
+urgent; do it if Gooper is touched for other reasons.
 
 ---
 

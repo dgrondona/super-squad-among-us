@@ -19,6 +19,19 @@ not explain, check it against `2623413` before assuming the cleanup caused it.
 
 ---
 
+## Decisions already taken
+
+These were confirmed with the maintainer after the second review pass. Phase 2 implements them; it does
+not need to re-open them.
+
+1. **Neutral win conditions — match upstream.** `GetImpactfulLivingPlayers()` + restore the
+   `KillersAliveCount == 0` guard (items 5.1/5.2, no longer gated).
+2. **Apparater — fix the `visited` bug *and* cache the walkable region per round** (new item 5.5).
+3. **Vulture — exclude from kit transfer** (new item 2.5).
+4. **Modifier localization — convert all of them**, names and descriptions (Stage 3, confirmed).
+
+---
+
 ## How anything gets verified here
 
 There is no automated test suite, and there cannot easily be one — this is a client-side IL2CPP Unity
@@ -53,25 +66,33 @@ role docs already have a *Playtest checklist* section (see `docs/roles/rc-xd.md`
 
 All independent of each other. Each is its own commit.
 
-### 1.1 Delete the Sniper's dead projectile-visual machinery (SSA-010, SSA-014)
+### 1.1 Guard the Sniper's retained RPC — do NOT delete it (SSA-010, SSA-014)
 
-**What changes.** Remove `RpcShowShot`, `ShowShotLocally`, `CoBulletTravel`, the `VisualRange` /
-`VisualSpeed` constants from `Modules/SniperShots.cs`; remove `SuperSquadRpc.ShowSniperShot`; remove
-`SuperSquadImpAssets.SniperGuideSprite` and `Resources/ImpButtons/SniperGuide.png`. Rewrite the class
-comment, which currently documents both the dead machinery and (incorrectly) describes `FindHits` as an
-"infinite line" — correct it to a forward ray while in there.
+**Changed since the first draft.** Phase 1 recommended deleting `RpcShowShot` / `ShowShotLocally` /
+`CoBulletTravel` and `SniperGuideSprite` as dead code. That was wrong: `docs/roles/sniper.md` records a
+dated user decision (2026-07-16) to keep them as reusable machinery for a future role that wants a
+visible projectile. **Leave the machinery in place.**
 
-**Why.** Zero callers. It is also the one RPC of eleven with no sender validation and no comment
-explaining the omission, so deleting it closes an unvalidated network entry point for free.
+**What changes.** Add the missing sender validation to `RpcShowShot`, matching the other ten RPCs:
 
-**Risk.** Very low. The only subtlety is the RPC enum: leaving a gap in `SuperSquadRpc` is harmless
-(Reactor scopes ids per plugin and they only need to be unique within this addon), so **do not
-renumber** the remaining entries — renumbering would break compatibility with any client running an
-older build during a mixed-version lobby.
+```csharp
+if (!AbilityGrants.SenderIsOrHolds<SniperRole>(source))
+{
+    Error("RpcShowShot - Invalid sniper");
+    return;
+}
+```
+Optionally add a one-line comment on `SuperSquadRpc.ShowSniperShot` noting it is intentionally unused,
+so this does not get re-filed as dead code next time. Also correct the `SniperShots` class comment,
+which describes `FindHits` as an "infinite line" when the code rejects anything behind the shooter
+(`along < -radius`) — it is a forward ray, which is what `sniper.md` describes.
 
-**Verify.** Build-verified. Grep confirms zero references before deleting. Playtest: fire the Sniper
-once and confirm the shot still kills — nothing visual should change, because nothing visual was ever
-rendered.
+**Why.** It is the only one of eleven RPCs with no sender check and no comment explaining the omission,
+so any client can currently spawn sprites on every other client.
+
+**Risk.** Very low — the RPC has no callers today, so the guard cannot regress live behaviour.
+
+**Verify.** Build-verified.
 
 **Depends on:** nothing.
 
@@ -190,9 +211,27 @@ hidden; when the Godfather dies mid-round both reappear immediately without a hu
 
 **Depends on:** nothing.
 
+### 2.5 Exclude Vulture from kit transfer (SSA-020)
+
+**What changes.** Add `typeof(Roles.Neutral.VultureRole)` to `AbilityGrants.KitExcludedRoles`, extend
+that field's comment with the reason, and correct `vulture.md` and `kirby.md`, which currently imply
+a swallowed Vulture's eat is a working inherited ability.
+
+**Why.** `VultureEatButton` is kit-transferable but its win counter lives on `VultureRole`, so a
+borrowing Kirby gets an ability that destroys bodies, credits nobody, and can deny a real Vulture the
+bodies it needs to win.
+
+**Risk.** Low. The only behavioural change is that a Kirby that swallows a Vulture no longer gains the
+Eat button — which is the intent. Confirm no pool entry or doc promises that ability.
+
+**Verify.** Playtest-verified (two clients): swallow a Vulture as Kirby, confirm no Eat button appears.
+Then confirm a real Vulture still eats and still wins at its threshold.
+
+**Depends on:** nothing.
+
 ---
 
-## Stage 3 — Localization sweep (SSA-007)
+## Stage 3 — Localization sweep (SSA-007) — CONFIRMED
 
 **What changes.** Convert hardcoded English display strings to locale lookups:
 19 `ModifierName` overrides, 8+ `GetDescription()` bodies in `Modifiers/`, and
@@ -319,10 +358,13 @@ devoured/swallowed subtractions. In `SentinelRole` and `GooperRole` additionally
 **Why.** The upstream roles these were ported from (Glitch, Arsonist) exclude Neutral Benign players from
 the count; ours do not, so the wins fail to trigger in the end-game states they exist for.
 
-**⚠️ Needs a design decision first.** The divergence is consistent across four roles, which is weak
-evidence it might have been deliberate. Confirm the intended rule: *should a living Survivor/Jester
-prevent a Neutral Killing win?* Upstream says no. If the answer is "no", apply the fix; if "yes", instead
-correct the code comments, which currently cite Glitch/Arsonist parity that does not hold.
+**DECIDED — apply the fix.** The maintainer confirmed upstream's rule: a living Survivor/Jester must
+**not** block a Neutral Killing win. `MiscUtils.GetImpactfulLivingPlayers()` is confirmed present and
+public in the pinned `TownOfUsMira 1.7.3` DLL, so no version work is needed.
+
+**Also in this commit:** correct `sentinel.md`'s claim that `WinConditionMet()` is "a byte-for-byte copy
+of `GlitchRole.WinConditionMet()`" (SSA-022). That false claim is why the divergence went unexamined;
+fixing the code without fixing the doc leaves the trap armed.
 
 **Risk.** High blast radius by nature — this makes four neutral roles win *more readily*. Expect the
 change to surface as "the round ended earlier than it used to".
@@ -347,6 +389,10 @@ host and clients. A predicate that is polled every tick is also the wrong place 
 **Risk.** Medium-high. `DigestStomach()` kills players; moving when it runs changes who dies and when. The
 current implementation is idempotent and relies on that (it is invoked twice per evaluation today, once
 from `IsMet` and once from `TriggerGameOver`) — preserve idempotence.
+
+**Also in this commit:** correct `pelican.md`, which currently justifies the exception with *"it's
+called on every client that evaluates the win check, not just host"* — the claim this finding disproves
+(SSA-022).
 
 **Verify.** Playtest-verified, **two clients, non-host Pelican**: devour to the win threshold without
 calling a meeting, then compare the end-game summary on host and client — devoured players must show as
@@ -387,6 +433,56 @@ a worst-case bound alone.
 
 ---
 
+### 5.5 Apparater: fix the search bug, then cache the region (SSA-019, SSA-006) — **decided**
+
+Two changes, in this order. **Land and playtest 5.5a before starting 5.5b** — if the clunkiness was
+reliability rather than latency, 5.5a alone may resolve it, and you want to know that before adding
+lifecycle state.
+
+**5.5a — split node validity from edge validity.** In `WalkableRegionSolver`'s expansion loop, stop
+marking a neighbour `visited` before it has been tested. Keep a permanent per-cell node verdict (which
+also removes today's duplicate probing of the same cell) and treat a failed `HasClearEdge` as rejecting
+only that step, never the cell. See SSA-019 for the sketch.
+
+*Risk:* low, and asymmetric in our favour — the change can only widen the set of cells considered, never
+narrow it, so no currently working click can start failing. The one thing to watch is cost: cells that
+were previously blacklisted early now get re-examined from other directions, so expansions may rise.
+Watch the existing search-ms log line.
+
+*Verify:* the per-map click matrix in `docs/roles/apparater.md`, concentrating on clicks just past
+doorways and around the Storage crate pile. Also re-check Elusive's teleport, which shares the solver.
+
+**5.5b — cache the walkable region per round.** Flood-fill the region once per round from all seeds in a
+coroutine spread over frames, keep it as a cell set, and reduce a click to a local nearest-cell lookup
+plus one door-aware landing probe.
+
+*Why this is sound, and why round 6's rejection doesn't apply:* traversal is door-independent —
+`IsOpen(..., ignoreDoors: true)` and `HasClearEdge` both skip door colliders, and only the landing probe
+is door-aware — so the connectivity graph is invariant for a whole round. Round 6 rejected pregeneration
+on total-work grounds without accounting for that, and the point here is not to reduce total work but to
+move it off the click.
+
+*Risk:* medium, and it is new lifecycle state, which this codebase has historically found the hardest
+part. Design for: (a) a click arriving before the flood finishes — must fall back to the live search,
+never block or fail; (b) rebuild on round start / map change, since `ShipStatus` is replaced; (c) memory
+for the cell set; (d) the flood must use the same cell size as the live search or the two disagree.
+Do **not** let the cache answer the landing question — doors change, and only the landing probe is
+door-aware.
+
+*Verify:* same click matrix as 5.5a, plus explicitly: teleport into and out of a room with the doors
+sabotaged shut (the case the door-independence argument rests on), and a click taken in the first
+seconds of a round before the flood could have completed.
+
+*Also benefits:* `ElusiveEvents` runs the same search up to three times per kill attempt.
+
+*Free win, independent of both:* hoist `CollectDoorColliderIds()` out of the per-attempt loop in
+`TryFindRandomReachablePoint` — four `GetComponentsInChildren` sweeps per attempt, and the door set
+cannot change between attempts within one frame.
+
+**Depends on:** nothing, but 5.5b depends on 5.5a landing first.
+
+---
+
 ## Suggested sequencing summary
 
 | Order | Items | Gate |
@@ -396,7 +492,11 @@ a worst-case bound alone.
 | 2 | 2.1 – 2.4 | build + look at the icons |
 | 3 | 3 (localization) | build + key cross-check |
 | 4 | 4.1, 4.2 (4.3 optional) | build + appearance/keybind playtest |
-| 5 | 5.1/5.2 → 5.3; 5.4 independent | design sign-off + multi-client playtest |
+| 5 | 5.1/5.2 → 5.3; 5.5a → 5.5b; 5.4 independent | multi-client playtest (design sign-off now done) |
 
 Stages 1–3 are safe to land without a playtest gate beyond a smoke test. Stage 4 needs a targeted
-playtest. Stage 5 should not be attempted without two clients and a designer decision on the win rules.
+playtest. Stage 5 needs two clients.
+
+**Suggested first commit of Phase 2:** item 5.5a. It is small, strictly widening, fixes a real logic
+bug, and its result tells you whether the rest of the Apparater work (5.5b) is even the right problem to
+solve — the search already logs the data you need to decide.

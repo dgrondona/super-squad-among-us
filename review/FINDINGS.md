@@ -1,6 +1,6 @@
 # Super Squad Among Us — Independent Review (Phase 1)
 
-**Reviewed:** working tree on branch `dev/more-sidemen-among-us-roles`, 2026-09-24.
+**Reviewed:** commit `2623413` on branch `dev/more-sidemen-among-us-roles`, 2026-09-24.
 **Scope:** all 140 first-party source files under `SuperSquadAmongUs/` (~10,500 LOC), plus build
 configuration. `reference/` was used only as evidence for upstream contracts, never reviewed as our code.
 
@@ -13,9 +13,10 @@ configuration. `reference/` was used only as evidence for upstream contracts, ne
 
 Good. This is a carefully built codebase — unusually so for a game mod. The ability-grant architecture,
 the `WalkableRegionSolver` reachability search, and the RPC-validation convention are all well designed
-and well documented, and the comments explain *why* rather than restating the code. It compiles clean
-(0 errors; 735 warnings, of which 1,448 lines are the pre-existing, expected CS1591 doc-comment noise
-called out in `CLAUDE.md`).
+and well documented, and the comments explain *why* rather than restating the code. It compiles clean:
+**0 errors and 735 warnings, 724 of which are the pre-existing, expected CS1591 doc-comment noise**
+called out in `CLAUDE.md`. Of the remaining 11, six are CA1707 false positives (Harmony's mandatory
+`__instance` / `__result` parameter names) — leaving just five real warnings, all itemised below.
 
 The defects that exist are concentrated in three places: **win conditions that silently diverge from the
 upstream roles they were ported from**, **finished assets that were never wired up**, and **an
@@ -533,8 +534,9 @@ a living `GodfatherRole`, or cache per frame.
 | S125 | [`Buttons/Impostor/WitchHexButton.cs:111`](../SuperSquadAmongUs/Buttons/Impostor/WitchHexButton.cs#L111) | commented-out code |
 | S125 | [`Events/EraserEvents.cs:78`](../SuperSquadAmongUs/Events/EraserEvents.cs#L78) | commented-out code |
 
-These are the only non-CS1591 warnings in the build besides the two CA1310s in SSA-008 — i.e. the build's
-signal-to-noise is genuinely good once doc-comment warnings are set aside.
+Together with the two CA1310s in SSA-008, these five are the entire non-CS1591, non-false-positive
+warning surface of the build — the signal-to-noise here is genuinely good once doc-comment warnings are
+set aside.
 
 ---
 
@@ -554,6 +556,11 @@ Recording these so Phase 2 does not "fix" them:
   `TouAssets.Banner` is read only by its main-menu `LogoPatch` and the April Fools patch. Role option
   screenshots use `TouBanners.*`, so this does not bleed into TOU's own role menus. (Minor cosmetic note:
   `BannerDark`, used by TOU's loading screen, is not patched, so the loading screen keeps TOU's artwork.)
+- **The six CA1707 warnings** (`Patches/InvisibleBoyAdminPatch.cs:35`,
+  `InvisibleBoyVisibilityPatch.cs:20`, `LogoPatch.cs:14`, `MafiaLabelsPatch.cs:44`,
+  `MafiosoGatePatches.cs:46`, `WitchMeetingPatch.cs:20`). All are "remove the underscores from
+  parameter name `__instance`/`__result`". Harmony *requires* those exact names to inject the patched
+  instance and return value — renaming them silently breaks the patch. Suppress or ignore; never "fix".
 - **`SightChecker.CanAnyoneSee` cost.** It looked like a hot path (`PlayerControl.FixedUpdate` postfix for
   every player), but the raycast is short-circuited behind a cheap distance test, and the patch filters to
   `InvisibleBoyRole` before doing any work.

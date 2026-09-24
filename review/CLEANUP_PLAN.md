@@ -30,11 +30,16 @@ tiers are used below.
 
 - **Build-verified** — `./scripts/build.sh` succeeds and the warning profile does not regress. Capture
   a baseline first:
+  MSBuild prints each warning twice, so dedup by site before counting:
   ```
-  ./scripts/build.sh 2>&1 | grep -oE 'warning [A-Z]+[0-9]+' | sort | uniq -c | sort -rn > review/warning-baseline.txt
+  ./scripts/build.sh 2>&1 | grep -E ': warning ' \
+    | sed 's|.*/super-squad-among-us/||; s| \[/home.*||' | sort -u \
+    | sed 's/.*: warning \([A-Z]*[0-9]*\).*/\1/' | sort | uniq -c | sort -rn > review/warning-baseline.txt
   ```
-  Current baseline: `1448 CS1591`, `12 CA1707`, `4 S125`, `4 CA1310`, `2 CS8618`, `0 errors`. Several
-  stages below should *reduce* specific counts; nothing should introduce a new code.
+  Current baseline, by distinct site: **724 CS1591, 6 CA1707, 2 S125, 2 CA1310, 1 CS8618, 0 errors**
+  (735 warnings total). The 6 CA1707s are Harmony's mandatory `__instance`/`__result` parameter names
+  and must **not** be "fixed" — renaming them breaks the patch. Several stages below should *reduce*
+  specific counts; nothing should introduce a new code.
 - **Playtest-verified** — needs a running Among Us + BepInEx, and for some items two clients. Each item
   below names the specific thing to look at. Deploy with `./scripts/deploy.sh`.
 
@@ -109,7 +114,7 @@ this **before** those, or expect a trivial conflict.
 each before deleting — this codebase uses explanatory comments heavily and one of these may be
 documenting a rejected approach, in which case rewrite it as prose instead of deleting.
 
-**Verify.** Build-verified; `S125` count should drop from 4 to 2 (2 remain elsewhere).
+**Verify.** Build-verified; `S125` should drop 2 → 0 (these are the only two sites).
 
 **Depends on:** nothing.
 
@@ -128,7 +133,7 @@ can fail to match under some cultures, causing the tag to be re-appended every f
 **Risk.** Very low — ordinal is strictly more predictable and is the correct comparison for a literal
 marker.
 
-**Verify.** Build-verified; `CA1310` count drops 4 → 2. Playtest: as a mafia member, confirm teammates'
+**Verify.** Build-verified; `CA1310` should drop 2 → 0 (these are the only two sites). Playtest: as a mafia member, confirm teammates'
 names show exactly one `(G)`/`(M)`/`(J)` suffix, in-world and in a meeting, and that it does not grow
 over time.
 
@@ -144,7 +149,7 @@ which always assigns `Transform`. Give it a constructor taking the transform (or
 **Risk.** Low. `Clear()` dereferences `Transform.gameObject`; confirm `SentinelExplodeButton`'s
 `Explode` field handling still compiles (it assigns and nulls it).
 
-**Verify.** Build-verified; `CS8618` drops 2 → 1. Playtest: Sentinel explode still renders and clears.
+**Verify.** Build-verified; `CS8618` should drop 1 → 0 (this is the only site). Playtest: Sentinel explode still renders and clears.
 
 **Depends on:** nothing.
 

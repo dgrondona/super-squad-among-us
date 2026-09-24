@@ -401,35 +401,20 @@ dead on both. Repeat for Kirby. Also re-check the ordinary path (digest at a nor
 **Depends on:** should land after 5.1/5.2, since those change when the win threshold is reached and you
 want to test one variable at a time.
 
-### 5.4 Measure, then optimise, the reachability search (SSA-006)
+### 5.4 Reachability-search performance (SSA-006) — **superseded by 5.5**
 
-**What changes.** First **measure** — instrument `WalkableRegionSolver.TryFindReachablePoint` with a
-stopwatch, log elapsed time and the final `expanded` count, and exercise both real call paths
-(Apparater map click, Elusive shield trigger) on the largest map. Only then optimise.
+The first draft had this as "measure, then optimise". The measurement step is no longer a separate item
+for two reasons: the search is already instrumented (`ApparaterMapButton` logs search milliseconds and a
+distinct reason string on every rejection), and the maintainer has already chosen the direction. The
+work now lives in 5.5.
 
-**Why.** The static worst case is ~130k–190k physics queries in one synchronous frame, and
-`TryFindRandomReachablePoint` runs the whole search up to three times plus re-collects door colliders per
-attempt. Whether that is a real hitch or a theoretical bound is unknown — the early-success break may
-mean the typical case is cheap.
+Two points from the original item that still stand and are carried into 5.5:
 
-**If measurement justifies it**, in increasing order of risk:
-1. Hoist `CollectDoorColliderIds()` out of the per-attempt loop in `TryFindRandomReachablePoint` (pure
-   win, no behaviour change — the door set cannot change between attempts within one frame).
-2. Memoise `IsOpen` per cell: the same cell centre is probed once as a traversal neighbour and again as a
-   landing candidate.
-3. Lower `MaxExpandedCells`. ⚠️ This *does* change behaviour — it makes distant-but-reachable targets
-   fail. Only with a design decision.
-
-**Risk.** Item 1 is safe. Item 2 needs care: `IsOpen` is called with two different radii
-(`traversalRadius` and `landingRadius`) and two different `ignoreDoors` values, so any cache must key on
-all three, not just the cell. Item 3 is a gameplay change.
-
-**Verify.** The measurement itself is the verification for whether to proceed. After optimising, re-run
-the Apparater's full click-target matrix documented in `docs/roles/apparater.md` — that role has an
-extensive history of exactly this code being subtly wrong, and its doc records the cases that mattered.
-
-**Depends on:** nothing, but treat the measurement step as mandatory. Do not optimise on the strength of
-a worst-case bound alone.
+- **`MaxExpandedCells` is deliberate.** `apparater.md` identifies it as what stops a cross-ship click
+  hitching, so lowering it is a gameplay change (distant-but-reachable targets start failing), not a
+  free optimisation. Do not touch it as a performance lever.
+- **Read the log before optimising further.** High search-ms means latency (5.5b is the fix); many
+  `click ignored` lines mean reliability (5.5a is the fix). They point at different work.
 
 ---
 

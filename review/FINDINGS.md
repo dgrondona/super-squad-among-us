@@ -533,49 +533,66 @@ preserve: arrows appear for new bodies and disappear when a body is reported, cl
 
 ---
 
-### SSA-023 — Two `ClickHandler` overrides bypass the keybind arbiter
+### SSA-023 — Four `ClickHandler` overrides bypass the keybind arbiter; every two-phase button's *second* phase is unguarded
 
 **Severity:** Medium
-**Location:** [`Buttons/Impostor/NinjaMarkButton.cs:101-121`](../SuperSquadAmongUs/Buttons/Impostor/NinjaMarkButton.cs#L101-L121),
-[`Buttons/Impostor/RcXdDeployButton.cs:106-129`](../SuperSquadAmongUs/Buttons/Impostor/RcXdDeployButton.cs#L106-L129)
+**Location:** [`NinjaMarkButton.cs:101`](../SuperSquadAmongUs/Buttons/Impostor/NinjaMarkButton.cs#L101),
+[`DetonatorAttachButton.cs:86`](../SuperSquadAmongUs/Buttons/Impostor/DetonatorAttachButton.cs#L86),
+[`RcXdDeployButton.cs:106`](../SuperSquadAmongUs/Buttons/Impostor/RcXdDeployButton.cs#L106),
+[`DumperCarryButton.cs:94`](../SuperSquadAmongUs/Buttons/Impostor/DumperCarryButton.cs#L94)
 
-**Evidence.** Every `ClickHandler` in the addon was audited. Four of six claim the keybind; two do not:
+**Evidence.** Every `ClickHandler` override in the addon, brace-matched and checked:
 
-| Override | Claims `KeybindArbiter`? |
+| Override | Claims the keybind? |
 |---|---|
-| `SuperSquadRoleButton<TRole>` / `<TRole,TTarget>` | yes |
-| `GrantedTargetButtonBase`, `GrantedSwoopButton` | yes |
-| **`NinjaMarkButton`** | **no** — replicates the hacked/disabled gating, then calls `OnClick()` directly, never `base.ClickHandler()` |
-| **`RcXdDeployButton`** (detonate branch only) | **no** — `if (EffectActive) { … detonateRequested = true; ResetCooldownAndOrEffect(); return; }` returns before reaching `base.ClickHandler()` |
+| `SuperSquadRoleButton<TRole>` / `<TRole,TTarget>`, `GrantedTargetButtonBase`, `GrantedSwoopButton` | yes |
+| `DaddyHagridHideButton`, `InvisibilityCloakButton`, `SlideTackleButton` | yes |
+| **`NinjaMarkButton`** | **no** — never calls `base.ClickHandler()`; both phases unguarded |
+| **`DetonatorAttachButton`** | **no** — never calls `base.ClickHandler()`; both phases unguarded |
+| **`RcXdDeployButton`** | **partly** — deploy goes through `base`, the *detonate* branch returns first |
+| **`DumperCarryButton`** | **partly** — store goes through `base`, the *early-dump* branch returns first |
 
-`GrantedSwoopButton` carries a comment showing the project already knows this shape is a hazard:
-*"KeybindArbiter check here too: this toggle-style override bypasses `base.ClickHandler()`'s
-`CanClick()` gate entirely … so without it a shared `ModifierAction` press could fire this AND another
-grant-holder button uncontested on the same keypress."* The same reasoning applies to these two and was
-not applied.
+The pattern is systematic rather than four separate slips: `base.ClickHandler()` is what claims, so any
+branch that returns before reaching it is unarbitrated — and in a two-phase button that is always the
+second phase (detonate, dump, assassinate).
 
-**Why this is likely to bite.** `gooper.md` notes borrowed kits keep their source keybind, "usually
-`SecondaryAction`". A keybind census shows **ten** buttons on `SecondaryAction` — Elusive, Sui
-(retaliate), Astral, Detonator, Dumper, Eraser, MafiaJanitor, **Ninja**, **RC-XD**, Sniper, Witch. So an
-accumulate-mode Kirby holding two Secondary kits is an ordinary outcome, not a corner case.
+**`DaddyHagridHideButton` is the counterexample that proves it's a defect, not a choice.** It is the same
+two-phase shape as `DumperCarryButton` — same `ToggleDebounce`, same
+`if (EffectActive) { if (!CanUse()) return; ResetCooldownAndOrEffect(); }` — and it *does* claim, with a
+comment saying why:
 
-**Failure scenario.** A Kirby has swallowed a Ninja and a Sniper (both Secondary). One Secondary press:
-`NinjaMarkButton.ClickHandler` fires unarbitrated *and* `SniperSnipeButton.ClickHandler` claims the
-frame and arms the aim — the player marks a target and enters sniper aim on one keypress. For RC-XD, a
-Kirby driving a car who also holds another Secondary ability detonates *and* triggers that ability.
+```csharp
+// KeybindArbiter check here too: this branch bypasses base.ClickHandler()'s CanClick() gate
+// entirely, so without it a shared PrimaryAction press could release early AND let another
+// grant-holder button (e.g. GrantedKillButton) fire uncontested on the same keypress.
+if (!CanUse() || !KeybindArbiter.TryClaim(Keybind))
+```
 
-**Impact.** Exactly the double-fire the `KeybindArbiter` exists to prevent, on the two abilities whose
-own docs record having previously shipped a "one press did two things" bug (`rc-xd.md`, 2026-07-19).
+`DumperCarryButton` reads as a copy of that method with the arbiter term dropped.
 
-**Suggested fix.** Add `|| !KeybindArbiter.TryClaim(Keybind)` to both early-return guards. Note the
-arbiter must be claimed *after* the can-fire check, per `KeybindArbiter`'s own remarks — both sites
-already check first, so the claim slots in directly after. This also removes the need for
-`RcXdDeployButton`'s bespoke `DetonateArmDelay`? **No — keep it.** The arm delay defends against
-same-press double dispatch and key autorepeat, which is a different problem from two *different*
-buttons sharing a keybind; the arbiter's claim is per (keybind, frame) and would not stop autorepeat
-across frames.
+**Why this is likely to bite.** A keybind census shows **ten** buttons on `SecondaryAction` — Elusive,
+Sui retaliate, Astral, **Detonator**, **Dumper**, Eraser, MafiaJanitor, **Ninja**, **RC-XD**, Sniper,
+Witch. `gooper.md` notes borrowed kits keep their source keybind, so an accumulate-mode Kirby holding
+two Secondary kits is an ordinary outcome, and all four affected buttons are on Secondary.
 
-**Verify.** Playtest: as a Kirby holding two Secondary kits, one press must fire exactly one ability.
+**Failure scenario.** A Kirby has swallowed a Ninja and a Sniper. One Secondary press: `NinjaMarkButton`
+fires unarbitrated *and* `SniperSnipeButton` claims the frame and arms the aim — the player marks a
+target and enters sniper aim on a single keypress. Same for a Dumper mid-carry who also holds another
+Secondary ability: one press dumps the body *and* fires the other kit.
+
+**Impact.** Exactly the double-fire `KeybindArbiter` exists to prevent, and `rc-xd.md` records having
+already shipped a "one press did two things" bug once.
+
+**Suggested fix.** Add `|| !KeybindArbiter.TryClaim(Keybind)` to the guard in each unguarded branch,
+after the existing can-fire check (the arbiter's own remarks require claiming only once the press will
+actually be honoured). Four edits; `DaddyHagridHideButton` is the reference implementation.
+
+Keep the existing `ToggleDebounce` / `DetonateArmDelay` guards — those defend against one *physical*
+press dispatching twice (autorepeat), which is a different problem from two *different* buttons sharing
+a keybind, and the arbiter's per-(keybind, frame) claim would not cover it.
+
+**Verify.** Playtest: as a Kirby holding two Secondary kits, one press must fire exactly one ability —
+in both phases of each two-phase button.
 
 ---
 

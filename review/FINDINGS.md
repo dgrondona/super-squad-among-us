@@ -22,9 +22,15 @@ to separate *bugs* from *recorded design decisions*. That pass changed three fin
 - **New: SSA-019 – SSA-022**, including a logic bug in the reachability search and two design docs that
   assert invariants the code does not hold.
 
-**Pass 3 (in progress)** — the targeted read of the ability implementations planned in
-[PASS_3_PLAN.md](PASS_3_PLAN.md) — has so far added **SSA-023 – SSA-026** and cleared
-`ElusiveShieldButton`, `AstralFormButton` and `DaddyHagridHideButton`.
+**Pass 3 (partially complete)** — the targeted read of the ability implementations planned in
+[PASS_3_PLAN.md](PASS_3_PLAN.md) — has added **SSA-023 – SSA-028**. Files cleared with no findings:
+`ElusiveShieldButton` and `AstralFormButton` (no local state — theirs lives on modifiers, which tick
+independently of the button), `DaddyHagridHideButton` (correct gating, arbitrates both phases, overrides
+`Enabled`), and `DetonatorAttachButton`'s stale-state handling (it *does* self-heal `activeBomb` in
+`FixedUpdate`, unlike Witch). **Still unread:** `DumperCarryModifier`, `SuiRetaliateButton`,
+`SuiProtectButton`, `EraserEraseButton`, the rest of `InvisibleBoyModifier`, `GrantedSwoopModifier`,
+`SlideTackleButton`, `InvisibilityCloakButton`, `InvisibleBoyAdminPatch`, `SniperAimPatch`,
+`ApparaterMapClickPatch`.
 
 ### Decisions taken
 
@@ -717,6 +723,83 @@ documented gotcha. The cross-game half is **unverified** — it depends on MiraA
 true while `EffectActive`, and add a `FixedUpdate` self-heal that cancels the cast when the caster has
 died or a meeting has started. Consider also clearing `castTarget` in `ResetCooldownAddition()` (rename
 it) so the existing game-start hook covers everything.
+
+---
+
+### SSA-027 — Three patches on shared vanilla `Update` methods lack the exception containment the project's own doc mandates
+
+**Severity:** Medium
+**Location:** [`Patches/MafiaLabelsPatch.cs`](../SuperSquadAmongUs/Patches/MafiaLabelsPatch.cs),
+[`Patches/MafiosoGatePatches.cs`](../SuperSquadAmongUs/Patches/MafiosoGatePatches.cs),
+[`Patches/WitchMeetingPatch.cs`](../SuperSquadAmongUs/Patches/WitchMeetingPatch.cs)
+
+**Evidence.** `docs/il2cpp-gotchas.md` §"One throwing Harmony postfix skips the rest of the chain"
+exists because this already cost a playtest (`sniper.md`, 2026-07-16 third playtest: clicks eaten by a
+chain abort). The two patches fixed then adopted `Priority.First` + try/catch. Auditing all eleven
+patches by what they target:
+
+| Patch | Target | `Priority.First` | try/catch |
+|---|---|---|---|
+| `ApparaterMapClickPatch` | `HudManager.Update` | yes | yes |
+| `SniperAimPatch` | `HudManager.Update` | yes | yes |
+| `InvisibleBoyAdminPatch` | `MapCountOverlay` | yes | yes |
+| `InvisibleBoyVisibilityPatch` | `PlayerControl.FixedUpdate` | no | yes |
+| **`MafiaLabelsPatch`** | **`HudManager.Update` + `MeetingHud.Update`** | **no** | **no** |
+| **`MafiosoGatePatches`** | **`HudManager.Update`** | **no** | **no** |
+| **`WitchMeetingPatch`** | **`MeetingHud.Update`** | **no** | **no** |
+
+The three unguarded ones sit on the two most contended methods in the game, which TOU-Mira also patches
+several times.
+
+**Concrete throw paths**, not just theoretical:
+
+```csharp
+// WitchMeetingPatch.cs:24  and  MafiaLabelsPatch.cs:53 - identical shape
+var player = GameData.Instance.GetPlayerById(voteArea.PlayerId)?.Object;   // GameData.Instance unguarded
+var showOverlay = player != null && !player.Data.IsDead && ...;            // player.Data unguarded
+```
+
+`GameData.Instance` is null during teardown between rounds, and `.Object` can be non-null with a null
+`Data` transiently. `MafiosoGatePatches.HudUpdatePostfix` likewise dereferences `__instance.KillButton`
+and `__instance.SabotageButton` with no null check.
+
+**Impact.** A throw in any of these aborts every remaining postfix on that method for that frame — both
+ours and TOU-Mira's. The observable symptom is not a crash but *other features intermittently not
+working*, which is exactly the class of bug that took three playtests to diagnose last time.
+
+**Suggested fix.** Wrap each postfix body in try/catch with an `Error(...)` log, matching
+`InvisibleBoyVisibilityPatch`'s shape, and add `[HarmonyPriority(Priority.First)]` to the ones on
+`HudManager.Update` / `MeetingHud.Update`. Separately, null-guard `GameData.Instance` and `player.Data`
+at the two sites above — containment should not be the only defence.
+
+**Verify.** Build-verified for the guards. The chain-abort behaviour itself is only observable in game.
+
+---
+
+### SSA-028 — `WitchMeetingPatch` does a string-based child lookup per vote area per frame
+
+**Severity:** Low
+**Location:** [`Patches/WitchMeetingPatch.cs:22-27`](../SuperSquadAmongUs/Patches/WitchMeetingPatch.cs#L22-L27)
+
+**Evidence.** The postfix runs on every `MeetingHud.Update` and, for each vote area, does:
+
+```csharp
+var overlay = voteArea.transform.Find(OverlayName);   // "SuperSquadHexedOverlay"
+```
+
+`Transform.Find` walks the child list doing string comparisons. With 15 players that is ~15 name-matched
+child searches per frame for the whole meeting, plus a `GetPlayerById` lookup and a `HasModifier` scan
+each.
+
+**Impact.** Small but entirely avoidable, and it is on a UI path that already has TOU-Mira patches
+competing for the same frame budget. Note the per-frame *cadence* is deliberate — the class comment
+explains it keeps hexes cast just before the meeting and mid-meeting deaths accurate — so the cadence is
+not the problem, the lookup mechanism is.
+
+**Suggested fix.** Cache the overlay per vote area (a `Dictionary<byte, GameObject>` keyed on
+`voteArea.PlayerId`, cleared when the meeting ends), or track it on the created object instead of
+re-finding it by name. Behaviour to preserve: an overlay appears when a hex lands mid-meeting and
+disappears when the hexed player dies mid-meeting.
 
 ---
 

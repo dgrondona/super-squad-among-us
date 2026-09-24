@@ -4,9 +4,10 @@
 **Scope:** all 140 first-party source files under `SuperSquadAmongUs/` (~10,500 LOC), plus build
 configuration. `reference/` was used only as evidence for upstream contracts, never reviewed as our code.
 
-> **Note on tree state.** The working tree contains a large uncommitted change set (the TOU-Mira
-> 1.7.1→1.7.3 / MiraAPI 0.4.3→0.5.0 upgrade). This review covers the code **as it currently stands**,
-> including those changes. Several findings below (SSA-003, SSA-004) concern code that upgrade touched.
+> **Note on tree state.** This review covers the code as of commit `2623413` ("adjusted to update in
+> line with depedancies"), which landed the TOU-Mira 1.7.1→1.7.3 / MiraAPI 0.4.3→0.5.0 upgrade. All
+> line numbers are against that commit; the working tree is clean. Several findings below (SSA-003,
+> SSA-004) concern code that upgrade touched.
 
 ## Overall health
 

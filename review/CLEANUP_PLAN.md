@@ -7,15 +7,15 @@ IDs refer to [FINDINGS.md](FINDINGS.md).
 
 ---
 
-## Precondition — settle the working tree first
+## Baseline
 
-The review was performed against a working tree carrying a large **uncommitted** change set (the
-TOU-Mira 1.7.1→1.7.3 / MiraAPI 0.4.3→0.5.0 upgrade, 86 modified files). Every line number in
-FINDINGS.md is against that state.
+Phase 2 starts from commit `2623413` ("adjusted to update in line with depedancies"), which landed the
+TOU-Mira 1.7.1→1.7.3 / MiraAPI 0.4.3→0.5.0 upgrade. The working tree is clean and every line number in
+FINDINGS.md is against that commit — so each stage below can be landed and reviewed in isolation.
 
-**Before any Phase 2 work:** commit or otherwise land that upgrade. Starting cleanup on top of an
-uncommitted 86-file diff makes every subsequent change impossible to review in isolation, and a bad
-`git checkout` would destroy work that is not yet in history.
+Because that upgrade is recent and has **not** been playtested, treat any Stage 5 playtest as covering
+two variables at once (the upgrade and the change). If something looks wrong in a way the change does
+not explain, check it against `2623413` before assuming the cleanup caused it.
 
 ---
 

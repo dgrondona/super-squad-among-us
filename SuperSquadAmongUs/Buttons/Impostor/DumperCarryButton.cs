@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -11,7 +12,6 @@ using TownOfUs;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -42,8 +42,8 @@ public sealed class DumperCarryButton : SuperSquadRoleButton<DumperRole, DeadBod
     public override LoadableAsset<Sprite> Sprite => SuperSquadAssets.ImpostorPlaceholderButton;
     public override string Name => StoreLabel;
 
-    private static string StoreLabel => TouLocale.GetParsed("SuperSquadRoleDumperCarry", "Store");
-    private static string DumpLabel => TouLocale.GetParsed("SuperSquadRoleDumperDrop", "Dump");
+    private static string StoreLabel => MiraLocaleManager.Get("SuperSquadRoleDumperCarry", "Store");
+    private static string DumpLabel => MiraLocaleManager.Get("SuperSquadRoleDumperDrop", "Dump");
 
     // When the current body was stored (local Time.time), only for the sync-settle grace below - a
     // freshly-added modifier isn't visible via HasModifier for a tick or two.

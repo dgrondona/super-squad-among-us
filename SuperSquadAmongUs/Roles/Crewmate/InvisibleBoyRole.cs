@@ -2,13 +2,13 @@ using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Modules;
 using TownOfUs.Extensions;
 using TownOfUs.Modules;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Utilities;
@@ -78,15 +78,15 @@ public sealed class InvisibleBoyRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITow
     }
 
     public DoomableType DoomHintType => DoomableType.Insight;
-    public string LocaleKey => "InvisibleBoy";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "InvisibleBoy";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -99,8 +99,8 @@ public sealed class InvisibleBoyRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITow
             {
                 // No button for this ability - it's passive, so the role's own wiki sprite doubles as
                 // the ability icon.
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Passive", "Unseen"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}PassiveWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Passive", "Unseen"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}PassiveWikiDescription"),
                     SuperSquadRoleIcons.InvisibleBoy),
             };
         }

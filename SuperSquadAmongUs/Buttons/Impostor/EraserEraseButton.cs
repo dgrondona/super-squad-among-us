@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Events;
@@ -9,7 +10,6 @@ using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -27,7 +27,7 @@ public sealed class EraserEraseButton : SuperSquadRoleButton<EraserRole, PlayerC
     // TOR's fixed cooldown escalation per successful erase (Buttons.cs:1103).
     private const float CooldownEscalation = 10f;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleEraserErase", "Erase");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleEraserErase", "Erase");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(

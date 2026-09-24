@@ -1,12 +1,12 @@
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Utilities;
@@ -17,15 +17,15 @@ namespace SuperSquadAmongUs.Roles.Impostor;
 public sealed class RcXdRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsRole, IWikiDiscoverable, IDoomable
 {
     public DoomableType DoomHintType => DoomableType.Hunter;
-    public string LocaleKey => "RcXd";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "RcXd";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -36,11 +36,11 @@ public sealed class RcXdRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsRol
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Deploy", "Deploy"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}DeployWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Deploy", "Deploy"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}DeployWikiDescription"),
                     SuperSquadImpAssets.RcXdDeploySprite),
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Detonate", "Detonate"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}DetonateWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Detonate", "Detonate"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}DetonateWikiDescription"),
                     SuperSquadImpAssets.RcXdDetonateSprite),
             };
         }

@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
@@ -8,7 +9,6 @@ using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -25,7 +25,7 @@ public sealed class WitchHexButton : SuperSquadRoleButton<WitchRole, PlayerContr
     private PlayerControl? cachedTarget;
     private bool targetCached;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleWitchHex", "Hex");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleWitchHex", "Hex");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(

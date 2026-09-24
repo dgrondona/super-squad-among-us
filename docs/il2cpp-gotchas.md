@@ -24,7 +24,7 @@ they don't match their folder name in the TOU-Mira source tree:
 | Type | Namespace | Folder it actually lives in |
 |---|---|---|
 | `IDoomable`, `DoomableType` | `TownOfUs.Extensions` | `Interfaces/` |
-| `TouLocale` | `TownOfUs.Modules.Localization` | — |
+| `MiraLocaleManager` | `MiraAPI.Translation` | Replaced TOU's `TouLocale` in 1.7.3 (that shim is `[Obsolete]`) |
 | `MiscUtils` | `TownOfUs.Utilities` | — |
 | `BaseKeybind` | `MiraAPI.Keybinds` | — |
 | `SetOutline(Renderer, Color?)` | `Reactor.Utilities.Extensions` | Reactor, not TOU/Mira |
@@ -37,12 +37,57 @@ When in doubt, `grep` the namespace declaration directly in `reference/TOU-Mira`
 rather than guessing from the folder path — the build (`dotnet build SuperSquadAmongUs.sln`) will
 immediately flag `CS0246` for anything missing, which is the fastest way to catch these.
 
-## Locale merge ordering
+## Locale registration is order-independent (since TOU-Mira 1.7.3)
 
-`Modules/SuperSquadLocale.cs` hooks `IL2CPPChainloader.Instance.Finished` (wired up in
-`SuperSquadAmongUsPlugin.Load()`) so this mod's locale XML is merged into TOU-Mira's `TouLocale`
-registry *after* TOU-Mira has already loaded its own — hooking earlier would get overwritten or fail
-to find TOU-Mira's registry yet.
+`Modules/SuperSquadLocale.cs` calls `MiraLocaleManager.Register(Id, "SuperSquadAmongUs")` directly
+from `SuperSquadAmongUsPlugin.Load()`. `Register` reads embedded resources off
+`Assembly.GetCallingAssembly()` into MiraAPI's own static dictionary, so it depends on nothing else
+having loaded — the old `IL2CPPChainloader.Instance.Finished` hook (needed when we were mutating
+TOU-Mira's `TouLocale` registry) is gone. It must stay inside this assembly for `GetCallingAssembly`
+to resolve, and the second argument is the resource-embed root namespace: MiraAPI looks for
+`SuperSquadAmongUs.Resources.Locale.<lang>.xml`.
+
+Two rules that come with it:
+
+- **Locale XML uses `[...]`, not `\%...\%`.** `MiraLocaleManager.ParseXmlFile` converts `[`/`]` to
+  `<`/`>` at *load* time (then `<nl>`→newline, `<and>`→`&`), so markup applies to `Get` as well as
+  `GetParsed`. The old `\%b\%` syntax is no longer parsed at all and would render literally.
+- **Duplicate keys log an error and silently overwrite** (last mod to `Register` wins). Keeping every
+  key prefixed `SuperSquad*` is what keeps us from colliding with TOU-Mira's ~2900 keys.
+
+## Upstream renames that compile fine and break at runtime
+
+The 1.7.1 -> 1.7.3 / 0.4.3 -> 0.5.0 upgrade produced three traps where the *compiler stayed quiet*
+because our member was an implicit interface implementation, not an `override`. Worth checking first
+whenever an upgrade makes something role-agnostic go subtly wrong.
+
+- **`ITownOfUsRole.LocaleKey` -> `ICustomRole.IdPart`.** Our roles declared `public string LocaleKey
+  => "Sentinel";` with no `override`, so after the rename they kept compiling while `IdPart` silently
+  fell back to MiraAPI's default `GetType().Name` (`"SentinelRole"`). Everything upstream that builds
+  a key off it then misses: `DeathEventHandlers` looks up `DiedTo{IdPart}`, so `DiedToSentinel`
+  stopped resolving and deaths fell back to the generic `DiedToKiller`. On `TouBaseGameModifier` the
+  same rename *was* an `override`, so the two universal modifiers failed loudly instead.
+- **`ConcealedModifier.CarriesIntoMeetings` (new, defaults `false`).** The base class now removes
+  itself in `OnMeetingStart`, and MiraAPI runs every modifier's `OnMeetingStart` *before* it invokes
+  `StartMeetingEvent` (`MeetingHudPatches.MeetingHudStartPatch`). Any modifier whose meeting
+  behaviour lives in a `StartMeetingEvent` handler is therefore gone before that handler runs — see
+  `CarriedModifier`, which opts back in with `CarriesIntoMeetings => true`. Subclasses that override
+  `OnMeetingStart` without calling `base` (`CloakHiddenModifier`, the invisibility modifiers) never
+  hit this.
+- **`playerState: StoredPlayerState.Dead` is now mandatory on custom death text.**
+  `DeathEventHandlers.PlayerDeathEventHandler` used to skip players that already had a
+  `DeathHandlerModifier`; it now only skips players whose `PlayerState` is already `Dead`, and
+  `GameHistory.PlayerStats` has an entry for everyone from role assignment on. So
+  `GameHistory.UpdatePlayerDeathData(...)` must pass `playerState: StoredPlayerState.Dead` or the
+  generic text overwrites ours a frame later. `lockInfo` does *not* protect against this — it's only
+  consulted by the later `AfterMurderEvent` handler. `RpcUpdateLocalDeathHandler` has no
+  `playerState` parameter at all, which is an unresolved gap for RC-XD (see
+  [roles/rc-xd.md](roles/rc-xd.md)).
+
+A related non-silent one, from the `AmongUs.GameLibs.Steam` bump to `2026.8.18`: vanilla renamed
+`PlayerVoteArea.TargetPlayerId` to `.PlayerId` (and its type is now a `PlayerId` struct, not a raw
+byte). Keep that package pinned to whatever MiraAPI/TOU-Mira build against — both moved to
+`2026.8.18` for AU v18.0.x, and interop skew here is the native-crash class described below.
 
 ## Auto-registration means typos fail silently, not loudly
 
@@ -186,8 +231,8 @@ not which mechanism does what at runtime — cross-check against readable mod so
 ## `reference/TOU-Mira` can be ahead of the pinned `TownOfUsMira` package
 
 The reference checkout is a live source tree; the package this addon actually compiles against is
-whatever version is pinned in `AmongUs.props` (currently `1.7.1`, which as of the 2026-08 upgrade
-matches the reference checkout's own `1.7.1` tag — but don't assume that stays true). A
+whatever version is pinned in `AmongUs.props` (currently `1.7.3`, which as of the 2026-09 upgrade
+matches the reference checkout's own `1.7.3` tag — but don't assume that stays true). A
 member that exists in `reference/TOU-Mira` source may not exist yet in the compiled DLL, and reference
 source can't stand in for that mismatch. Confirmed case: `VanillaTweakOptions.PetVisibilityUponDeath`
 and the `PetHidden`-enum overload of `MiscUtils.RemovePet` exist in reference source but not in
@@ -391,11 +436,13 @@ now rather than waiting for a TOU-Mira update, the only currently-confirmed miti
 downgrading the installed Among Us version below 2026.6.5 (per the maintainer's own advice) - a
 game/launcher-level change, not something this repo controls.
 
-**Status update (2026-08):** the addon is now pinned to TOU-Mira `1.7.1` (up from 1.6.3-beta2), so
-the "stay on 1.6.3-beta2, it's the latest" framing above is historical. Whether 1.7.1 actually fixes
-this corruption is **untested** — re-run the self-kill repro (RC-XD detonating inside its own blast,
-or a plain TOU Sheriff misfire) on 1.7.1 before assuming either way, and update this entry with the
-result.
+**Status update (2026-09):** the addon is now pinned to TOU-Mira `1.7.3` and Among Us
+`2026.8.18` (AU v18.0.x), so both the "stay on 1.6.3-beta2" framing and the "downgrade below
+2026.6.5" mitigation above are historical — the addon no longer runs on a game version where that
+downgrade is possible. Whether 1.7.3 fixes this corruption is **untested**: re-run the self-kill
+repro (RC-XD detonating inside its own blast, or a plain TOU Sheriff misfire) and update this entry
+with the result. Note 1.7.3's own release notes are mostly about Innersloth-side anti-cheat fixes,
+not memory corruption.
 
 Related pitfall fixed along the way: MiraAPI's `RpcCustomMurder`/`CustomMurder` default
 `teleportMurderer: true`, which makes the kill coroutine yield (blur animation, camera lock) instead

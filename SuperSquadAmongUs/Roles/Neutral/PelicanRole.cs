@@ -3,6 +3,7 @@ using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Events;
@@ -11,7 +12,6 @@ using SuperSquadAmongUs.Options.Roles.Neutral;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Roles.Neutral;
@@ -23,15 +23,15 @@ namespace SuperSquadAmongUs.Roles.Neutral;
 public sealed class PelicanRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRole, IWikiDiscoverable, IDoomable
 {
     public DoomableType DoomHintType => DoomableType.Relentless;
-    public string LocaleKey => "Pelican";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "Pelican";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -42,8 +42,8 @@ public sealed class PelicanRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsR
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Devour", "Devour"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}DevourWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Devour", "Devour"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}DevourWikiDescription"),
                     SuperSquadNeutAssets.PelicanDevourSprite),
             };
         }

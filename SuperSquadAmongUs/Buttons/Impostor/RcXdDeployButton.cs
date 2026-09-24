@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -12,7 +13,6 @@ using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
 using TownOfUs.Modules;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -48,7 +48,7 @@ public sealed class RcXdDeployButton : SuperSquadRoleButton<RcXdRole>
     private float cameraLingerRemaining;
     private GameObject? cameraLingerAnchor;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleRcXdDeploy", "Deploy");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleRcXdDeploy", "Deploy");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<RcXdOptions>.Instance.DeployCooldown + MapCooldown, 5f, 120f);
@@ -278,7 +278,7 @@ public sealed class RcXdDeployButton : SuperSquadRoleButton<RcXdRole>
         player.lightSource.Initialize(player.Collider.offset / 2f);
 
         OverrideSprite(SuperSquadImpAssets.RcXdDetonateSprite.LoadAsset());
-        OverrideName(TouLocale.GetParsed("SuperSquadRoleRcXdDetonate", "Detonate"));
+        OverrideName(MiraLocaleManager.Get("SuperSquadRoleRcXdDetonate", "Detonate"));
         SetLabelTextVisible(true);
 
         driveLockActive = true;
@@ -317,7 +317,7 @@ public sealed class RcXdDeployButton : SuperSquadRoleButton<RcXdRole>
         player.NetTransform.Halt();
 
         OverrideSprite(SuperSquadImpAssets.RcXdDeploySprite.LoadAsset());
-        OverrideName(TouLocale.GetParsed("SuperSquadRoleRcXdDeploy", "Deploy"));
+        OverrideName(MiraLocaleManager.Get("SuperSquadRoleRcXdDeploy", "Deploy"));
         SetLabelTextVisible(false);
     }
 

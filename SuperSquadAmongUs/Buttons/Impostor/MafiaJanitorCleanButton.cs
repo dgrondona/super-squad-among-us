@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -8,7 +9,6 @@ using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Impostor;
@@ -20,7 +20,7 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// </summary>
 public sealed class MafiaJanitorCleanButton : SuperSquadRoleButton<MafiaJanitorRole, DeadBody>
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleMafiaJanitorClean", "Clean");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleMafiaJanitorClean", "Clean");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(

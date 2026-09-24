@@ -1,7 +1,9 @@
+using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
 using MiraAPI.Networking;
 using MiraAPI.PluginLoading;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using Reactor.Utilities.Extensions;
 using SuperSquadAmongUs.Assets;
@@ -12,10 +14,8 @@ using TownOfUs.Assets;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
-using MiraAPI.GameOptions;
 
 namespace SuperSquadAmongUs.Buttons;
 
@@ -131,7 +131,7 @@ public sealed class GrantedKillButton : GrantedTargetButtonBase, IKillButton
 /// </summary>
 public sealed class GrantedVestButton : TownOfUsButton
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleGrantedVest", "Vest");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleGrantedVest", "Vest");
     public override Color TextOutlineColor => GrantedAbility.OutlineColor;
 
     public override float Cooldown => Math.Clamp(
@@ -162,7 +162,7 @@ public sealed class GrantedVestButton : TownOfUsButton
 /// </summary>
 public sealed class GrantedSwoopButton : TownOfUsButton
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleGrantedSwoop", "Swoop");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleGrantedSwoop", "Swoop");
     public override BaseKeybind Keybind => Keybinds.ModifierAction;
     public override Color TextOutlineColor => GrantedAbility.OutlineColor;
     public override bool ZeroIsInfinite { get; set; } = true;

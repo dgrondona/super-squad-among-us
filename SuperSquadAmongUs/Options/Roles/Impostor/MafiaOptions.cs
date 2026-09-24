@@ -1,7 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
@@ -12,7 +12,7 @@ public sealed class MafiaOptions : AbstractOptionGroup
 {
     public override MenuCategory ParentMenu => MenuCategory.Roles;
 
-    public override string GroupName => TouLocale.Get("SuperSquadRoleMafia", "Mafia");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleMafia", "Mafia");
 
     [ModdedNumberOption("SuperSquadOptionMafiaSpawnChance", 0, 100, 10, MiraNumberSuffixes.Percent)]
     public float SpawnChance { get; set; } = 50f;

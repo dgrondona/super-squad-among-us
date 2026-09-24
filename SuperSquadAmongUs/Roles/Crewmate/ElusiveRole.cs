@@ -1,11 +1,11 @@
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Assets;
 using TownOfUs.Extensions;
 using TownOfUs.Modules;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Utilities;
@@ -16,15 +16,15 @@ namespace SuperSquadAmongUs.Roles.Crewmate;
 public sealed class ElusiveRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITownOfUsRole, IWikiDiscoverable, IDoomable
 {
     public DoomableType DoomHintType => DoomableType.Trickster;
-    public string LocaleKey => "Elusive";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "Elusive";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -35,8 +35,8 @@ public sealed class ElusiveRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITownOfUs
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Shield", "Shield"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}ShieldWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Shield", "Shield"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}ShieldWikiDescription"),
                     SuperSquadAssets.CrewmatePlaceholderButton),
             };
         }

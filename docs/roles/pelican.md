@@ -40,6 +40,11 @@ Design: adapted from AllTheRoles per the user's own spec; see `docs/porting/READ
 
 ## Not yet verified in-game / known follow-ups
 
+- **`CarriedModifier.CarriesIntoMeetings => true` is load-bearing.** TOU-Mira 1.7.3 made
+  `ConcealedModifier` strip itself on meeting start, and MiraAPI runs that *before* `StartMeetingEvent`
+  — without the opt-out, `DigestStomach` would find an empty stomach and devoured players would simply
+  pop out alive at every meeting. Don't remove it; re-verify meeting digestion after any upstream bump.
+
 - Manual in-game verification needed — untestable solo (needs a second player to devour). Highest-value checks: camera-follow feel while devoured, meeting digestion showing the victims as dead in the vote list, release position after killing the Pelican, and a devoured player being unable to report/use anything.
 - Role icon and the Devour button sprite have no dedicated art yet. The role icon uses Town of Us:
   Mira's generic Neutral team icon (`Resources/Placeholders/Neutral.png`); the Devour button

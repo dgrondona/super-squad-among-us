@@ -4,15 +4,15 @@ using MiraAPI.Events.Vanilla.Meeting;
 using MiraAPI.GameOptions;
 using MiraAPI.Hud;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Buttons.Impostor;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Events;
-using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Game.Alliance;
-using TownOfUs.Modules.Localization;
+using TownOfUs.Modules;
+using TownOfUs.Modules.Components;
 using TownOfUs.Options.Modifiers.Alliance;
 using TownOfUs.Utilities;
 
@@ -68,13 +68,17 @@ public static class WitchEvents
                 continue;
             }
 
-            DeathHandlerModifier.UpdateDeathHandlerImmediate(
+            // playerState: Dead, or DeathEventHandlers' PlayerDeathEvent handler overwrites DeathString
+            // with the generic "DiedTo..." text (it no longer skips players that already have death info).
+            GameHistory.UpdatePlayerDeathData(
                 target,
-                TouLocale.Get("SuperSquadDiedToWitchHex", "Hexed"),
-                DeathEventHandlers.CurrentRound,
+                MiraLocaleManager.Get("SuperSquadDiedToWitchHex", "Hexed"),
+                0f,
+                HudManagerHelper.Instance.CurrentRound,
                 DeathHandlerOverride.SetFalse,
-                TouLocale.GetParsed("DiedByStringBasic").Replace("<player>", witch!.Data!.PlayerName),
-                lockInfo: DeathHandlerOverride.SetTrue);
+                MiraLocaleManager.Get("DiedByStringBasic").Replace("<player>", witch!.Data!.PlayerName),
+                lockInfo: DeathHandlerOverride.SetTrue,
+                playerState: StoredPlayerState.Dead);
 
             target.Exiled();
         }

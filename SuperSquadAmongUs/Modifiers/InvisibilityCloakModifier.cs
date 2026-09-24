@@ -2,12 +2,12 @@ using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
 using MiraAPI.Modifiers.Types;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Modifiers;
 using TownOfUs.Interfaces;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Game;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -24,10 +24,10 @@ namespace SuperSquadAmongUs.Modifiers;
 public sealed class InvisibilityCloakModifier : UniversalGameModifier, IWikiDiscoverable, IButtonModifier
 {
     /// <inheritdoc />
-    public override string LocaleKey => "InvisibilityCloak";
+    public override string IdPart => "InvisibilityCloak";
 
     /// <inheritdoc />
-    public override string ModifierName => TouLocale.Get($"SuperSquadModifier{LocaleKey}");
+    public override string ModifierName => MiraLocaleManager.Get($"SuperSquadModifier{IdPart}");
 
     /// <inheritdoc />
     public override Color FreeplayFileColor => new Color32(180, 180, 180, 255);
@@ -38,13 +38,13 @@ public sealed class InvisibilityCloakModifier : UniversalGameModifier, IWikiDisc
     /// <inheritdoc />
     public override string GetDescription()
     {
-        return TouLocale.GetParsed($"SuperSquadModifier{LocaleKey}TabDescription");
+        return MiraLocaleManager.Get($"SuperSquadModifier{IdPart}TabDescription");
     }
 
     /// <inheritdoc />
     public string GetAdvancedDescription()
     {
-        return TouLocale.GetParsed($"SuperSquadModifier{LocaleKey}WikiDescription") +
+        return MiraLocaleManager.Get($"SuperSquadModifier{IdPart}WikiDescription") +
                MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -56,8 +56,8 @@ public sealed class InvisibilityCloakModifier : UniversalGameModifier, IWikiDisc
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.Get($"SuperSquadModifier{LocaleKey}Button"),
-                    TouLocale.GetParsed($"SuperSquadModifier{LocaleKey}ButtonWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadModifier{IdPart}Button"),
+                    MiraLocaleManager.Get($"SuperSquadModifier{IdPart}ButtonWikiDescription"),
                     SuperSquadAssets.NeutralPlaceholderButton),
             };
         }

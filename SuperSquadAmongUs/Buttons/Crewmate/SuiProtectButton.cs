@@ -1,13 +1,13 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Crewmate;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -26,7 +26,7 @@ public sealed class SuiProtectButton : SuperSquadRoleButton<SuiRole, PlayerContr
     // singletons serving whichever role the local player is.
     private PlayerControl? protectedTarget;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleSuiProtect", "Protect");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleSuiProtect", "Protect");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Sui;
 

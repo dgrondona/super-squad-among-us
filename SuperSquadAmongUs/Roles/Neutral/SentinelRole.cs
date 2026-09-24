@@ -5,6 +5,7 @@ using MiraAPI.Hud;
 using MiraAPI.LocalSettings;
 using MiraAPI.Patches.Stubs;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using Reactor.Utilities;
 using SuperSquadAmongUs.Assets;
@@ -13,7 +14,6 @@ using SuperSquadAmongUs.Options.Roles.Neutral;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Roles.Crewmate;
@@ -28,15 +28,15 @@ public sealed class SentinelRole(IntPtr cppPtr)
 {
     public RoleBehaviour CrewVariant => RoleManager.Instance.GetRole((RoleTypes)RoleId.Get<TrapperRole>());
     public DoomableType DoomHintType => DoomableType.Relentless;
-    public string LocaleKey => "Sentinel";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "Sentinel";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -47,8 +47,8 @@ public sealed class SentinelRole(IntPtr cppPtr)
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Explode", "Explode"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}ExplodeWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Explode", "Explode"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}ExplodeWikiDescription"),
                     SuperSquadNeutAssets.SentinelExplodeSprite),
             };
         }

@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using Reactor.Utilities.Extensions;
@@ -9,7 +10,6 @@ using SuperSquadAmongUs.Options.Roles.Neutral;
 using SuperSquadAmongUs.Roles.Neutral;
 using TownOfUs;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -24,7 +24,7 @@ public sealed class VultureEatButton : SuperSquadRoleButton<VultureRole, DeadBod
 {
     private readonly Dictionary<byte, ArrowBehaviour> bodyArrows = new();
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleVultureEat", "Eat");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleVultureEat", "Eat");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Vulture;
     public override float Cooldown => Math.Clamp(

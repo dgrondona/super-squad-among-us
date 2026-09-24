@@ -1,7 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.OptionTypes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options;
 
@@ -21,7 +21,7 @@ public sealed class GrantedAbilityOptions : AbstractOptionGroup
     // though it isn't tied to one specific role class - see the class summary above.
     public override MenuCategory ParentMenu => MenuCategory.Roles;
 
-    public override string GroupName => TouLocale.Get("SuperSquadGrantedAbilities", "Granted Abilities");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadGrantedAbilities", "Granted Abilities");
 
     public ModdedNumberOption KillCooldown { get; set; } =
         new("SuperSquadOptionGrantedKillCooldown", 25f, 5f, 120f, 2.5f, MiraNumberSuffixes.Seconds);

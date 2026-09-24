@@ -69,6 +69,17 @@ destroy path.
 
 ## Known follow-ups
 
+- **Self-detonate death text is at risk on TOU-Mira 1.7.3 — needs a playtest.** The deployer's
+  "DiedToSuperSquadRcXd" text is set through `GameHistory.RpcUpdateLocalDeathHandler`, which (unlike
+  `GameHistory.UpdatePlayerDeathData`) has no `playerState` parameter. Since 1.7.3,
+  `DeathEventHandlers.PlayerDeathEventHandler` only leaves a death string alone when `PlayerState` is
+  already `Dead`, so the `RpcCustomMurder` that follows may overwrite ours with the generic
+  `DiedToKiller` a frame later; `lockInfo` does not protect against it (see
+  [../il2cpp-gotchas.md](../il2cpp-gotchas.md)). **Repro:** deploy, self-detonate, check the death
+  reason in the end-game summary. If it reads as a generic kill, the fix is upstream-shaped — either
+  ask for a `playerState` parameter on that RPC, or send the death-handler RPC *after*
+  `RpcCustomMurder` so it overwrites the generic text instead of being overwritten by it.
+
 - **Deploy/Detonate button art + explosion VFX.** The two HUD buttons and the explosion flash are
   still placeholders (Rewind sprite, Sentinel `Explode`/Arsonist ignite sound patterns). The in-world
   car itself has real art (`Resources/ImpButtons/RcXdCar.png`, `SuperSquadImpAssets.RcXdCarSprite`,

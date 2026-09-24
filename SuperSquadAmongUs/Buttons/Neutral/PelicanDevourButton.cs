@@ -1,13 +1,13 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Neutral;
 using SuperSquadAmongUs.Roles.Neutral;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -15,7 +15,7 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 
 public sealed class PelicanDevourButton : SuperSquadRoleButton<PelicanRole, PlayerControl>, IKillButton
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRolePelicanDevour", "Devour");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRolePelicanDevour", "Devour");
     public override BaseKeybind Keybind => Keybinds.PrimaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Pelican;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<PelicanOptions>.Instance.DevourCooldown + MapCooldown, 5f, 120f);

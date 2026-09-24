@@ -1,15 +1,15 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
 using MiraAPI.GameOptions.OptionTypes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Crewmate;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Crewmate;
 
 public sealed class DaddyHagridOptions : AbstractRoleOptionGroup<DaddyHagridRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleDaddyHagrid", "Daddy Hagrid");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleDaddyHagrid", "Daddy Hagrid");
 
     [ModdedNumberOption("SuperSquadOptionDaddyHagridHideCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float HideCooldown { get; set; } = 25f;

@@ -21,7 +21,7 @@ public static class WitchMeetingPatch
     {
         foreach (var voteArea in __instance.playerStates)
         {
-            var player = GameData.Instance.GetPlayerById(voteArea.TargetPlayerId)?.Object;
+            var player = GameData.Instance.GetPlayerById(voteArea.PlayerId)?.Object;
             var showOverlay = player != null && !player.Data.IsDead && player.HasModifier<HexedModifier>();
 
             var overlay = voteArea.transform.Find(OverlayName);

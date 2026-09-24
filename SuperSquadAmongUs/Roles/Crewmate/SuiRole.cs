@@ -1,12 +1,12 @@
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.Modifiers;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Utilities;
@@ -20,15 +20,15 @@ public sealed class SuiRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITownOfUsRole
     // per-client singletons, so keeping the state there lets a role that borrowed the Sui kit
     // (AbilityGrants.GrantedKits) share it. The synced state of record is SuiProtectedModifier.
     public DoomableType DoomHintType => DoomableType.Protective;
-    public string LocaleKey => "Sui";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "Sui";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -39,11 +39,11 @@ public sealed class SuiRole(IntPtr cppPtr) : CrewmateRole(cppPtr), ITownOfUsRole
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Protect", "Protect"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}ProtectWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Protect", "Protect"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}ProtectWikiDescription"),
                     SuperSquadAssets.CrewmatePlaceholderButton),
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Retaliate", "Retaliate"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}RetaliateWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Retaliate", "Retaliate"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}RetaliateWikiDescription"),
                     SuperSquadAssets.CrewmatePlaceholderButton),
             };
         }

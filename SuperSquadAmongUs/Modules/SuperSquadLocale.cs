@@ -1,34 +1,24 @@
-
-using System.Reflection;
-using BepInEx.Logging;
-using MiraAPI.Utilities;
-using TownOfUs.Modules.Localization;
+using MiraAPI.Translation;
 
 namespace SuperSquadAmongUs.Modules;
 
+/// <summary>
+/// Registers this addon's embedded <c>Resources/Locale/*.xml</c> files with MiraAPI's translation
+/// system.
+/// </summary>
 public static class SuperSquadLocale
 {
-    internal static ManualLogSource LocaleLogger { get; } = BepInEx.Logging.Logger.CreateLogSource("SuperSquadLocale");
-
-    public static void SearchInternalLocale()
+    /// <summary>
+    /// Registers our locale XMLs. Call once from <see cref="SuperSquadAmongUsPlugin.Load"/>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="MiraLocaleManager.Register(string, string)"/> resolves embedded resources off
+    /// <c>Assembly.GetCallingAssembly()</c>, so this must stay inside this assembly. The second
+    /// argument is the resource-embed root namespace - MiraAPI looks for
+    /// <c>SuperSquadAmongUs.Resources.Locale.&lt;lang&gt;.xml</c>.
+    /// </remarks>
+    public static void Register()
     {
-        var assembly = Assembly.GetExecutingAssembly();
-        foreach (var locale in TouLocale.LangList)
-        {
-            using var resourceStream =
-                assembly.GetManifestResourceStream("SuperSquadAmongUs.Resources.Locale." + locale.Value);
-            if (resourceStream == null)
-            {
-                LocaleLogger.LogError($"Language is not added: {locale.Key.ToDisplayString()}");
-                continue;
-            }
-
-            LocaleLogger.LogWarning($"Language is being added: {locale.Key.ToDisplayString()}");
-            using StreamReader reader = new(resourceStream);
-            string xmlContent = reader.ReadToEnd();
-
-            TouLocale.TouLocalization.TryAdd((SupportedLangs)locale.Key, []);
-            TouLocale.ParseXmlFile(xmlContent, (SupportedLangs)locale.Key);
-        }
+        MiraLocaleManager.Register(SuperSquadAmongUsPlugin.Id, "SuperSquadAmongUs");
     }
 }

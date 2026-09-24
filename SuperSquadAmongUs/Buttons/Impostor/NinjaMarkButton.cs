@@ -2,6 +2,7 @@ using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
 using MiraAPI.Networking;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
@@ -12,7 +13,6 @@ using TownOfUs;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -29,7 +29,7 @@ public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, Player
     // ninjaButton.Timer = 5f on mark).
     private const float MarkArmingDelay = 5f;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleNinjaMark", "Mark");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleNinjaMark", "Mark");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<NinjaOptions>.Instance.MarkCooldown + MapCooldown, 5f, 120f);
@@ -138,7 +138,7 @@ public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, Player
             Marked.GetModifierComponent()!.AddModifier(modifier);
         }
 
-        OverrideName(TouLocale.GetParsed("SuperSquadRoleNinjaAssassinate", "Assassinate"));
+        OverrideName(MiraLocaleManager.Get("SuperSquadRoleNinjaAssassinate", "Assassinate"));
         OverrideSprite(SuperSquadImpAssets.NinjaAssassinateSprite.LoadAsset());
     }
 
@@ -183,7 +183,7 @@ public sealed class NinjaMarkButton : SuperSquadKillRoleButton<NinjaRole, Player
         }
 
         Marked = null;
-        OverrideName(TouLocale.GetParsed("SuperSquadRoleNinjaMark", "Mark"));
+        OverrideName(MiraLocaleManager.Get("SuperSquadRoleNinjaMark", "Mark"));
         OverrideSprite(SuperSquadImpAssets.NinjaMarkSprite.LoadAsset());
     }
 

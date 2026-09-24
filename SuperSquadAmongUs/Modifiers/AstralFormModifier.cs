@@ -1,10 +1,10 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
 using MiraAPI.Networking;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Options.Roles.Impostor;
-using TownOfUs.Events;
-using TownOfUs.Modifiers;
-using TownOfUs.Modules.Localization;
+using TownOfUs.Modules;
+using TownOfUs.Modules.Components;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -103,12 +103,16 @@ public sealed class AstralFormModifier : TimedInvisibilityModifier
     private void DieFromFailedReturn()
     {
         var showAnim = !MeetingHud.Instance && !ExileController.Instance;
-        DeathHandlerModifier.UpdateDeathHandlerImmediate(
+        // playerState: Dead, or DeathEventHandlers' PlayerDeathEvent handler overwrites DeathString
+        // with the generic "DiedTo..." text (it no longer skips players that already have death info).
+        GameHistory.UpdatePlayerDeathData(
             Player,
-            TouLocale.Get("SuperSquadDiedToAstral", "Faded"),
-            DeathEventHandlers.CurrentRound,
+            MiraLocaleManager.Get("SuperSquadDiedToAstral", "Faded"),
+            0f,
+            HudManagerHelper.Instance.CurrentRound,
             showAnim ? DeathHandlerOverride.SetTrue : DeathHandlerOverride.SetFalse,
-            lockInfo: DeathHandlerOverride.SetTrue);
+            lockInfo: DeathHandlerOverride.SetTrue,
+            playerState: StoredPlayerState.Dead);
 
         // showKillAnim always false: vanilla's ShowKillAnimation is broken for killer == victim
         // (see Patches/SelfKillOverlayPatch.cs).

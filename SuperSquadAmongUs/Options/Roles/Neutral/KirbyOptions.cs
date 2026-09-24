@@ -1,14 +1,14 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Neutral;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Neutral;
 
 public sealed class KirbyOptions : AbstractRoleOptionGroup<KirbyRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleKirby", "Kirby");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleKirby", "Kirby");
 
     [ModdedNumberOption("SuperSquadOptionKirbySwallowCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float SwallowCooldown { get; set; } = 15f;

@@ -3,6 +3,7 @@ using MiraAPI.GameOptions;
 using MiraAPI.Hud;
 using MiraAPI.Keybinds;
 using MiraAPI.Networking;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -13,7 +14,6 @@ using TownOfUs.Assets;
 using TownOfUs.Buttons;
 using TownOfUs.Buttons.Neutral;
 using TownOfUs.Modules;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Networking;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -22,7 +22,7 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 
 public sealed class SentinelExplodeButton : SuperSquadRoleButton<SentinelRole>
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleSentinelExplode", "Explode");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleSentinelExplode", "Explode");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Sentinel;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<SentinelOptions>.Instance.ExplodeCooldown + MapCooldown, 5f, 120f);

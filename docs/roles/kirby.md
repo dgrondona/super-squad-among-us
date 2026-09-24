@@ -66,6 +66,10 @@ anything.
 
 ## Not yet verified in-game / known follow-ups
 
+- **`CarriedModifier.CarriesIntoMeetings => true` is load-bearing** — same as the Pelican's, see
+  [pelican.md](pelican.md). Without it `KirbySwallowedModifier` is removed before Kirby's
+  `StartMeetingEvent` digest handler runs, so nothing is digested and no abilities are inherited.
+
 - Manual in-game verification needed — untestable solo (needs players to swallow, ideally ones holding
   different abilities). Highest-value checks: swallowing hides/freezes exactly like the Pelican; the
   inherited kit appears *immediately on swallow* (swallow a Sniper → the real Snipe button at once;

@@ -1,5 +1,6 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -7,7 +8,6 @@ using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Roles.Neutral;
 using SuperSquadAmongUs.Roles.Neutral;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -23,7 +23,7 @@ public sealed class GooperGoopButton : SuperSquadRoleButton<GooperRole, DeadBody
 {
     private readonly Dictionary<byte, ArrowBehaviour> bodyArrows = new();
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleGooperGoop", "Goop");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleGooperGoop", "Goop");
 
     // TertiaryAction: PrimaryAction belongs to the granted Kill, and borrowed kit buttons keep their
     // source keybinds - which is almost always SecondaryAction - so the Gooper's own core ability

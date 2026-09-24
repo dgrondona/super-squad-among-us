@@ -2,13 +2,13 @@ using AmongUs.GameOptions;
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modules;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Roles.Neutral;
@@ -36,15 +36,15 @@ public sealed class GooperRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRo
     public bool BaseCanVent => false;
 
     public DoomableType DoomHintType => DoomableType.Relentless;
-    public string LocaleKey => "Gooper";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "Gooper";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -55,8 +55,8 @@ public sealed class GooperRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRo
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Goop", "Goop"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}GoopWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Goop", "Goop"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}GoopWikiDescription"),
                     SuperSquadAssets.NeutralPlaceholderButton),
             };
         }

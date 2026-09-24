@@ -2,6 +2,7 @@ using MiraAPI.GameOptions;
 using MiraAPI.Hud;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using Reactor.Utilities.Extensions;
 using SuperSquadAmongUs.Assets;
@@ -10,7 +11,6 @@ using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Modifiers;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Roles.Other;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -25,7 +25,7 @@ namespace SuperSquadAmongUs.Buttons.Modifiers;
 public sealed class SlideTackleButton : TownOfUsTargetButton<PlayerControl>
 {
     /// <inheritdoc />
-    public override string Name => TouLocale.GetParsed("SuperSquadModifierSlideTackleButton", "Tackle");
+    public override string Name => MiraLocaleManager.Get("SuperSquadModifierSlideTackleButton", "Tackle");
 
     /// <inheritdoc />
     public override BaseKeybind Keybind => Keybinds.ModifierAction;

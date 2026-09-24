@@ -1,15 +1,15 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
 using MiraAPI.GameOptions.OptionTypes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
 public sealed class RcXdOptions : AbstractRoleOptionGroup<RcXdRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleRcXd", "RC-XD");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleRcXd", "RC-XD");
 
     [ModdedNumberOption("SuperSquadOptionRcXdDeployCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float DeployCooldown { get; set; } = 25f;

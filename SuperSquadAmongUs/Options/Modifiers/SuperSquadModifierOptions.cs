@@ -20,9 +20,6 @@ public sealed class SuperSquadModifierOptions : AbstractOptionGroup
     public override MenuCategory ParentMenu => MenuCategory.Modifiers;
 
     /// <inheritdoc />
-    public override bool ShowInModifiersMenu => true;
-
-    /// <inheritdoc />
     public override uint GroupPriority => 36;
 
     [ModdedNumberOption("SuperSquadOptionInvisibilityCloakAmount", 0f, 5f, 1f)]

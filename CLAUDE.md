@@ -35,6 +35,17 @@ or via the Cake build script used in CI: `dotnet cake build.cake`.
   addon's own code — especially anything role-agnostic, or that goes away when the addon DLL is
   removed — check installed vs. pinned versions first: `strings BepInEx/plugins/TownOfUsMira.dll |
   grep -E '^[0-9]+\.[0-9]+\.[0-9]+'` (same for `MiraAPI.dll`/`Reactor.dll`) against `AmongUs.props`.
+- **Release channels are chosen by `VersionSuffix`, nothing else.** `VersionPrefix` (1.0.0) lives in
+  `SuperSquadAmongUs.csproj`; the suffix defaults to `dev`. `SuperSquadAmongUsPlugin` derives
+  `IsWipBuild`/`IsBetaBuild`/`IsDevBuild` from the resulting version string at runtime, mirroring
+  TOU-Mira's `TownOfUsPlugin` and MiraAPI's `MiraApiPlugin` - so never hardcode those flags.
+  `scripts/build-channel.sh {beta [n]|dev|release}` wraps it; the underlying command is
+  `dotnet build SuperSquadAmongUs.sln -c Release -p:VersionSuffix=beta1`. Betas are numbered
+  (`1.0.0-beta1`, `-beta2`, ...) and are still dev builds per TOU-Mira's semantics, but distinguishable
+  via `IsBetaBuild`; an empty suffix gives a clean `1.0.0` release where `IsDevBuild` is false. Only
+  `AssemblyVersion` (`1.0.0.0`) is what BepInEx parses - the suffix rides on `InformationalVersion`,
+  which is what the `Is*Build` flags read. Note `build.cake` only sets a version from a git tag or a CI
+  run number, and there is no `.github/workflows/`, so locally it just builds `-dev`.
 - To auto-deploy after building, set an `AmongUs` environment variable to your local Among Us install
   directory; the `Copy` target in `AmongUs.props` will symlink/copy the built DLL into
   `BepInEx/plugins/` automatically.

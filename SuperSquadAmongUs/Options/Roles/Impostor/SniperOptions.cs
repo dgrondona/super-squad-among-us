@@ -1,14 +1,14 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
 public sealed class SniperOptions : AbstractRoleOptionGroup<SniperRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleSniper", "Sniper");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleSniper", "Sniper");
 
     [ModdedNumberOption("SuperSquadOptionSniperSnipeCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float SnipeCooldown { get; set; } = 25f;

@@ -1,8 +1,8 @@
 using MiraAPI.Hud;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Buttons;
 using TownOfUs.Modifiers;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using TownOfUs.Utilities.Appearances;
 using UnityEngine;
@@ -104,7 +104,7 @@ public sealed class GrantedSwoopModifier : ConcealedModifier, IVisualAppearance
     private static void UpdateButtonVisual(bool swooped)
     {
         CustomButtonSingleton<GrantedSwoopButton>.Instance.OverrideName(swooped
-            ? TouLocale.GetParsed("SuperSquadRoleGrantedUnswoop", "Unswoop")
-            : TouLocale.GetParsed("SuperSquadRoleGrantedSwoop", "Swoop"));
+            ? MiraLocaleManager.Get("SuperSquadRoleGrantedUnswoop", "Unswoop")
+            : MiraLocaleManager.Get("SuperSquadRoleGrantedSwoop", "Swoop"));
     }
 }

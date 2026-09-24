@@ -1,14 +1,14 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Crewmate;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Crewmate;
 
 public sealed class ElusiveOptions : AbstractRoleOptionGroup<ElusiveRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleElusive", "Elusive");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleElusive", "Elusive");
 
     [ModdedNumberOption("SuperSquadOptionElusiveShieldCooldown", 5f, 120f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float ShieldCooldown { get; set; } = 25f;

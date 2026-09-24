@@ -1,15 +1,15 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
 using MiraAPI.GameOptions.OptionTypes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
 public sealed class EraserOptions : AbstractRoleOptionGroup<EraserRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleEraser", "Eraser");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleEraser", "Eraser");
 
     [ModdedNumberOption("SuperSquadOptionEraserEraseCooldown", 10f, 120f, 5f, MiraNumberSuffixes.Seconds)]
     public float EraseCooldown { get; set; } = 30f;

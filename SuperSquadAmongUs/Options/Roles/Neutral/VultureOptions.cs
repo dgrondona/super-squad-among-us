@@ -1,14 +1,14 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Neutral;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Neutral;
 
 public sealed class VultureOptions : AbstractRoleOptionGroup<VultureRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleVulture", "Vulture");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleVulture", "Vulture");
 
     [ModdedNumberOption("SuperSquadOptionVultureEatCooldown", 10f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float EatCooldown { get; set; } = 15f;

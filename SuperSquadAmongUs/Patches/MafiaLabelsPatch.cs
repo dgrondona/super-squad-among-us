@@ -50,7 +50,7 @@ public static class MafiaLabelsPatch
 
         foreach (var voteArea in __instance.playerStates)
         {
-            var player = GameData.Instance.GetPlayerById(voteArea.TargetPlayerId)?.Object;
+            var player = GameData.Instance.GetPlayerById(voteArea.PlayerId)?.Object;
             var tag = GetTag(player);
             if (tag == null || voteArea.NameText == null)
             {

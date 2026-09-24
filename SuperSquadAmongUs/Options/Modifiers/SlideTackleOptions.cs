@@ -1,8 +1,8 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Modifiers;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Options;
 using UnityEngine;
 
@@ -18,10 +18,10 @@ public sealed class SlideTackleOptions : AbstractOptionGroup<SlideTackleModifier
     public override MenuCategory ParentMenu => MenuCategory.Modifiers;
 
     /// <inheritdoc />
-    public override Func<bool> GroupVisible => () => OptionGroupSingleton<RoleOptions>.Instance.IsClassicRoleAssignment;
+    public override Func<bool> GroupVisible => () => RoleOptions.IsClassicRoleAssignment;
 
     /// <inheritdoc />
-    public override string GroupName => TouLocale.Get("SuperSquadModifierSlideTackle", "Slide Tackle");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadModifierSlideTackle", "Slide Tackle");
 
     /// <inheritdoc />
     public override Color GroupColor => SuperSquadColors.SlideTackle;

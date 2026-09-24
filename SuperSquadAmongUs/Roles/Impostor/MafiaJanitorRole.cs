@@ -1,12 +1,12 @@
 using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Utilities;
@@ -20,15 +20,15 @@ namespace SuperSquadAmongUs.Roles.Impostor;
 public sealed class MafiaJanitorRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITownOfUsRole, IWikiDiscoverable, IDoomable
 {
     public DoomableType DoomHintType => DoomableType.Trickster;
-    public string LocaleKey => "MafiaJanitor";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "MafiaJanitor";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -39,8 +39,8 @@ public sealed class MafiaJanitorRole(IntPtr cppPtr) : ImpostorRole(cppPtr), ITow
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Clean", "Clean"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}CleanWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Clean", "Clean"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}CleanWikiDescription"),
                     SuperSquadImpAssets.MafiaJanitorCleanSprite),
             };
         }

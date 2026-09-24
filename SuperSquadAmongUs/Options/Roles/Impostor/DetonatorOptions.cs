@@ -1,15 +1,15 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
 using MiraAPI.GameOptions.OptionTypes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
 public sealed class DetonatorOptions : AbstractRoleOptionGroup<DetonatorRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleDetonator", "Detonator");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleDetonator", "Detonator");
 
     [ModdedNumberOption("SuperSquadOptionDetonatorAttachCooldown", 5f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float AttachCooldown { get; set; } = 25f;

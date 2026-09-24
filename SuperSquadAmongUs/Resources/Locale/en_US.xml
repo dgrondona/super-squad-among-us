@@ -16,7 +16,7 @@
     <!-- Sentinel - Neutral Killing -->
     <string name="SuperSquadRoleSentinel">Sentinel</string>
     <string name="SuperSquadRoleSentinelIntroBlurb">Eliminate those who stand in your path.</string>
-    <string name="SuperSquadRoleSentinelTabDescription">Kill players by using your dope abilities!\%nl\%Preferably, explode \%b\%only\%/b\% in a secluded area.</string>
+    <string name="SuperSquadRoleSentinelTabDescription">Kill players by using your dope abilities![nl]Preferably, explode [b]only[/b] in a secluded area.</string>
     <!-- Sentinel Wiki -->
     <string name="SuperSquadRoleSentinelWikiDescription">The Sentinel is a Neutral Killing role that can explode themselves to kill anyone nearby. They may also kill normally, but where's the fun in that?</string>
     <string name="SuperSquadRoleSentinelExplode">Explode</string>
@@ -30,7 +30,7 @@
     <!-- Apparater - Crewmate Power -->
     <string name="SuperSquadRoleApparater">Apparater</string>
     <string name="SuperSquadRoleApparaterIntroBlurb">Teleport to places around the map.</string>
-    <string name="SuperSquadRoleApparaterTabDescription">Open the map and click anywhere on it to \%b\%teleport\%/b\% there.</string>
+    <string name="SuperSquadRoleApparaterTabDescription">Open the map and click anywhere on it to [b]teleport[/b] there.</string>
     <!-- Apparater Wiki -->
     <string name="SuperSquadRoleApparaterWikiDescription">The Apparater is a Crewmate Power role that can open the map and click a location to instantly teleport there.</string>
     <string name="SuperSquadRoleApparaterTeleport">Teleport</string>
@@ -41,7 +41,7 @@
     <!-- Invisible Boy - Crewmate Support -->
     <string name="SuperSquadRoleInvisibleBoy">Invisible Boy</string>
     <string name="SuperSquadRoleInvisibleBoyIntroBlurb">Turn invisible when no one is watching.</string>
-    <string name="SuperSquadRoleInvisibleBoyTabDescription">You turn \%b\%invisible\%/b\% whenever nobody can see you.</string>
+    <string name="SuperSquadRoleInvisibleBoyTabDescription">You turn [b]invisible[/b] whenever nobody can see you.</string>
     <!-- Invisible Boy Wiki -->
     <string name="SuperSquadRoleInvisibleBoyWikiDescription">The Invisible Boy is a Crewmate Support role that turns invisible whenever no living player has line of sight to him. The moment anyone can see even a sliver of him, he is visible again.</string>
     <string name="SuperSquadRoleInvisibleBoyPassive">Unseen</string>
@@ -49,7 +49,7 @@
     <!-- Astral - Impostor Concealing -->
     <string name="SuperSquadRoleAstral">Astral</string>
     <string name="SuperSquadRoleAstralIntroBlurb">Pass through walls with ease.</string>
-    <string name="SuperSquadRoleAstralTabDescription">Phase into an \%b\%invisible spirit\%/b\% that walks through walls.\%nl\%When your tether breaks, you snap back to where you phased from.</string>
+    <string name="SuperSquadRoleAstralTabDescription">Phase into an [b]invisible spirit[/b] that walks through walls.[nl]When your tether breaks, you snap back to where you phased from.</string>
     <!-- Astral Wiki -->
     <string name="SuperSquadRoleAstralWikiDescription">The Astral is an Impostor Concealing role that can phase into a spirit form: invisible, able to walk through walls, and still able to kill. When the form ends they are pulled back to the spot they phased from, staying invisible for a few seconds longer to slip away.</string>
     <string name="SuperSquadRoleAstralForm">Phase</string>
@@ -63,7 +63,7 @@
     <!-- Ninja - Impostor Assassin -->
     <string name="SuperSquadRoleNinja">Ninja</string>
     <string name="SuperSquadRoleNinjaIntroBlurb">Surprise and assassinate your foes.</string>
-    <string name="SuperSquadRoleNinjaTabDescription">Mark a target and \%b\%trace\%/b\% their location.\%nl\%Assassinate them to become \%b\%invisible\%/b\%.</string>
+    <string name="SuperSquadRoleNinjaTabDescription">Mark a target and [b]trace[/b] their location.[nl]Assassinate them to become [b]invisible[/b].</string>
     <!-- Ninja Wiki -->
     <string name="SuperSquadRoleNinjaWikiDescription">The Ninja is an Impostor Assassin role that can mark players and see their trace. When they assassinate a marked target, they become invisible for a brief period to slip away unnoticed.</string>
     <string name="SuperSquadRoleNinjaMark">Mark</string>
@@ -80,7 +80,7 @@
     <!-- Witch - Impostor Curse -->
     <string name="SuperSquadRoleWitch">Witch</string>
     <string name="SuperSquadRoleWitchIntroBlurb">Cast a hex upon your foes.</string>
-    <string name="SuperSquadRoleWitchTabDescription">\%b\%Hex\%/b\% your targets during the game.\%nl\%They will die at the next meeting unless they're protected or you're voted out.</string>
+    <string name="SuperSquadRoleWitchTabDescription">[b]Hex[/b] your targets during the game.[nl]They will die at the next meeting unless they're protected or you're voted out.</string>
     <!-- Witch Wiki -->
     <string name="SuperSquadRoleWitchWikiDescription">The Witch is an Impostor Curse role that can hex players. Hexed players will die at the next meeting unless the Witch is voted out before then or the hex is somehow lifted.</string>
     <string name="SuperSquadRoleWitchHex">Hex</string>
@@ -96,7 +96,7 @@
     <!-- Sniper - Impostor Marksman -->
     <string name="SuperSquadRoleSniper">Sniper</string>
     <string name="SuperSquadRoleSniperIntroBlurb">Shoot the crew with your sniper.</string>
-    <string name="SuperSquadRoleSniperTabDescription">\%b\%Aim\%/b\% and \%b\%snipe\%/b\% players from anywhere on the map.\%nl\%Precision kills from a distance.</string>
+    <string name="SuperSquadRoleSniperTabDescription">[b]Aim[/b] and [b]snipe[/b] players from anywhere on the map.[nl]Precision kills from a distance.</string>
     <!-- Sniper Wiki -->
     <string name="SuperSquadRoleSniperWikiDescription">The Sniper is an Impostor Marksman role that can aim at targets and take a piercing shot that kills from across the map. They have a limited aiming window to line up their shot.</string>
     <string name="SuperSquadRoleSniperSnipe">Snipe</string>
@@ -109,7 +109,7 @@
     <!-- Pelican - Neutral Killing -->
     <string name="SuperSquadRolePelican">Pelican</string>
     <string name="SuperSquadRolePelicanIntroBlurb">You're soooo hungry.</string>
-    <string name="SuperSquadRolePelicanTabDescription">\%b\%Devour\%/b\% players to consume them.\%nl\%Win by being the last one alive.</string>
+    <string name="SuperSquadRolePelicanTabDescription">[b]Devour[/b] players to consume them.[nl]Win by being the last one alive.</string>
     <!-- Pelican Wiki -->
     <string name="SuperSquadRolePelicanWikiDescription">The Pelican is a Neutral Killing role that can devour other players. They win alone when they are the only player left alive.</string>
     <string name="SuperSquadRolePelicanDevour">Devour</string>
@@ -122,17 +122,17 @@
     <string name="SuperSquadRoleMafia">Mafia</string>
     <string name="SuperSquadRoleGodfather">Godfather</string>
     <string name="SuperSquadRoleGodfatherIntroBlurb">Kill all Crewmates.</string>
-    <string name="SuperSquadRoleGodfatherTabDescription">You are the head of the Mafia.\%nl\%The Mafioso answers to you and cannot act while you live.</string>
+    <string name="SuperSquadRoleGodfatherTabDescription">You are the head of the Mafia.[nl]The Mafioso answers to you and cannot act while you live.</string>
     <!-- Godfather Wiki -->
     <string name="SuperSquadRoleGodfatherWikiDescription">The Godfather is an Impostor Killing role and the leader of the Mafia. They are a standard Impostor with kill and sabotage abilities. The Mafioso cannot kill or sabotage while the Godfather is alive, ensuring the hierarchy of the family.</string>
     <string name="SuperSquadRoleMafioso">Mafioso</string>
     <string name="SuperSquadRoleMafiosoIntroBlurb">Work with the Mafia to kill the Crewmates.</string>
-    <string name="SuperSquadRoleMafiosoTabDescription">You work under the Godfather.\%nl\%You cannot kill or sabotage while they live, but you inherit their powers when they die.</string>
+    <string name="SuperSquadRoleMafiosoTabDescription">You work under the Godfather.[nl]You cannot kill or sabotage while they live, but you inherit their powers when they die.</string>
     <!-- Mafioso Wiki -->
     <string name="SuperSquadRoleMafiosoWikiDescription">The Mafioso is an Impostor Killing role and a member of the Mafia under the Godfather's command. While the Godfather lives, the Mafioso cannot kill or sabotage. When the Godfather dies, the Mafioso immediately gains full Impostor powers and becomes the new leader.</string>
     <string name="SuperSquadRoleMafiaJanitor">Mafia Janitor</string>
     <string name="SuperSquadRoleMafiaJanitorIntroBlurb">Work with the Mafia by hiding dead bodies.</string>
-    <string name="SuperSquadRoleMafiaJanitorTabDescription">You have a \%b\%clean\%/b\% button instead of a kill button.\%nl\%Use it to remove bodies and cover the Mafia's tracks.</string>
+    <string name="SuperSquadRoleMafiaJanitorTabDescription">You have a [b]clean[/b] button instead of a kill button.[nl]Use it to remove bodies and cover the Mafia's tracks.</string>
     <!-- Mafia Janitor Wiki -->
     <string name="SuperSquadRoleMafiaJanitorWikiDescription">The Mafia Janitor is an Impostor Support role that cleans up after the Mafia. Instead of a kill button, they have a clean button to remove bodies from the game, one at a time. This helps the Mafia avoid detection while covering their tracks.</string>
     <string name="SuperSquadRoleMafiaJanitorClean">Clean</string>
@@ -143,7 +143,7 @@
     <!-- Eraser - Impostor Support -->
     <string name="SuperSquadRoleEraser">Eraser</string>
     <string name="SuperSquadRoleEraserIntroBlurb">Mark players and strip them of their role - immediately or at the next meeting.</string>
-    <string name="SuperSquadRoleEraserTabDescription">\%b\%Mark\%/b\% your targets.\%nl\%At the next meeting's end, they lose their role and become plain Crewmates. Each use adds cooldown time.</string>
+    <string name="SuperSquadRoleEraserTabDescription">[b]Mark[/b] your targets.[nl]At the next meeting's end, they lose their role and become plain Crewmates. Each use adds cooldown time.</string>
     <!-- Eraser Wiki -->
     <string name="SuperSquadRoleEraserWikiDescription">The Eraser is an Impostor Support role that can mark players to be erased. At the end of each meeting's exile phase, all marked players lose their modded role and become plain Crewmates without being informed. Each use of the erase ability adds 10 seconds to the cooldown permanently.</string>
     <string name="SuperSquadRoleEraserErase">Erase</string>
@@ -156,7 +156,7 @@
     <!-- Vulture - Neutral Scavenger -->
     <string name="SuperSquadRoleVulture">Vulture</string>
     <string name="SuperSquadRoleVultureIntroBlurb">Eat corpses to win.</string>
-    <string name="SuperSquadRoleVultureTabDescription">\%b\%Eat\%/b\% dead bodies to consume them.\%nl\%When you've eaten enough, you win instantly.</string>
+    <string name="SuperSquadRoleVultureTabDescription">[b]Eat[/b] dead bodies to consume them.[nl]When you've eaten enough, you win instantly.</string>
     <!-- Vulture Wiki -->
     <string name="SuperSquadRoleVultureWikiDescription">The Vulture is a Neutral Scavenger role that can eat dead bodies, permanently removing them from the game. They can see arrows pointing to nearby corpses and win instantly once they have consumed the required number of bodies. They win alone and do not align with any other faction.</string>
     <string name="SuperSquadRoleVultureEat">Eat</string>
@@ -169,7 +169,7 @@
     <!-- Daddy Hagrid - Crewmate Protective -->
     <string name="SuperSquadRoleDaddyHagrid">Daddy Hagrid</string>
     <string name="SuperSquadRoleDaddyHagridIntroBlurb">Hide players in your cloak to keep them safe.</string>
-    <string name="SuperSquadRoleDaddyHagridTabDescription">\%b\%Hide\%/b\% a player in your cloak.\%nl\%They're protected until they pop back out.</string>
+    <string name="SuperSquadRoleDaddyHagridTabDescription">[b]Hide[/b] a player in your cloak.[nl]They're protected until they pop back out.</string>
     <!-- Daddy Hagrid Wiki -->
     <string name="SuperSquadRoleDaddyHagridWikiDescription">Daddy Hagrid is a Crewmate Protective role that can hide a player in his cloak. A hidden player is invisible, untargetable, and rides along with Hagrid until the hide duration runs out, popping back out at his position. Unlike a certain hungry bird, a meeting releases them unharmed - and if Hagrid dies, they're released alive where he fell.</string>
     <string name="SuperSquadRoleDaddyHagridHide">Hide</string>
@@ -182,7 +182,7 @@
     <!-- Elusive - Crewmate Protective -->
     <string name="SuperSquadRoleElusive">Elusive</string>
     <string name="SuperSquadRoleElusiveIntroBlurb">Send your attackers somewhere far, far away.</string>
-    <string name="SuperSquadRoleElusiveTabDescription">Raise your \%b\%shield\%/b\%.\%nl\%Anyone who interacts with you while it's up is teleported across the map.</string>
+    <string name="SuperSquadRoleElusiveTabDescription">Raise your [b]shield[/b].[nl]Anyone who interacts with you while it's up is teleported across the map.</string>
     <!-- Elusive Wiki -->
     <string name="SuperSquadRoleElusiveWikiDescription">The Elusive is a Crewmate Protective role with a shield ability. While the shield is up, anyone who interacts with the Elusive - a kill attempt or a targeted ability - is blocked and instantly teleported to a random spot on the map. Attackers can't tell the shield is up until it's too late.</string>
     <string name="SuperSquadRoleElusiveShield">Shield</string>
@@ -195,7 +195,7 @@
     <!-- RC-XD - Impostor Killing -->
     <string name="SuperSquadRoleRcXd">RC-XD</string>
     <string name="SuperSquadRoleRcXdIntroBlurb">Deploy an explosive RC car.</string>
-    <string name="SuperSquadRoleRcXdTabDescription">\%b\%Deploy\%/b\% an RC car to drive around.\%nl\%Press again to \%b\%detonate\%/b\% it in a radius.</string>
+    <string name="SuperSquadRoleRcXdTabDescription">[b]Deploy[/b] an RC car to drive around.[nl]Press again to [b]detonate[/b] it in a radius.</string>
     <!-- RC-XD Wiki -->
     <string name="SuperSquadRoleRcXdWikiDescription">The RC-XD is an Impostor Killing role that deploys a remote-controlled car. You freeze in place while driving it, and pressing the button again detonates it to kill everyone nearby.</string>
     <string name="SuperSquadRoleRcXdDeploy">Deploy</string>
@@ -211,7 +211,7 @@
     <string name="SuperSquadOptionRcXdCanVent">RC-XD Can Vent</string>
     <!-- Invisibility Cloak - Universal Modifier -->
     <string name="SuperSquadModifierInvisibilityCloak">Invisibility Cloak</string>
-    <string name="SuperSquadModifierInvisibilityCloakTabDescription">Throw on your \%b\%cloak\%/b\% to turn invisible for a short while.</string>
+    <string name="SuperSquadModifierInvisibilityCloakTabDescription">Throw on your [b]cloak[/b] to turn invisible for a short while.</string>
     <string name="SuperSquadModifierInvisibilityCloakWikiDescription">The Invisibility Cloak is a Universal Modifier that grants its holder a Cloak button. Using it turns the holder completely invisible - hidden from players, cameras, and the admin table - for a short duration. Only the wearer (and the informed dead) see a faint outline.</string>
     <string name="SuperSquadModifierInvisibilityCloakButton">Cloak</string>
     <string name="SuperSquadModifierInvisibilityCloakButtonWikiDescription">Become invisible for a short duration.</string>
@@ -222,7 +222,7 @@
     <string name="SuperSquadOptionInvisibilityCloakDuration">Cloak Duration</string>
     <!-- Slide Tackle - Universal Modifier -->
     <string name="SuperSquadModifierSlideTackle">Slide Tackle</string>
-    <string name="SuperSquadModifierSlideTackleTabDescription">\%b\%Slide tackle\%/b\% the nearest player, stunning them briefly.</string>
+    <string name="SuperSquadModifierSlideTackleTabDescription">[b]Slide tackle[/b] the nearest player, stunning them briefly.</string>
     <string name="SuperSquadModifierSlideTackleWikiDescription">The Slide Tackle is a Universal Modifier that grants its holder a Tackle button. Using it lunges the holder at the nearest player and knocks them down: the victim can't move, use abilities, or report for a short duration - but they can still be killed while down.</string>
     <string name="SuperSquadModifierSlideTackleButton">Tackle</string>
     <string name="SuperSquadModifierSlideTackleButtonWikiDescription">Lunge at the nearest player and stun them briefly.</string>
@@ -234,7 +234,7 @@
     <!-- Dumper - Impostor Support -->
     <string name="SuperSquadRoleDumper">Dumper</string>
     <string name="SuperSquadRoleDumperIntroBlurb">Carry bodies away before anyone can find them.</string>
-    <string name="SuperSquadRoleDumperTabDescription">\%b\%Carry\%/b\% a nearby body to hide it completely, then \%b\%drop\%/b\% it wherever you please.</string>
+    <string name="SuperSquadRoleDumperTabDescription">[b]Carry[/b] a nearby body to hide it completely, then [b]drop[/b] it wherever you please.</string>
     <!-- Dumper Wiki -->
     <string name="SuperSquadRoleDumperWikiDescription">The Dumper is an Impostor Support role that can pick up a nearby dead body, hiding it entirely from the round for a limited time. The body can be dropped early at any moment, or it will drop automatically - and become visible again - once the carry duration runs out, a meeting is called, or the Dumper dies.</string>
     <string name="SuperSquadRoleDumperCarry">Store</string>
@@ -247,7 +247,7 @@
     <!-- Detonator - Impostor Killing -->
     <string name="SuperSquadRoleDetonator">Detonator</string>
     <string name="SuperSquadRoleDetonatorIntroBlurb">Attach a bomb, then choose your moment.</string>
-    <string name="SuperSquadRoleDetonatorTabDescription">\%b\%Attach\%/b\% a bomb to a nearby player, then \%b\%detonate\%/b\% it whenever you like once it's armed.</string>
+    <string name="SuperSquadRoleDetonatorTabDescription">[b]Attach[/b] a bomb to a nearby player, then [b]detonate[/b] it whenever you like once it's armed.</string>
     <!-- Detonator Wiki -->
     <string name="SuperSquadRoleDetonatorWikiDescription">The Detonator is an Impostor Killing role that can attach a bomb to a nearby player. After a short arming delay, the bomb can be detonated at any time, killing the bombed player and anyone caught in a small radius around their current position. Only one bomb can be active at a time, and it's removed harmlessly if a meeting is called before it goes off.</string>
     <string name="SuperSquadRoleDetonatorAttach">Attach</string>
@@ -262,7 +262,7 @@
     <!-- Gooper - Neutral Killing -->
     <string name="SuperSquadRoleGooper">Gooper</string>
     <string name="SuperSquadRoleGooperIntroBlurb">Goop bodies to grow ever more dangerous.</string>
-    <string name="SuperSquadRoleGooperTabDescription">\%b\%Goop\%/b\% dead bodies to mark them - each goop grants a new power. Outlast everyone else to win.</string>
+    <string name="SuperSquadRoleGooperTabDescription">[b]Goop[/b] dead bodies to mark them - each goop grants a new power. Outlast everyone else to win.</string>
     <!-- Gooper Wiki -->
     <string name="SuperSquadRoleGooperWikiDescription">The Gooper is a Neutral Killing role that can goop dead bodies, marking them (without removing them) so they can't be gooped again. The first goop unlocks a protective vest ability - activate it to become briefly immune to being killed; the second grants a permanent kill button and the ability to vent; the third and every goop after grants one additional random ability, drawn without repeats from a pool that currently includes Snipe and Swoop. An arrow points toward every un-gooped body while alive.</string>
     <string name="SuperSquadRoleGooperGoop">Goop</string>
@@ -272,7 +272,7 @@
     <!-- Kirby - Neutral Killing -->
     <string name="SuperSquadRoleKirby">Kirby</string>
     <string name="SuperSquadRoleKirbyIntroBlurb">Swallow your way to a bigger arsenal.</string>
-    <string name="SuperSquadRoleKirbyTabDescription">\%b\%Swallow\%/b\% nearby players to inherit their abilities right away. They're digested at the next meeting.</string>
+    <string name="SuperSquadRoleKirbyTabDescription">[b]Swallow[/b] nearby players to inherit their abilities right away. They're digested at the next meeting.</string>
     <!-- Kirby Wiki -->
     <string name="SuperSquadRoleKirbyWikiDescription">Kirby is a Neutral Killing role that can swallow nearby players, hiding and freezing them exactly like the Pelican. The moment a player is swallowed, Kirby permanently inherits a curated set of their abilities - kill, vent, snipe, and swoop. Swallowed players are digested (killed, no body) at the next meeting. If Kirby dies before then, everyone in its stomach is released alive where it died.</string>
     <string name="SuperSquadRoleKirbySwallow">Swallow</string>
@@ -295,7 +295,7 @@
     <!-- Sui - Crewmate Protective -->
     <string name="SuperSquadRoleSui">Sui</string>
     <string name="SuperSquadRoleSuiIntroBlurb">Protect someone, and make anyone who targets them regret it.</string>
-    <string name="SuperSquadRoleSuiTabDescription">\%b\%Protect\%/b\% one player at a time. If someone interacts with them, you gain a one-time \%b\%retaliation\%/b\% kill.</string>
+    <string name="SuperSquadRoleSuiTabDescription">[b]Protect[/b] one player at a time. If someone interacts with them, you gain a one-time [b]retaliation[/b] kill.</string>
     <!-- Sui Wiki -->
     <string name="SuperSquadRoleSuiWikiDescription">The Sui is a Crewmate Protective role that can protect one player at a time. If anyone uses an ability on - or attempts to kill - the protected player, the Sui gains a one-shot retaliation kill locked onto whoever did it, with an arrow pointing them out. Options can widen the retaliation target to anyone, make the Sui die if they retaliate against the wrong person, or narrow the trigger to only an impostor's kill attempts. The retaliation window lasts until it's used or the next meeting starts.</string>
     <string name="SuperSquadRoleSuiProtect">Protect</string>

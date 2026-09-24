@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
@@ -10,7 +11,6 @@ using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -27,8 +27,8 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 /// </summary>
 public sealed class DaddyHagridHideButton : SuperSquadRoleButton<DaddyHagridRole, PlayerControl>
 {
-    private static string HideLabel => TouLocale.GetParsed("SuperSquadRoleDaddyHagridHide", "Hide");
-    private static string ReleaseLabel => TouLocale.GetParsed("SuperSquadRoleDaddyHagridRelease", "Release");
+    private static string HideLabel => MiraLocaleManager.Get("SuperSquadRoleDaddyHagridHide", "Hide");
+    private static string ReleaseLabel => MiraLocaleManager.Get("SuperSquadRoleDaddyHagridRelease", "Release");
 
     // The player currently hidden by THIS Hagrid, or null. The button's EffectActive is the phase
     // authority (Hide vs. Release); this field just remembers WHO to release. Not re-derived from

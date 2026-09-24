@@ -2,6 +2,7 @@ using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
 using MiraAPI.Networking;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modules;
@@ -11,7 +12,6 @@ using TownOfUs;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Networking;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -37,7 +37,7 @@ public sealed class SniperSnipeButton : SuperSquadRoleButton<SniperRole>
     // (it can be reached from Fire, OnEffectEnd, and the FixedUpdate cancel path).
     private bool aimLockActive;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleSniperSnipe", "Snipe");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleSniperSnipe", "Snipe");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<SniperOptions>.Instance.SnipeCooldown + MapCooldown, 5f, 120f);

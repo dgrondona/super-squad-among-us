@@ -2,6 +2,7 @@ using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
 using MiraAPI.Networking;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
@@ -9,7 +10,6 @@ using SuperSquadAmongUs.Options.Roles.Crewmate;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -26,7 +26,7 @@ public sealed class SuiRetaliateButton : SuperSquadRoleButton<SuiRole, PlayerCon
     private PlayerControl? lockedTarget;
     private ArrowBehaviour? arrow;
 
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleSuiRetaliate", "Retaliate");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleSuiRetaliate", "Retaliate");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => SuperSquadColors.Sui;
     public override float Cooldown => 0f;

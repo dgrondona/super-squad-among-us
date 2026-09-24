@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Impostor;
@@ -8,14 +9,13 @@ using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Impostor;
 
 public sealed class AstralFormButton : SuperSquadRoleButton<AstralRole>
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleAstralForm", "Phase");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleAstralForm", "Phase");
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
     public override Color TextOutlineColor => TownOfUsColors.Impostor;
     public override float Cooldown => Math.Clamp(OptionGroupSingleton<AstralOptions>.Instance.FormCooldown + MapCooldown, 5f, 120f);

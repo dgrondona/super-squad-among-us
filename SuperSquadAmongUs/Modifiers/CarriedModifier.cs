@@ -30,6 +30,16 @@ public abstract class CarriedModifier(PlayerControl carrier) : ConcealedModifier
     /// <inheritdoc />
     public override bool VisibleToOthers => false;
 
+    /// <summary>
+    /// Gets a value indicating whether this modifier survives into a meeting. Always true: TOU-Mira
+    /// 1.7.3 made <see cref="ConcealedModifier"/> strip itself on meeting start by default, and that
+    /// runs before <c>StartMeetingEvent</c> - so leaving it false would empty the stomach before
+    /// PelicanEvents/KirbyEvents' digest handlers ever see it. Those handlers remove the modifier
+    /// themselves once they're done. <see cref="CloakHiddenModifier"/> opts out of digestion by
+    /// overriding <c>OnMeetingStart</c> instead.
+    /// </summary>
+    public override bool CarriesIntoMeetings => true;
+
     /// <inheritdoc />
     public bool VisualPriority => true;
 

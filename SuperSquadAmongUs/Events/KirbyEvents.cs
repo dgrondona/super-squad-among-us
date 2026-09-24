@@ -2,10 +2,10 @@ using MiraAPI.Events;
 using MiraAPI.Events.Vanilla.Meeting;
 using MiraAPI.Events.Vanilla.Player;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Modifiers;
-using TownOfUs.Events;
-using TownOfUs.Modifiers;
-using TownOfUs.Modules.Localization;
+using TownOfUs.Modules;
+using TownOfUs.Modules.Components;
 using TownOfUs.Utilities;
 
 namespace SuperSquadAmongUs.Events;
@@ -41,13 +41,17 @@ public static class KirbyEvents
 
             // Ability inheritance already happened at swallow time (KirbySwallowedModifier.OnActivate) -
             // digestion only kills the swallowed player here.
-            DeathHandlerModifier.UpdateDeathHandlerImmediate(
+            // playerState: Dead, or DeathEventHandlers' PlayerDeathEvent handler overwrites DeathString
+            // with the generic "DiedTo..." text (it no longer skips players that already have death info).
+            GameHistory.UpdatePlayerDeathData(
                 target,
-                TouLocale.Get("SuperSquadDiedToKirby", "Digested"),
-                DeathEventHandlers.CurrentRound,
+                MiraLocaleManager.Get("SuperSquadDiedToKirby", "Digested"),
+                0f,
+                HudManagerHelper.Instance.CurrentRound,
                 DeathHandlerOverride.SetFalse,
-                TouLocale.GetParsed("DiedByStringBasic").Replace("<player>", kirby != null ? kirby.Data.PlayerName : "Kirby"),
-                lockInfo: DeathHandlerOverride.SetTrue);
+                MiraLocaleManager.Get("DiedByStringBasic").Replace("<player>", kirby != null ? kirby.Data.PlayerName : "Kirby"),
+                lockInfo: DeathHandlerOverride.SetTrue,
+                playerState: StoredPlayerState.Dead);
 
             // Exiled() kills without leaving a body - the victim was digested, there's nothing to find.
             target.Exiled();

@@ -11,8 +11,9 @@ using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Options.Roles.Impostor;
 using SuperSquadAmongUs.Roles.Impostor;
 using TownOfUs.Assets;
-using TownOfUs.Events;
 using TownOfUs.Modifiers;
+using TownOfUs.Modules;
+using TownOfUs.Modules.Components;
 using TownOfUs.Networking;
 using TownOfUs.Utilities;
 using UnityEngine;
@@ -152,8 +153,10 @@ public static class RcXdCar
                     // deployer's client computes the blast). killedBy: owner, not null - TOU
                     // suppresses the "killed by" text when killedBy == player, and unlike null it's
                     // safe to dereference on the locale-miss branch.
-                    DeathHandlerModifier.RpcUpdateLocalDeathHandler(owner, owner, "DiedToSuperSquadRcXd",
-                        DeathEventHandlers.CurrentRound, DeathHandlerOverride.SetTrue, "null",
+                    // Unlike GameHistory.UpdatePlayerDeathData, this RPC has no playerState parameter,
+                    // so the deployer can't be marked Dead ahead of the kill - see docs/roles/rc-xd.md.
+                    GameHistory.RpcUpdateLocalDeathHandler(owner, owner, "DiedToSuperSquadRcXd",
+                        HudManagerHelper.Instance.CurrentRound, DeathHandlerOverride.SetTrue, "null",
                         DeathHandlerOverride.SetTrue);
 
                     // teleportMurderer: false keeps the kill synchronous (MiraAPI defaults to true,

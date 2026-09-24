@@ -1,14 +1,14 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
 public sealed class DumperOptions : AbstractRoleOptionGroup<DumperRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleDumper", "Dumper");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleDumper", "Dumper");
 
     [ModdedNumberOption("SuperSquadOptionDumperCarryCooldown", 5f, 60f, 2.5f, MiraNumberSuffixes.Seconds)]
     public float CarryCooldown { get; set; } = 20f;

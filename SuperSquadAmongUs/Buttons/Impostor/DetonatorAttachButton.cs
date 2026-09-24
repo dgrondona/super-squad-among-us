@@ -1,6 +1,7 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
@@ -11,7 +12,6 @@ using TownOfUs;
 using TownOfUs.Buttons;
 using TownOfUs.Modifiers;
 using TownOfUs.Modifiers.Neutral;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -24,8 +24,8 @@ namespace SuperSquadAmongUs.Buttons.Impostor;
 /// </summary>
 public sealed class DetonatorAttachButton : SuperSquadRoleButton<DetonatorRole, PlayerControl>
 {
-    private static string AttachLabel => TouLocale.GetParsed("SuperSquadRoleDetonatorAttach", "Attach");
-    private static string DetonateLabel => TouLocale.GetParsed("SuperSquadRoleDetonatorDetonate", "Detonate");
+    private static string AttachLabel => MiraLocaleManager.Get("SuperSquadRoleDetonatorAttach", "Attach");
+    private static string DetonateLabel => MiraLocaleManager.Get("SuperSquadRoleDetonatorDetonate", "Detonate");
 
     // The player currently bombed by THIS Detonator, or null - the LOCAL source of truth for the
     // Attach vs. Detonate phase. Deliberately NOT re-derived from HasModifier each frame: a freshly-sent

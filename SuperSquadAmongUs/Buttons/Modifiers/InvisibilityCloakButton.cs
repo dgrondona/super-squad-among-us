@@ -2,13 +2,13 @@ using MiraAPI.GameOptions;
 using MiraAPI.Hud;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Modules;
 using SuperSquadAmongUs.Options.Modifiers;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Modifiers;
@@ -21,7 +21,7 @@ namespace SuperSquadAmongUs.Buttons.Modifiers;
 public sealed class InvisibilityCloakButton : TownOfUsButton
 {
     /// <inheritdoc />
-    public override string Name => TouLocale.GetParsed("SuperSquadModifierInvisibilityCloakButton", "Cloak");
+    public override string Name => MiraLocaleManager.Get("SuperSquadModifierInvisibilityCloakButton", "Cloak");
 
     /// <inheritdoc />
     public override BaseKeybind Keybind => Keybinds.ModifierAction;

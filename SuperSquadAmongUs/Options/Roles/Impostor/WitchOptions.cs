@@ -1,14 +1,14 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Impostor;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Impostor;
 
 public sealed class WitchOptions : AbstractRoleOptionGroup<WitchRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleWitch", "Witch");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleWitch", "Witch");
 
     [ModdedNumberOption("SuperSquadOptionWitchHexCooldown", 10f, 120f, 5f, MiraNumberSuffixes.Seconds)]
     public float HexCooldown { get; set; } = 30f;

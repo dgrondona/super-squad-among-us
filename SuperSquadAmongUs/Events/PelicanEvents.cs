@@ -2,11 +2,11 @@ using MiraAPI.Events;
 using MiraAPI.Events.Vanilla.Meeting;
 using MiraAPI.Events.Vanilla.Player;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Roles.Neutral;
-using TownOfUs.Events;
-using TownOfUs.Modifiers;
-using TownOfUs.Modules.Localization;
+using TownOfUs.Modules;
+using TownOfUs.Modules.Components;
 using TownOfUs.Utilities;
 
 namespace SuperSquadAmongUs.Events;
@@ -49,13 +49,17 @@ public static class PelicanEvents
                 continue;
             }
 
-            DeathHandlerModifier.UpdateDeathHandlerImmediate(
+            // playerState: Dead, or DeathEventHandlers' PlayerDeathEvent handler overwrites DeathString
+            // with the generic "DiedTo..." text (it no longer skips players that already have death info).
+            GameHistory.UpdatePlayerDeathData(
                 target,
-                TouLocale.Get("SuperSquadDiedToPelican", "Digested"),
-                DeathEventHandlers.CurrentRound,
+                MiraLocaleManager.Get("SuperSquadDiedToPelican", "Digested"),
+                0f,
+                HudManagerHelper.Instance.CurrentRound,
                 DeathHandlerOverride.SetFalse,
-                TouLocale.GetParsed("DiedByStringBasic").Replace("<player>", pelican != null ? pelican.Data.PlayerName : "Pelican"),
-                lockInfo: DeathHandlerOverride.SetTrue);
+                MiraLocaleManager.Get("DiedByStringBasic").Replace("<player>", pelican != null ? pelican.Data.PlayerName : "Pelican"),
+                lockInfo: DeathHandlerOverride.SetTrue,
+                playerState: StoredPlayerState.Dead);
 
             // Exiled() kills without leaving a body - the victim was digested, there's nothing to find.
             target.Exiled();

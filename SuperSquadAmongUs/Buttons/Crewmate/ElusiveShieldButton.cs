@@ -1,13 +1,13 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Crewmate;
 using SuperSquadAmongUs.Roles.Crewmate;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using UnityEngine;
 
 namespace SuperSquadAmongUs.Buttons.Crewmate;
@@ -20,7 +20,7 @@ namespace SuperSquadAmongUs.Buttons.Crewmate;
 public sealed class ElusiveShieldButton : SuperSquadRoleButton<ElusiveRole>
 {
     /// <inheritdoc />
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleElusiveShield", "Shield");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleElusiveShield", "Shield");
 
     /// <inheritdoc />
     public override BaseKeybind Keybind => Keybinds.SecondaryAction;
@@ -45,12 +45,12 @@ public sealed class ElusiveShieldButton : SuperSquadRoleButton<ElusiveRole>
     protected override void OnClick()
     {
         PlayerControl.LocalPlayer.RpcAddModifier<ElusiveShieldModifier>();
-        OverrideName(TouLocale.Get("SuperSquadRoleElusiveShielding", "Shielding"));
+        OverrideName(MiraLocaleManager.Get("SuperSquadRoleElusiveShielding", "Shielding"));
     }
 
     /// <inheritdoc />
     public override void OnEffectEnd()
     {
-        OverrideName(TouLocale.Get("SuperSquadRoleElusiveShield", "Shield"));
+        OverrideName(MiraLocaleManager.Get("SuperSquadRoleElusiveShield", "Shield"));
     }
 }

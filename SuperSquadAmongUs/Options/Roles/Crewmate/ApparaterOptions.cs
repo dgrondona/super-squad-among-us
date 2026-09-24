@@ -1,15 +1,15 @@
 using MiraAPI.GameOptions;
 using MiraAPI.GameOptions.Attributes;
 using MiraAPI.GameOptions.OptionTypes;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Roles.Crewmate;
-using TownOfUs.Modules.Localization;
 
 namespace SuperSquadAmongUs.Options.Roles.Crewmate;
 
 public sealed class ApparaterOptions : AbstractRoleOptionGroup<ApparaterRole>
 {
-    public override string GroupName => TouLocale.Get("SuperSquadRoleApparater", "Apparater");
+    public override string GroupName => MiraLocaleManager.Get("SuperSquadRoleApparater", "Apparater");
 
     [ModdedNumberOption("SuperSquadOptionApparaterCooldown", 5f, 60f, 1f, MiraNumberSuffixes.Seconds)]
     public float TeleportCooldown { get; set; } = 6f;

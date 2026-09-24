@@ -3,6 +3,7 @@ using Il2CppInterop.Runtime.Attributes;
 using MiraAPI.GameOptions;
 using MiraAPI.Modifiers;
 using MiraAPI.Roles;
+using MiraAPI.Translation;
 using MiraAPI.Utilities;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
@@ -11,7 +12,6 @@ using SuperSquadAmongUs.Options.Roles.Neutral;
 using TownOfUs;
 using TownOfUs.Assets;
 using TownOfUs.Extensions;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Modules.Wiki;
 using TownOfUs.Roles;
 using TownOfUs.Roles.Neutral;
@@ -33,15 +33,15 @@ public sealed class KirbyRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRol
     public bool BaseCanVent => OptionGroupSingleton<KirbyOptions>.Instance.CanVent;
 
     public DoomableType DoomHintType => DoomableType.Relentless;
-    public string LocaleKey => "Kirby";
-    public string RoleName => TouLocale.Get($"SuperSquadRole{LocaleKey}");
-    public string RoleDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}IntroBlurb");
-    public string RoleLongDescription => TouLocale.GetParsed($"SuperSquadRole{LocaleKey}TabDescription");
+    public string IdPart => "Kirby";
+    public string RoleName => MiraLocaleManager.Get($"SuperSquadRole{IdPart}");
+    public string RoleDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}IntroBlurb");
+    public string RoleLongDescription => MiraLocaleManager.Get($"SuperSquadRole{IdPart}TabDescription");
 
     public string GetAdvancedDescription()
     {
         return
-            TouLocale.GetParsed($"SuperSquadRole{LocaleKey}WikiDescription") +
+            MiraLocaleManager.Get($"SuperSquadRole{IdPart}WikiDescription") +
             MiscUtils.AppendOptionsText(GetType());
     }
 
@@ -52,8 +52,8 @@ public sealed class KirbyRole(IntPtr cppPtr) : NeutralRole(cppPtr), ITownOfUsRol
         {
             return new List<CustomButtonWikiDescription>
             {
-                new(TouLocale.GetParsed($"SuperSquadRole{LocaleKey}Swallow", "Swallow"),
-                    TouLocale.GetParsed($"SuperSquadRole{LocaleKey}SwallowWikiDescription"),
+                new(MiraLocaleManager.Get($"SuperSquadRole{IdPart}Swallow", "Swallow"),
+                    MiraLocaleManager.Get($"SuperSquadRole{IdPart}SwallowWikiDescription"),
                     SuperSquadAssets.NeutralPlaceholderButton),
             };
         }

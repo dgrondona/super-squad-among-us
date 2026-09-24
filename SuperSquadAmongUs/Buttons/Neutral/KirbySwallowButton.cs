@@ -1,13 +1,13 @@
 using MiraAPI.GameOptions;
 using MiraAPI.Keybinds;
 using MiraAPI.Modifiers;
+using MiraAPI.Translation;
 using MiraAPI.Utilities.Assets;
 using SuperSquadAmongUs.Assets;
 using SuperSquadAmongUs.Modifiers;
 using SuperSquadAmongUs.Options.Roles.Neutral;
 using SuperSquadAmongUs.Roles.Neutral;
 using TownOfUs.Buttons;
-using TownOfUs.Modules.Localization;
 using TownOfUs.Utilities;
 using UnityEngine;
 
@@ -20,7 +20,7 @@ namespace SuperSquadAmongUs.Buttons.Neutral;
 /// </summary>
 public sealed class KirbySwallowButton : SuperSquadRoleButton<KirbyRole, PlayerControl>, IKillButton
 {
-    public override string Name => TouLocale.GetParsed("SuperSquadRoleKirbySwallow", "Swallow");
+    public override string Name => MiraLocaleManager.Get("SuperSquadRoleKirbySwallow", "Swallow");
 
     // TertiaryAction: PrimaryAction belongs to the granted Kill, and borrowed kit buttons keep their
     // source keybinds - which is almost always SecondaryAction - so Kirby's own core ability lives on

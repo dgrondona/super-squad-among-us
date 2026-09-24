@@ -19,6 +19,11 @@ not explain, check it against `2623413` before assuming the cleanup caused it.
 
 ---
 
+> **A third review pass is planned** — see [PASS_3_PLAN.md](PASS_3_PLAN.md). It covers the ~2,000 lines
+> of ability implementations that passes 1–2 never read end to end. It does **not** gate this plan:
+> everything below except item 1.4 and Stage 3 touches code already reviewed in full. Prefer running it
+> **before Stage 3**, so the localization sweep doesn't obscure a fresh read of the modifier files.
+
 ## Decisions already taken
 
 These were confirmed with the maintainer after the second review pass. Phase 2 implements them; it does

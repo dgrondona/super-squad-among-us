@@ -234,6 +234,54 @@ Then confirm a real Vulture still eats and still wins at its threshold.
 
 **Depends on:** nothing.
 
+### 2.6 Claim the keybind in the four unguarded `ClickHandler` branches (SSA-023)
+
+**What changes.** Add `|| !KeybindArbiter.TryClaim(Keybind)` to the can-fire guard in
+`NinjaMarkButton`, `DetonatorAttachButton` (both branches — neither reaches `base.ClickHandler()`),
+`RcXdDeployButton` (detonate branch) and `DumperCarryButton` (early-dump branch).
+
+**Why.** `base.ClickHandler()` is what claims; any branch returning before it is unarbitrated, which in
+a two-phase button is always the second phase. All four are on `SecondaryAction`, shared by ten buttons.
+
+**Risk.** Low. `DaddyHagridHideButton` is the reference implementation — same shape, already correct.
+Claim *after* the can-fire check, never before, per `KeybindArbiter`'s remarks. Keep the existing
+`ToggleDebounce` / `DetonateArmDelay` guards: they cover autorepeat, which the arbiter does not.
+
+**Verify.** Build-verified. Playtest: a Kirby holding two Secondary kits fires exactly one ability per
+press, in both phases of each two-phase button.
+
+### 2.7 Fix the Ninja's `DisabledModifier` gate (SSA-024)
+
+**What changes.** `HasModifier<DisabledModifier>()` → `GetModifiers<DisabledModifier>().Any(x => !x.CanUseAbilities)`
+in `NinjaMarkButton.ClickHandler`. The only remaining bare gate in the addon.
+
+**Risk.** Very low; it un-blocks cases that should never have been blocked (Grenadier flash, Eclipsal
+blind). Pair with 2.6 — same guard, same line.
+
+**Verify.** Build-verified.
+
+### 2.8 Contain the three unguarded patches (SSA-027)
+
+**What changes.** Wrap the postfix bodies of `MafiaLabelsPatch`, `MafiosoGatePatches` and
+`WitchMeetingPatch` in try/catch with an `Error(...)` log, add `[HarmonyPriority(Priority.First)]` to
+those on `HudManager.Update` / `MeetingHud.Update`, and null-guard `GameData.Instance` and `player.Data`
+at the two dereference sites.
+
+**Risk.** Low. `InvisibleBoyVisibilityPatch` and `SniperAimPatch` are the reference implementations.
+
+**Verify.** Build-verified; the chain-abort behaviour itself only shows in game.
+
+### 2.9 Give `WitchHexButton` death handling (SSA-026)
+
+**What changes.** Override `Enabled` to stay true while `EffectActive`, and add a `FixedUpdate`
+self-heal that cancels the cast on caster death or meeting start. Consider clearing `castTarget` in
+`ResetCooldownAddition()` so the existing game-start hook covers it.
+
+**Risk.** Low. Every other effect-holding button with local state already does this.
+
+**Verify.** Build-verified. Playtest: die mid-channel (hex an alerted Veteran), confirm the button is
+usable and clean next round.
+
 ---
 
 ## Stage 3 — Localization sweep (SSA-007) — CONFIRMED
@@ -470,6 +518,33 @@ seconds of a round before the flood could have completed.
 cannot change between attempts within one frame.
 
 **Depends on:** nothing, but 5.5b depends on 5.5a landing first.
+
+---
+
+### 4.4 Cache the hex overlay lookup (SSA-028)
+
+**What changes.** Replace `voteArea.transform.Find(OverlayName)` per vote area per frame with a
+dictionary keyed on `voteArea.PlayerId`, cleared at meeting end. Keep the per-frame cadence — it is
+deliberate.
+
+**Risk.** Low. Preserve: overlay appears on a hex landing mid-meeting, disappears on a mid-meeting death.
+
+---
+
+### 5.6 Unify RC-XD's two "does the deployer die?" computations (SSA-025)
+
+**What changes.** Extract the victim filter from `RcXdCar.RpcDetonateCar` into a shared helper
+(`GetBlastVictims(position)`) and have `RcXdDeployButton` ask `victims.Any(p => p.AmOwner)` instead of
+re-deriving it with a shorter filter.
+
+**Risk.** Medium — touches the self-detonate path, which this role's history shows is delicate. Removing
+the divergence by construction is safer than patching the three known disagreement cases.
+
+**Verify.** Playtest the specific case: Kirby swallows an RC-XD, `CanKillImpostors` off, detonate on top
+of yourself — control and camera must return cleanly.
+
+**Depends on:** 2.5 (excluding Vulture) is unrelated, but if 2.5's reasoning is extended to exclude
+RC-XD from kits too, this case disappears and 5.6 drops to cosmetic. Decide that first.
 
 ---
 

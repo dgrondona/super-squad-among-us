@@ -22,17 +22,25 @@ to separate *bugs* from *recorded design decisions*. That pass changed three fin
 - **New: SSA-019 – SSA-022**, including a logic bug in the reachability search and two design docs that
   assert invariants the code does not hold.
 
-**Pass 3 (partially complete)** — the targeted read of the ability implementations planned in
-[PASS_3_PLAN.md](PASS_3_PLAN.md) — has added **SSA-023 – SSA-028**. Files cleared with no findings:
-`ElusiveShieldButton` and `AstralFormButton` (no local state — theirs lives on modifiers, which tick
-independently of the button), `DaddyHagridHideButton` (correct gating, arbitrates both phases, overrides
-`Enabled`), and `DetonatorAttachButton`'s stale-state handling (it *does* self-heal `activeBomb` in
-`FixedUpdate`, unlike Witch). **Still unread:** `DumperCarryModifier`, `SuiRetaliateButton`,
-`SuiProtectButton`, `EraserEraseButton`, the rest of `InvisibleBoyModifier`, `GrantedSwoopModifier`,
-`SlideTackleButton`, `InvisibilityCloakButton`, `InvisibleBoyAdminPatch`, `SniperAimPatch`,
-`ApparaterMapClickPatch`.
+**Pass 3 (complete)** — the targeted read of the ability implementations planned in
+[PASS_3_PLAN.md](PASS_3_PLAN.md). All 18 files read end to end; added **SSA-023 – SSA-028**.
 
-### Decisions taken
+Cleared with no findings, and why: `ElusiveShieldButton` / `AstralFormButton` (no local state — theirs
+lives on modifiers, which tick independently of the button); `DaddyHagridHideButton` (arbitrates both
+phases, correct gating, overrides `Enabled`); `DetonatorAttachButton`'s stale state (it self-heals
+`activeBomb` in `FixedUpdate`, unlike Witch); both Sui buttons (`protectedTarget` is on the singleton
+with a self-heal — the documented worked example, and it holds up); `DumperCarryModifier` (handles
+body-destroyed-mid-carry, pet restore, meeting and death); `InvisibleBoyModifier`; `GrantedSwoopModifier`;
+`SlideTackleButton` / `InvisibilityCloakButton`; and `InvisibleBoyAdminPatch` / `SniperAimPatch` /
+`ApparaterMapClickPatch`, all three of which are exemplary — which is what makes SSA-027's three
+unguarded patches outliers rather than the norm.
+
+Two hypotheses from the plan were **ruled out**, both worth recording so they aren't re-raised:
+`GrantedSwoopModifier` not setting `PlayerControl.Visible` turns out to match TOU-Mira's own
+`SwoopModifier` exactly (see the deliberate-patterns list), and the two-phase buttons' second-phase
+gating is sound apart from the arbiter (SSA-023).
+
+### Decisions taken### Decisions taken
 
 Confirmed with the maintainer; Phase 2 should implement these rather than re-litigate them.
 
@@ -1098,6 +1106,14 @@ Recording these so Phase 2 does not "fix" them:
   `MafiosoGatePatches.cs:46`, `WitchMeetingPatch.cs:20`). All are "remove the underscores from
   parameter name `__instance`/`__result`". Harmony *requires* those exact names to inject the patched
   instance and return value — renaming them silently breaks the patch. Suppress or ignore; never "fix".
+- **`GrantedSwoopModifier` never sets `PlayerControl.Visible`**, unlike every other concealment
+  modifier in this addon (`InvisibleBoyModifier`, `TimedInvisibilityModifier`, `CarriedModifier`), whose
+  comments note that security cameras and TOU-Mira's `IsVisibleToOthers` honour `Visible` rather than
+  sprite alpha. I checked upstream: TOU-Mira's own `SwoopModifier` doesn't set it either, so granted
+  Swoop faithfully reproduces the Swooper's behaviour. The consequence is a real asymmetry — a Kirby is
+  camera-visible while granted-Swooped but camera-invisible under a borrowed Astral phase or Hagrid
+  cloak. Left alone as faithful-to-source, but flagged so nobody "fixes" one side without deciding
+  about the other.
 - **`SightChecker.CanAnyoneSee` cost.** It looked like a hot path (`PlayerControl.FixedUpdate` postfix for
   every player), but the raycast is short-circuited behind a cheap distance test, and the patch filters to
   `InvisibleBoyRole` before doing any work.

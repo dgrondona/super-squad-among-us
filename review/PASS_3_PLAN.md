@@ -3,7 +3,9 @@
 A third review pass, deliberately narrow. Not a re-review: it covers only the files that passes 1 and 2
 never read end to end.
 
-**Status:** planned, not started. Does **not** block Phase 2 — see "Interaction with Phase 2" below.
+**Status: COMPLETE (2026-09-24).** All 18 files read end to end. Produced SSA-023 – SSA-028 in
+[FINDINGS.md](FINDINGS.md); see that file's "Pass 3 (complete)" note for what was cleared and why, and
+for the two hypotheses this plan raised that were ruled out.
 
 ---
 
